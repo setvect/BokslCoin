@@ -1,0 +1,6 @@
+com:
+  setvect:
+    bokslcoin:
+      autotrading:
+        accessKey: ${ACCESS_KEY}
+        secretKey: ${SECRET_KEY}
