@@ -4,3 +4,4 @@ com:
       autotrading:
         accessKey: ${ACCESS_KEY}
         secretKey: ${SECRET_KEY}
+        url: https://api.upbit.com
