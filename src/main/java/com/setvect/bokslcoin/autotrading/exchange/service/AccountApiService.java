@@ -7,6 +7,7 @@ import com.setvect.bokslcoin.autotrading.AccessInfo;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtils;
+import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
@@ -35,7 +36,7 @@ public class AccountApiService {
         try {
             HttpEntity entity = callGetApi(URL);
             String jsonResult = EntityUtils.toString(entity, "UTF-8");
-            List<Account> accounts = ApplicationUtils.GSON.fromJson(jsonResult, new TypeToken<List<Account>>() {
+            List<Account> accounts = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<Account>>() {
             }.getType());
 
             return accounts;

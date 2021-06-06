@@ -2,8 +2,7 @@ package com.setvect.bokslcoin.autotrading.quotation.service;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
-import com.setvect.bokslcoin.autotrading.model.CandleMinute;
-import com.setvect.bokslcoin.autotrading.util.ApplicationUtils;
+import com.setvect.bokslcoin.autotrading.model.Ticker;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,37 +25,29 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CandleApiService {
-    private static final String URL_MINUTES = "/v1/candles/minutes/{unit}";
-    private static final String URL_DAYS = "/v1/candles/days";
+public class TickerApiService {
+    private static final String URL = "/v1/ticker";
 
     private final ConnectionInfo connectionInfo;
 
-
     /**
-     * 분(Minute) 캔들
+     * 요청 당시 종목의 스냅샷을 반환한다.
      *
-     * @param unit   분 단위. 가능한 값 : 1, 3, 5, 15, 10, 30, 60, 240
      * @param market 마켓 코드 (ex. KRW-BTC)
-     * @param to     마지막 캔들 시각 (exclusive).
-     * @param count  캔들 개수(최대 200개까지 요청 가능)
      * @return
      */
-    public List<CandleMinute> callMinute(int unit, String market, LocalDateTime to, int count) {
+    public List<Ticker> callTicker(String market) {
         try {
-            String url = URL_MINUTES.replace("{unit}", String.valueOf(unit));
             Map<String, String> params = new HashMap<>();
 
-            params.put("market", market);
-            params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
-            params.put("count", String.valueOf(count));
+            params.put("markets", market);
 
-            HttpEntity entity = callGetApi(url, params);
+            HttpEntity entity = callGetApi(URL, params);
             String jsonResult = EntityUtils.toString(entity, "UTF-8");
-            List<CandleMinute> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleMinute>>() {
+            List<Ticker> tickers = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<Ticker>>() {
             }.getType());
 
-            return candles;
+            return tickers;
         } catch (IOException | URISyntaxException e) {
             log.error(e.getMessage(), e);
             throw new RuntimeException(e);

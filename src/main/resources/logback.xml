@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+
+    <property name="LOG_PATH" value="./logs/"/>
+    <property name="LOG_FILE_MAX_HISTORY" value="365"/>
+    <property name="LOG_PATH_NAME" value="${LOG_PATH}/bokslcoin.log" />
+    <property name="LOG_PATTERN" value="%-5level %d{yy-MM-dd HH:mm:ss}[%thread] [%logger{20}:%line] - %msg%n"/>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>${LOG_PATTERN}</pattern>
+        </layout>
+    </appender>
+
+    <!-- FILE 로그 추가 -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH_NAME}</file>
+        <!-- 일자별로 로그파일 적용하기 (파일 Rolling) -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH_NAME}.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>${LOG_FILE_MAX_HISTORY}</maxHistory> <!-- 일자별 백업파일의 보관기간 -->
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <springProfile name="local">
+        <root level="INFO">
+            <appender-ref ref="FILE" />
+            <appender-ref ref="STDOUT" />
+        </root>
+        <logger name="feign.Logger" level="DEBUG" additivity="false">
+            <appender-ref ref="FILE" />
+            <appender-ref ref="STDOUT" />
+        </logger>
+        <logger name="com.setvect.bokslcoin" level="DEBUG" additivity="false">
+            <appender-ref ref="FILE" />
+            <appender-ref ref="STDOUT" />
+        </logger>
+    </springProfile>
+    <springProfile name="!local">
+        <root level="INFO">
+            <appender-ref ref="FILE" />
+            <appender-ref ref="STDOUT" />
+        </root>
+    </springProfile>
+</configuration>

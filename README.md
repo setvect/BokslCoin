@@ -16,3 +16,6 @@ TODO
 
 ## 빌드 
 TODO
+
+## 참고
+- [조코딩-코인자동 매매](https://www.youtube.com/watch?v=7lFbKTVzj1c&ab_channel=%EC%A1%B0%EC%BD%94%EB%94%A9JoCoding)
