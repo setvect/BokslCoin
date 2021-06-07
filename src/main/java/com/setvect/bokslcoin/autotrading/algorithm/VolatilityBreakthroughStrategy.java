@@ -3,10 +3,12 @@ package com.setvect.bokslcoin.autotrading.algorithm;
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
+import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
 import com.setvect.bokslcoin.autotrading.quotation.service.TickerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,7 +16,7 @@ import java.util.List;
 /**
  * 변동성 돌파 전략
  */
-@Service("VolatilityBreakthroughStrategy")
+@Service("vbs")
 @Slf4j
 @RequiredArgsConstructor
 public class VolatilityBreakthroughStrategy implements CoinTrading {
@@ -23,12 +25,24 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
     private final TickerService tickerService;
     private final OrderService orderService;
 
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbs.coin}")
+    private String coin;
+
     @Override
     public void apply() {
         log.info("call VolatilityBreakthroughStrategy");
         List<Account> account = accountService.getMyAccount();
         System.out.println(account);
-//
+
+        List<CandleDay> candleList = candleService.getDay("KRW-BTC", 2);
+        CandleDay day = candleList.get(1);
+
+
+
+
+
+        System.out.println(candleList);
+
 //        Optional<Account> coin = account.stream().filter(p -> !p.getCurrency().equals("KRW")).findAny();
 //        coin.ifPresent(p -> {
 //            System.out.println(p);
@@ -41,8 +55,6 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
 
 
 //        System.out.println("=====================");
-//        List<CandleMinute> candleList = candleService.callMinute(1, "KRW-BTC", LocalDateTime.now(), 10);
-//        System.out.println(candleList);
 //        System.out.println("=====================");
 //        Ticker ticker = tickerService.callTicker("KRW-BTC");
 //        System.out.println(ticker);

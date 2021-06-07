@@ -3,6 +3,7 @@ package com.setvect.bokslcoin.autotrading.quotation.service;
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
 import com.setvect.bokslcoin.autotrading.common.service.ApiCaller;
+import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtils;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
@@ -26,28 +27,73 @@ public class CandleService {
 
 
     /**
+     * 현재 시간 기준으로 분(Minute) 캔들
+     *
+     * @param unit   분 단위. 가능한 값 : 1, 3, 5, 15, 10, 30, 60, 240
+     * @param market 마켓 코드 (ex. KRW-BTC)
+     * @param count  캔들 개수(최대 200개까지 요청 가능)
+     * @return 분(Minute) 캔들
+     */
+    public List<CandleMinute> getMinute(int unit, String market, int count) {
+        return getMinute(1, market, count, null);
+    }
+
+    /**
      * 분(Minute) 캔들
      *
      * @param unit   분 단위. 가능한 값 : 1, 3, 5, 15, 10, 30, 60, 240
      * @param market 마켓 코드 (ex. KRW-BTC)
-     * @param to     마지막 캔들 시각 (exclusive).
      * @param count  캔들 개수(최대 200개까지 요청 가능)
-     * @return
+     * @param to     마지막 캔들 시각 (exclusive).
+     * @return 분 캔들
      */
-    public List<CandleMinute> getMinute(int unit, String market, LocalDateTime to, int count) {
+    public List<CandleMinute> getMinute(int unit, String market, int count, LocalDateTime to) {
         String url = URL_MINUTES.replace("{unit}", String.valueOf(unit));
         Map<String, String> params = new HashMap<>();
 
         params.put("market", market);
-        params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
         params.put("count", String.valueOf(count));
+        if (to != null) {
+            params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
+        }
 
         String jsonResult = ApiCaller.requestApi(url, params, connectionInfo);
         List<CandleMinute> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleMinute>>() {
         }.getType());
-
         return candles;
     }
 
+    /**
+     * 현재 시간 기준으로 일(Day) 캔들
+     *
+     * @param market 마켓 코드 (ex. KRW-BTC)
+     * @param count  캔들 개수(최대 200개까지 요청 가능)
+     * @return 일단위 캔들
+     */
+    public List<CandleDay> getDay(String market, int count) {
+        return getDay(market,count,null);
+    }
 
+    /**
+     * 일(Day) 캔들
+     *
+     * @param market 마켓 코드 (ex. KRW-BTC)
+     * @param count  캔들 개수(최대 200개까지 요청 가능)
+     * @param to     마지막 캔들 시각 (exclusive).
+     * @return 일단위 캔들
+     */
+    public List<CandleDay> getDay(String market, int count, LocalDateTime to) {
+        Map<String, String> params = new HashMap<>();
+
+        params.put("market", market);
+        params.put("count", String.valueOf(count));
+        if (to != null) {
+            params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
+        }
+
+        String jsonResult = ApiCaller.requestApi(URL_DAYS, params, connectionInfo);
+        List<CandleDay> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleDay>>() {
+        }.getType());
+        return candles;
+    }
 }

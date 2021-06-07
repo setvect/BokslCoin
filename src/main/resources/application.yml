@@ -16,9 +16,9 @@ com:
           fixedDelay: 5000
         algorithm:
           # 매매 알고리즘 지정
-          name: VolatilityBreakthroughStrategy
+          name: vbs
           # 변동성 돌파 알고리즘 관련 설정값
-          VolatilityBreakthroughStrategy:
+          vbs:
             coin: KRW-BTC
             k: 0.5
 
