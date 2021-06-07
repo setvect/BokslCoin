@@ -2,6 +2,7 @@ package com.setvect.bokslcoin.autotrading.schedule.service;
 
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
+import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.OrderHistory;
 import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
 import com.setvect.bokslcoin.autotrading.quotation.service.TickerService;
@@ -11,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,8 +26,14 @@ public class TradingScheduleService {
     @Scheduled(fixedDelay = 5000, initialDelay = 1000)
     public void scheduleCheck() {
         log.info("call scheduleCheck()");
-//        List<Account> account = accountService.call();
-//        System.out.println(account);
+        List<Account> account = accountService.getMyAccount();
+        System.out.println(account);
+
+        Optional<Account> coin = account.stream().filter(p -> !p.getCurrency().equals("KRW")).findAny();
+        coin.ifPresent(p -> {
+            orderService.callOrderAsk("KRW-" + p.getCurrency(), p.getBalance(), p.getAvgBuyPrice());
+        });
+
 //        System.out.println("=====================");
 //        List<CandleMinute> candleList = candleService.callMinute(1, "KRW-BTC", LocalDateTime.now(), 10);
 //        System.out.println(candleList);
@@ -39,10 +47,11 @@ public class TradingScheduleService {
         List<OrderHistory> orderHistoryList = orderService.getHistory(1, 100);
         System.out.println(orderHistoryList);
 
-        if (!orderHistoryList.isEmpty()) {
-            OrderHistory orderHistory = orderService.cancelOrder(orderHistoryList.get(0).getUuid());
-            System.out.println(orderHistory);
-        }
+//        if (!orderHistoryList.isEmpty()) {
+//            OrderHistory orderHistory = orderService.cancelOrder(orderHistoryList.get(0).getUuid());
+//            System.out.println(orderHistory);
+//        }
+
 
         System.out.println();
         System.out.println();

@@ -102,7 +102,7 @@ public class ApiCaller {
         HttpEntity entity = response.getEntity();
         String jsonText = EntityUtils.toString(entity, "UTF-8");
 
-        if (statusCode != 200) {
+        if (statusCode != 200 && statusCode != 201) {
             String message = String.format("Error, Status: %d, URL: %s, Message: %s", statusCode, url, jsonText);
             throw new RuntimeException(message);
         }
@@ -111,6 +111,7 @@ public class ApiCaller {
 
     private static String getQueryString(Map<String, String> params) {
         return params.entrySet().stream()
+                .filter(p -> p.getValue() != null)
                 .map(p -> p.getKey() + "=" + p.getValue())
                 .collect(Collectors.joining("&"));
     }

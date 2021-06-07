@@ -79,17 +79,67 @@ public class OrderService {
 
 
     /**
+     * 지정가 매수 주문하기
+     *
+     * @param market 마켓 ID<br>
+     *               예) KRW-BTC, KRW-ETH, BTC-DOGE
+     * @param volume 주문량
+     * @param price  주문 가격
+     * @return 주문 정보
+     */
+    public OrderResult callOrderBid(String market, String volume, String price) {
+        return callOrder(market, volume, price, OrderResult.OrdType.limit, OrderResult.Side.bid);
+    }
+
+    /**
+     * 지정가 매도 주문하기
+     *
+     * @param market 마켓 ID<br>
+     *               예) KRW-BTC, KRW-ETH, BTC-DOGE
+     * @param volume 주문량
+     * @param price  주문 가격
+     * @return 주문 정보
+     */
+    public OrderResult callOrderAsk(String market, String volume, String price) {
+        return callOrder(market, volume, price, OrderResult.OrdType.limit, OrderResult.Side.ask);
+    }
+
+    /**
+     * 시장가 매수 주문하기
+     *
+     * @param market 마켓 ID<br>
+     *               예) KRW-BTC, KRW-ETH, BTC-DOGE
+     * @param volume 주문량
+     * @return 주문 정보
+     */
+    public OrderResult callOrderBidPrice(String market, String volume) {
+        return callOrder(market, volume, null, OrderResult.OrdType.price, OrderResult.Side.bid);
+    }
+
+    /**
+     * 시장가 매도 주문하기
+     *
+     * @param market 마켓 ID<br>
+     *               예) KRW-BTC, KRW-ETH, BTC-DOGE
+     * @param volume 주문량
+     * @return 주문 정보
+     */
+    public OrderResult callOrderAskMarket(String market, String volume) {
+        return callOrder(market, volume, null, OrderResult.OrdType.market, OrderResult.Side.ask);
+    }
+
+    /**
      * 주문하기
      *
      * @param market  마켓 ID<br>
      *                예) KRW-BTC, KRW-ETH, BTC-DOGE
-     * @param side    주문 종류
      * @param volume  주문량
      * @param price   주문 가격
      * @param ordType 주문 타입
+     * @param side    주문 종류(매수, 매도)
      * @return 주문 정보
      */
-    public OrderResult callOrder(String market, OrderResult.Side side, String volume, String price, OrderResult.OrdType ordType) {
+    private OrderResult callOrder(String market, String volume, String price, OrderResult.OrdType ordType, OrderResult.Side side) {
         Map<String, String> params = new HashMap<>();
         params.put("market", market);
         params.put("side", side.name());
