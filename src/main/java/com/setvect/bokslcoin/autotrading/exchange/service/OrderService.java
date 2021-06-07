@@ -109,11 +109,11 @@ public class OrderService {
      *
      * @param market 마켓 ID<br>
      *               예) KRW-BTC, KRW-ETH, BTC-DOGE
-     * @param volume 주문량
+     * @param price  주문 가격
      * @return 주문 정보
      */
-    public OrderResult callOrderBidPrice(String market, String volume) {
-        return callOrder(market, volume, null, OrderResult.OrdType.price, OrderResult.Side.bid);
+    public OrderResult callOrderBidByMarket(String market, String price) {
+        return callOrder(market, null, price, OrderResult.OrdType.price, OrderResult.Side.bid);
     }
 
     /**
@@ -124,7 +124,7 @@ public class OrderService {
      * @param volume 주문량
      * @return 주문 정보
      */
-    public OrderResult callOrderAskMarket(String market, String volume) {
+    public OrderResult callOrderAskByMarket(String market, String volume) {
         return callOrder(market, volume, null, OrderResult.OrdType.market, OrderResult.Side.ask);
     }
 

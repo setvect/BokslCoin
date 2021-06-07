@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.util;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -33,5 +34,21 @@ public class ApplicationUtils {
     public static String formatFromLocalDateTime(LocalDateTime localDateTime, String pattern) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return localDateTime.format(formatter);
+    }
+
+
+    /**
+     * askPrice가 100,521
+     * priceUnit값이 500원이면
+     * 100,500반환
+     *
+     * @param askPrice  호가
+     * @param priceUnit 호가 단위
+     * @return 호가에서 호가 단위를 절사해 반환
+     */
+    public static String applyAskPrice(double askPrice, int priceUnit) {
+        double remain = askPrice % priceUnit;
+        BigDecimal price = new BigDecimal(askPrice - remain);
+        return price.toString();
     }
 }

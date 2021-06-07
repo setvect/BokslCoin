@@ -2,6 +2,8 @@ com:
   setvect:
     bokslcoin:
       autotrading:
-        accessKey: ${ACCESS_KEY}
-        secretKey: ${SECRET_KEY}
-        url: https://api.upbit.com
+        api:
+          accessKey: ${ACCESS_KEY}
+          secretKey: ${SECRET_KEY}
+          url: https://api.upbit.com
+        coin: KRW-BTC

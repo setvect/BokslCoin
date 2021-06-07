@@ -20,8 +20,8 @@ public class AccessTokenMaker {
     private String secretKey;
 
     public AccessTokenMaker(
-            @Value("${com.setvect.bokslcoin.autotrading.accessKey}") String accessKey,
-            @Value("${com.setvect.bokslcoin.autotrading.secretKey}") String secretKey) {
+            @Value("${com.setvect.bokslcoin.autotrading.api.accessKey}") String accessKey,
+            @Value("${com.setvect.bokslcoin.autotrading.api.secretKey}") String secretKey) {
         this.accessKey = accessKey;
         this.secretKey = secretKey;
     }

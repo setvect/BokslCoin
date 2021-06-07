@@ -89,7 +89,9 @@ public class ApiCaller {
         HttpPost request = new HttpPost(url);
         request.setHeader("Content-Type", "application/json");
         request.addHeader("Authorization", accessTokenMaker.makeToken(queryString));
-        String requestBody = new Gson().toJson(params);
+        // null 값 제거
+        Map<String, String> map = params.entrySet().stream().filter(p -> p.getValue() != null).collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+        String requestBody = new Gson().toJson(map);
         request.setEntity(new StringEntity(requestBody));
 
         return request(url, request);
