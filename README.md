@@ -9,6 +9,7 @@
     ```
     ACCESS_KEY=엑세스키;SECRET_KEY=보안키
     ```
+1. Active Profiles: `local`
 1. `UpbitAutoTradingApplication` 클래스 실행
 
 ### Gradle 실행 

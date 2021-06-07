@@ -1,3 +1,8 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
 com:
   setvect:
     bokslcoin:
@@ -6,4 +11,15 @@ com:
           accessKey: ${ACCESS_KEY}
           secretKey: ${SECRET_KEY}
           url: https://api.upbit.com
-        coin: KRW-BTC
+        schedule:
+          # 시황 체크 주기
+          fixedDelay: 5000
+        algorithm:
+          # 매매 알고리즘 지정
+          name: VolatilityBreakthroughStrategy
+          # 변동성 돌파 알고리즘 관련 설정값
+          VolatilityBreakthroughStrategy:
+            coin: KRW-BTC
+            k: 0.5
+
+---
