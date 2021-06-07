@@ -1,38 +1,16 @@
 package com.setvect.bokslcoin.autotrading.model;
 
+import lombok.Getter;
+import lombok.ToString;
+
+import java.time.LocalDateTime;
+
 /**
- * 주문 결과
+ * 주문 내역
  */
-public class Order {
-    public enum Side {
-        /**
-         * 매수
-         */
-        bid,
-        /**
-         * 매도
-         */
-        ask
-    }
-
-    /**
-     * 주문 타입
-     */
-    public enum OrdType {
-        /**
-         * 지정가 주문
-         */
-        limit,
-        /**
-         * 시장가 주문(매수)
-         */
-        price,
-        /**
-         * 시장가 주문(매도)
-         */
-        market
-    }
-
+@Getter
+@ToString
+public class OrderHistory {
     /**
      * 주문의 고유 아이디
      */
@@ -40,23 +18,19 @@ public class Order {
     /**
      * 주문 종류
      */
-    private Side side;
+    private OrderResult.Side side;
     /**
      * 주문 방식
      */
-    private OrdType ordType;
+    private OrderResult.OrdType ordType;
     /**
      * 주문 당시 화폐 가격
      */
     private String price;
     /**
-     * 체결 가격의 평균가
-     */
-    private String avgPrice;
-    /**
      * 주문 상태
      */
-    private String state;
+    private OrderResult.State state;
     /**
      * 마켓의 유일키
      */
@@ -64,7 +38,7 @@ public class Order {
     /**
      * 주문 생성 시간
      */
-    private String createdAt;
+    private LocalDateTime createdAt;
     /**
      * 사용자가 입력한 주문 양
      */

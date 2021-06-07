@@ -29,8 +29,14 @@ public class GsonUtil {
                 return separateCamelCase(name, "_").toLowerCase(Locale.ENGLISH);
             }
         });
-        gsonBuilder.registerTypeAdapter(LocalDateTime.class, (JsonDeserializer<LocalDateTime>) (json, type, jsonDeserializationContext) ->
-                ApplicationUtils.getLocalDateTime(getString(json), ApplicationUtils.yyyy_MM_ddTHH_mm_ss)
+        gsonBuilder.registerTypeAdapter(LocalDateTime.class, (JsonDeserializer<LocalDateTime>) (json, type, jsonDeserializationContext) -> {
+                    String dateTimeString = getString(json);
+                    // 날짜 표현 문자열 일관성 맞추기
+                    if (dateTimeString.length() == "2021-05-15T11:26:30+09:00".length()) {
+                        dateTimeString = dateTimeString.substring(0, 19);
+                    }
+                    return ApplicationUtils.getLocalDateTime(dateTimeString, ApplicationUtils.yyyy_MM_ddTHH_mm_ss);
+                }
         );
         gsonBuilder.registerTypeAdapter(LocalDate.class, (JsonDeserializer<LocalDate>) (json, type, jsonDeserializationContext) -> {
                     String dateString = getString(json);

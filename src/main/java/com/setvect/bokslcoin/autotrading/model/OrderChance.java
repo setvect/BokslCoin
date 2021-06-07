@@ -113,11 +113,11 @@ public class OrderChance {
         /**
          * 지원 주문 방식
          */
-        private List<String> orderTypes;
+        private List<OrderResult.OrdType> orderTypes;
         /**
          * 지원 주문 종류
          */
-        private List<String> orderSides;
+        private List<OrderResult.Side> orderSides;
         /**
          * 매수 시 제약사항
          */
