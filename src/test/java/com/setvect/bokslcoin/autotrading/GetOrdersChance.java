@@ -20,10 +20,9 @@ import java.util.Map;
 import java.util.UUID;
 
 public class GetOrdersChance {
-//    ACCESS_KEY=c5EPfEXdIGdaYT0O5MKQqz53JWRiksJGtuZBGjnM;SECRET_KEY=tIyFNDQTe6hN4l5F8Cr47DRfwZDxrmVFjJk9oVPx
     public static void main(String[] args) throws NoSuchAlgorithmException, UnsupportedEncodingException {
-        String accessKey = "c5EPfEXdIGdaYT0O5MKQqz53JWRiksJGtuZBGjnM";
-        String secretKey = "tIyFNDQTe6hN4l5F8Cr47DRfwZDxrmVFjJk9oVPx";
+        String accessKey = "";
+        String secretKey = "";
         String serverUrl = "https://api.upbit.com";
 
         HashMap<String, String> params = new HashMap<>();

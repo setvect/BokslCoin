@@ -3,7 +3,7 @@ package com.setvect.bokslcoin.autotrading.exchange.service;
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.AccessTokenMaker;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
-import com.setvect.bokslcoin.autotrading.common.service.CommonFeature;
+import com.setvect.bokslcoin.autotrading.common.service.ApiCaller;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class AccountService {
     private final ConnectionInfo connectionInfo;
 
     public List<Account> call() {
-        String jsonResult = CommonFeature.requestApi(URL, Collections.emptyMap(), connectionInfo, accessInfo);
+        String jsonResult = ApiCaller.requestApi(URL, Collections.emptyMap(), connectionInfo, accessInfo);
         List<Account> accounts = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<Account>>() {
         }.getType());
 

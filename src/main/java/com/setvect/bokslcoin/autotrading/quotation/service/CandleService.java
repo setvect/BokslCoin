@@ -2,18 +2,14 @@ package com.setvect.bokslcoin.autotrading.quotation.service;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
-import com.setvect.bokslcoin.autotrading.common.service.CommonFeature;
+import com.setvect.bokslcoin.autotrading.common.service.ApiCaller;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtils;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -39,23 +35,18 @@ public class CandleService {
      * @return
      */
     public List<CandleMinute> callMinute(int unit, String market, LocalDateTime to, int count) {
-        try {
-            String url = URL_MINUTES.replace("{unit}", String.valueOf(unit));
-            Map<String, String> params = new HashMap<>();
+        String url = URL_MINUTES.replace("{unit}", String.valueOf(unit));
+        Map<String, String> params = new HashMap<>();
 
-            params.put("market", market);
-            params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
-            params.put("count", String.valueOf(count));
+        params.put("market", market);
+        params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
+        params.put("count", String.valueOf(count));
 
-            String jsonResult = CommonFeature.requestApi(url, params, connectionInfo);
-            List<CandleMinute> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleMinute>>() {
-            }.getType());
+        String jsonResult = ApiCaller.requestApi(url, params, connectionInfo);
+        List<CandleMinute> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleMinute>>() {
+        }.getType());
 
-            return candles;
-        } catch (IOException | URISyntaxException e) {
-            log.error(e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
+        return candles;
     }
 
 
