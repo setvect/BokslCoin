@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -59,6 +60,18 @@ public class ApiCaller {
         return request(url, request);
     }
 
+    @SneakyThrows
+    public static String requestApiByDelete(String apiUrl, Map<String, String> params, ConnectionInfo connectionInfo, AccessTokenMaker accessTokenMaker) {
+        String queryString = getQueryString(params);
+
+        String url = connectionInfo.getBaseUrl() + apiUrl + "?" + queryString;
+        HttpDelete request = new HttpDelete(url);
+        request.setHeader("Content-Type", "application/json");
+        request.addHeader("Authorization", accessTokenMaker.makeToken(queryString));
+
+        return request(url, request);
+    }
+
     /**
      * GET 방식  API 호출
      *
@@ -101,4 +114,5 @@ public class ApiCaller {
                 .map(p -> p.getKey() + "=" + p.getValue())
                 .collect(Collectors.joining("&"));
     }
+
 }

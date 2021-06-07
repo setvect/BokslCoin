@@ -36,8 +36,14 @@ public class TradingScheduleService {
 //        OrderChance orderChance = orderService.callChange("KRW-BTC");
 //        System.out.println(orderChance);
 
-        List<OrderHistory> orderHistory = orderService.callHistory(1, 100);
-        System.out.println(orderHistory);
+        List<OrderHistory> orderHistoryList = orderService.getHistory(1, 100);
+        System.out.println(orderHistoryList);
+
+        if (!orderHistoryList.isEmpty()) {
+            OrderHistory orderHistory = orderService.cancelOrder(orderHistoryList.get(0).getUuid());
+            System.out.println(orderHistory);
+        }
+
         System.out.println();
         System.out.println();
         System.out.println();

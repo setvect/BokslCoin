@@ -25,7 +25,7 @@ public class TickerService {
      * @param market 마켓 코드 (ex. KRW-BTC)
      * @return 현재가 정보
      */
-    public Ticker callTicker(String market) {
+    public Ticker getTicker(String market) {
         Map<String, String> params = new HashMap<>();
         params.put("markets", market);
 

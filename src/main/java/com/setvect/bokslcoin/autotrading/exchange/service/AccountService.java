@@ -23,7 +23,10 @@ public class AccountService {
 
     private final ConnectionInfo connectionInfo;
 
-    public List<Account> call() {
+    /**
+     * @return 계좌 내역
+     */
+    public List<Account> getMyAccount() {
         String jsonResult = ApiCaller.requestApi(URL, Collections.emptyMap(), connectionInfo, accessInfo);
         List<Account> accounts = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<Account>>() {
         }.getType());

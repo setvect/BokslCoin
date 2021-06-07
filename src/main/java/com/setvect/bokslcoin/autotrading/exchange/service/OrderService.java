@@ -21,8 +21,8 @@ import java.util.Map;
 @Slf4j
 public class OrderService {
     private static final String URL_ORDERS_CHANCE = "/v1/orders/chance";
-    private static final String URL_ORDERS_HISTORY = "/v1/orders";
     private static final String URL_ORDERS = "/v1/orders";
+    private static final String URL_ORDER = "/v1/order";
 
     private final AccessTokenMaker accessInfo;
 
@@ -33,7 +33,7 @@ public class OrderService {
      *               예) KRW-BTC, KRW-ETH, BTC-DOGE
      * @return 주문 가능 정보
      */
-    public OrderChance callChange(String market) {
+    public OrderChance getChange(String market) {
         Map<String, String> params = new HashMap<>();
         params.put("market", market);
 
@@ -48,17 +48,33 @@ public class OrderService {
      * @param limit 페이지당 가져올 항목 수 100 이하
      * @return 주문 내역
      */
-    public List<OrderHistory> callHistory(int page, int limit) {
+    public List<OrderHistory> getHistory(int page, int limit) {
         Map<String, String> params = new HashMap<>();
         params.put("page", String.valueOf(page));
         params.put("limit", String.valueOf(limit));
 
-        String jsonResult = ApiCaller.requestApi(URL_ORDERS_HISTORY, params, connectionInfo, accessInfo);
+        String jsonResult = ApiCaller.requestApi(URL_ORDERS, params, connectionInfo, accessInfo);
 
         List<OrderHistory> orderHistoryList = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<OrderHistory>>() {
         }.getType());
 
         return orderHistoryList;
+    }
+
+
+    /**
+     * 주문 취소
+     *
+     * @param uuid 취소할 주문의 UUID
+     * @return 취소 주문 정보
+     */
+    public OrderHistory cancelOrder(String uuid) {
+        Map<String, String> params = new HashMap<>();
+        params.put("uuid", String.valueOf(uuid));
+
+        String jsonResult = ApiCaller.requestApiByDelete(URL_ORDER, params, connectionInfo, accessInfo);
+        OrderHistory orderHistory = GsonUtil.GSON.fromJson(jsonResult, OrderHistory.class);
+        return orderHistory;
     }
 
 

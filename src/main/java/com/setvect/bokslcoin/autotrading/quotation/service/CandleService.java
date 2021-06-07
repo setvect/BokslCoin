@@ -34,7 +34,7 @@ public class CandleService {
      * @param count  캔들 개수(최대 200개까지 요청 가능)
      * @return
      */
-    public List<CandleMinute> callMinute(int unit, String market, LocalDateTime to, int count) {
+    public List<CandleMinute> getMinute(int unit, String market, LocalDateTime to, int count) {
         String url = URL_MINUTES.replace("{unit}", String.valueOf(unit));
         Map<String, String> params = new HashMap<>();
 
