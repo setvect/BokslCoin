@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -31,17 +32,13 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
     @Override
     public void apply() {
         log.info("call VolatilityBreakthroughStrategy");
-        List<Account> account = accountService.getMyAccount();
-        System.out.println(account);
+
+        BigDecimal krw = accountService.getBalance("KRW");
+        BigDecimal btc = accountService.getBalance(coin);
 
         List<CandleDay> candleList = candleService.getDay("KRW-BTC", 2);
-        CandleDay day = candleList.get(1);
-
-
-
-
-
-        System.out.println(candleList);
+        CandleDay yesterday = candleList.get(1);
+        System.out.println(yesterday);
 
 //        Optional<Account> coin = account.stream().filter(p -> !p.getCurrency().equals("KRW")).findAny();
 //        coin.ifPresent(p -> {

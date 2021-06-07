@@ -8,7 +8,9 @@ com:
     bokslcoin:
       autotrading:
         api:
+          # 엑세스 키: 환경 변수로 입력
           accessKey: ${ACCESS_KEY}
+          # 보안 키: 환경 변수로 입력
           secretKey: ${SECRET_KEY}
           url: https://api.upbit.com
         schedule:
