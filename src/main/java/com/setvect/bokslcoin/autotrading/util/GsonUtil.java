@@ -26,7 +26,6 @@ public class GsonUtil {
                 // accTradePrice24h => accTradePrice_24h
                 // highest52WeekDate => highest_52WeekDate
                 String name = f.getName().replaceAll("(\\d+)", "_$1");
-                System.out.println(name);
                 return separateCamelCase(name, "_").toLowerCase(Locale.ENGLISH);
             }
         });

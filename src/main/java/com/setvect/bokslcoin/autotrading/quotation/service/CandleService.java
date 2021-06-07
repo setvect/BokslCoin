@@ -2,22 +2,17 @@ package com.setvect.bokslcoin.autotrading.quotation.service;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
+import com.setvect.bokslcoin.autotrading.common.service.CommonFeature;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtils;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.utils.URIBuilder;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -27,7 +22,7 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CandleApiService {
+public class CandleService {
     private static final String URL_MINUTES = "/v1/candles/minutes/{unit}";
     private static final String URL_DAYS = "/v1/candles/days";
 
@@ -52,8 +47,7 @@ public class CandleApiService {
             params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
             params.put("count", String.valueOf(count));
 
-            HttpEntity entity = callGetApi(url, params);
-            String jsonResult = EntityUtils.toString(entity, "UTF-8");
+            String jsonResult = CommonFeature.requestApi(url, params, connectionInfo);
             List<CandleMinute> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleMinute>>() {
             }.getType());
 
@@ -64,23 +58,5 @@ public class CandleApiService {
         }
     }
 
-    private HttpEntity callGetApi(String apiUrl, Map<String, String> params) throws IOException, URISyntaxException {
-        HttpClient client = HttpClientBuilder.create().build();
-        String url = connectionInfo.getBaseUrl() + apiUrl;
-        HttpGet request = new HttpGet(url);
-        URIBuilder uriBuilder = new URIBuilder(request.getURI());
-
-        params.entrySet().forEach(p -> {
-            uriBuilder.addParameter(p.getKey(), p.getValue());
-        });
-
-        URI uri = uriBuilder.build();
-        request.setHeader("Content-Type", "application/json");
-        request.setURI(uri);
-
-        HttpResponse response = client.execute(request);
-        HttpEntity entity = response.getEntity();
-        return entity;
-    }
 
 }

@@ -17,5 +17,13 @@ TODO
 ## 빌드 
 TODO
 
+## 배포
+### 준비
+- 서버시간 동기화
+   ```sh
+   $ rdate -s time.bora.net
+   ```
+
 ## 참고
-- [조코딩-코인자동 매매](https://www.youtube.com/watch?v=7lFbKTVzj1c&ab_channel=%EC%A1%B0%EC%BD%94%EB%94%A9JoCoding)
+- [업비트 공식 문서](https://docs.upbit.com)
+- [조코딩-코인자동 매매](https://github.com/youtube-jocoding/pyupbit-autotrade)
