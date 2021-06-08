@@ -35,19 +35,19 @@ public class GsonUtil {
                     if (dateTimeString.length() == "2021-05-15T11:26:30+09:00".length()) {
                         dateTimeString = dateTimeString.substring(0, 19);
                     }
-                    return ApplicationUtils.getLocalDateTime(dateTimeString, ApplicationUtils.yyyy_MM_ddTHH_mm_ss);
+                    return DateUtil.getLocalDateTime(dateTimeString, DateUtil.yyyy_MM_ddTHH_mm_ss);
                 }
         );
         gsonBuilder.registerTypeAdapter(LocalDate.class, (JsonDeserializer<LocalDate>) (json, type, jsonDeserializationContext) -> {
                     String dateString = getString(json);
                     if (dateString.length() == 10) {
-                        return ApplicationUtils.getLocalDate(dateString, ApplicationUtils.yyyy_MM_dd);
+                        return DateUtil.getLocalDate(dateString, DateUtil.yyyy_MM_dd);
                     }
-                    return ApplicationUtils.getLocalDate(dateString, ApplicationUtils.yyyyMMdd);
+                    return DateUtil.getLocalDate(dateString, DateUtil.yyyyMMdd);
                 }
         );
         gsonBuilder.registerTypeAdapter(LocalTime.class, (JsonDeserializer<LocalTime>) (json, type, jsonDeserializationContext) ->
-                ApplicationUtils.getLocalTime(getString(json), ApplicationUtils.HHmmss)
+                DateUtil.getLocalTime(getString(json), DateUtil.HHmmss)
         );
         GSON = gsonBuilder.create();
     }

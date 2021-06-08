@@ -15,13 +15,17 @@ com:
           url: https://api.upbit.com
         schedule:
           # 시황 체크 주기
-          fixedDelay: 5000
+          fixedDelay: 10000
         algorithm:
           # 매매 알고리즘 지정
           name: vbs
           # 변동성 돌파 알고리즘 관련 설정값
           vbs:
+            # 매수, 매도 대상 코인
             coin: KRW-BTC
+            # 변동성 돌파 판단 비율
             k: 0.5
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            rate: 0.5
 
 ---

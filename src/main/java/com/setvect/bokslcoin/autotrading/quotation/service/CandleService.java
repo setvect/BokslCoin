@@ -5,7 +5,7 @@ import com.setvect.bokslcoin.autotrading.ConnectionInfo;
 import com.setvect.bokslcoin.autotrading.common.service.ApiCaller;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
-import com.setvect.bokslcoin.autotrading.util.ApplicationUtils;
+import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +54,7 @@ public class CandleService {
         params.put("market", market);
         params.put("count", String.valueOf(count));
         if (to != null) {
-            params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
+            params.put("to", DateUtil.format(to, DateUtil.yyyy_MM_ddTHH_mm_ssZ));
         }
 
         String jsonResult = ApiCaller.requestApi(url, params, connectionInfo);
@@ -88,7 +88,7 @@ public class CandleService {
         params.put("market", market);
         params.put("count", String.valueOf(count));
         if (to != null) {
-            params.put("to", ApplicationUtils.formatFromLocalDateTime(to, ApplicationUtils.yyyy_MM_ddTHH_mm_ssZ));
+            params.put("to", DateUtil.format(to, DateUtil.yyyy_MM_ddTHH_mm_ssZ));
         }
 
         String jsonResult = ApiCaller.requestApi(URL_DAYS, params, connectionInfo);
