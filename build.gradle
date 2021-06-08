@@ -1,12 +1,20 @@
+buildscript {
+    dependencies {
+        classpath("org.hidetake:gradle-ssh-plugin:2.2.0") //gradle 플러그인 의존성 추가
+    }
+}
+
 plugins {
     id 'org.springframework.boot' version '2.5.0'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
 }
 
+apply plugin: 'org.hidetake.ssh'
+
 group = 'com.example'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
+sourceCompatibility = '8'
 
 configurations {
     compileOnly {
@@ -16,6 +24,16 @@ configurations {
 
 repositories {
     mavenCentral()
+}
+
+// 테스트 skip
+test {
+    exclude '**/*'
+}
+
+bootJar {
+    enabled = true
+    archiveFileName = 'BokslCoin-1.0.0.jar'
 }
 
 dependencies {
@@ -32,4 +50,71 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+
+task makeInstallFile() {
+    group 'build'
+    dependsOn ordered(":bootJar")
+
+    doLast {
+        delete("$buildDir/dist")
+        copy {
+            from "$buildDir/libs/BokslCoin-1.0.0.jar"
+            into "$buildDir/dist/lib"
+        }
+        copy {
+            from "./script"
+            include '*'
+            into "$buildDir/dist/bin"
+        }
+        copy {
+            from "./src/main/resources/application.yml"
+            into "$buildDir/dist/conf"
+            rename 'application.yml', 'BokslCoin.yml'
+        }
+        copy {
+            from "./src/main/resources/logback-spring.xml"
+            into "$buildDir/dist/conf"
+        }
+    }
+}
+
+// 실행 의존서의 순서를 지키기 위함
+def ordered(String... dependencyPaths) {
+    def dependencies = dependencyPaths.collect { tasks.getByPath(it) }
+    for (int i = 0; i < dependencies.size() - 1; i++) {
+        dependencies[i + 1].mustRunAfter(dependencies[i])
+    }
+    return dependencies
+}
+
+task deployRemort(dependsOn: makeInstallFile) {
+    group 'build'
+    doLast {
+        // 원격 서버 ssh 출판
+        remotes {
+            publicServer {
+                host = project.properties["remortHost"]
+                port = project.properties["remortPort"].toInteger()
+                user = project.properties["remortUser"]
+                identity = new File(project.properties["authFile"])
+                knownHosts = allowAnyHosts //알 수 없는 호스트라도 접속 가능
+            }
+        }
+
+        ssh.run {
+            session(remotes.publicServer) {
+                final jarName = "$buildDir/dist/lib/BokslCoin-1.0.0.jar"
+                println "Deploy file : ${jarName}"
+
+                println "send start"
+                put from: "${jarName}", into: project.properties["remortDir"]
+                println "send complete"
+
+                println "execute restart command: ${project.properties["restartCommand"]}"
+                execute project.properties["restartCommand"]
+            }
+        }
+    }
 }

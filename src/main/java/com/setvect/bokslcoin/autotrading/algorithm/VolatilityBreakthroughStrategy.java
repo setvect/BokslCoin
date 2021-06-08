@@ -105,9 +105,9 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
             }
 
             BigDecimal krw = accountService.getBalance("KRW");
-            // 투자 금액
+            // 매수 금액
             double askPrice = krw.doubleValue() * rate;
-            log.info(String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,.00f, 투자 금액: %,.00f,", coin, currentPrice, askPrice));
+            log.info(String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,.00f, 매수 금액: %,.00f,", coin, currentPrice, askPrice));
             orderService.callOrderBidByMarket(coin, ApplicationUtil.toNumberString(askPrice));
         }
     }

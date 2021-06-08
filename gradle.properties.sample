@@ -1,0 +1,7 @@
+# gradle "deployRemort" task 사용하기 위해서 본 파일을 "gradle.properties" 변경하고 ssh 연결정보를 입력
+remortHost=127.0.0.1
+remortPort=22
+remortUser=userid
+remortDir=/home/boksl/web
+authFile=C:/Users/Administrator/.ssh/id_rsa
+restartCommand=cd /home/home/boksl/bin;./BokslPortal.sh restart
