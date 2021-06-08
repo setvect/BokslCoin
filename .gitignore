@@ -5,6 +5,7 @@ build/
 !**/src/test/**/build/
 logs
 gradle.properties
+craw-data
 
 ### STS ###
 .apt_generated
