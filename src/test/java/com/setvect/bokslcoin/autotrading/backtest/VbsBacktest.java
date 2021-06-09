@@ -2,12 +2,14 @@ package com.setvect.bokslcoin.autotrading.backtest;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
+import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Test;
@@ -39,10 +41,37 @@ public class VbsBacktest {
 
         // === 2. 백테스팅 ===
         List<BacktestRow> testResult = backtest(condition);
+        TestAnalysis testAnalysis = analysis(testResult);
+
+        System.out.printf("실재 수익: %,.2f%%\n", testAnalysis.getCoinYield() * 100);
+        System.out.printf("실재 MDD: %,.2f%%\n", testAnalysis.getCoinMdd() * 100);
+        System.out.printf("실현 수익: %,.2f%%\n", testAnalysis.getRealYield() * 100);
+        System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getRealMdd() * 100);
 
         // === 3. 리포트 ===
         makeReport(condition, testResult);
+
         System.out.println("끝.");
+    }
+
+    private TestAnalysis analysis(List<BacktestRow> testResult) {
+        TestAnalysis testAnalysis = new TestAnalysis();
+
+        double coinYield = testResult.get(testResult.size() - 1).getCandleDay().getTradePrice() / testResult.get(0).getCandleDay().getOpeningPrice() - 1;
+        testAnalysis.setCoinYield(coinYield);
+        List<Double> values = new ArrayList<>();
+        values.add(testResult.get(0).getCandleDay().getOpeningPrice());
+        values.addAll(testResult.stream().skip(1).map(p -> p.getCandleDay().getTradePrice()).collect(Collectors.toList()));
+        testAnalysis.setCoinMdd(ApplicationUtil.getMdd(values));
+
+        values = new ArrayList<>();
+        values.add(testResult.get(0).getFinalResult());
+        values.addAll(testResult.stream().skip(1).map(p -> p.getFinalResult()).collect(Collectors.toList()));
+        testAnalysis.setRealMdd(ApplicationUtil.getMdd(values));
+
+        double realYield = testResult.get(testResult.size() - 1).getFinalResult() / testResult.get(0).getFinalResult() - 1;
+        testAnalysis.setRealYield(realYield);
+        return testAnalysis;
     }
 
     private List<BacktestRow> backtest(VbsCondition condition) throws IOException {
@@ -226,5 +255,18 @@ public class VbsBacktest {
                     candleDay.getLowPrice(), candleDay.getTradePrice(), getCandleYield() * 100,
                     targetPrice, trade, bidPrice, askPrice, getRealYield() * 100, invest, cash, getGains(), feePrice, getInvestResult(), getFinalResult());
         }
+    }
+
+    @Setter
+    @Getter
+    @ToString
+    static class TestAnalysis {
+        private double coinYield;
+        // 코인 차트 기준 최대 낙폭
+        private double coinMdd;
+        private double realYield;
+        // 실 투자 기준 최대 낙폭
+        private double realMdd;
+
     }
 }

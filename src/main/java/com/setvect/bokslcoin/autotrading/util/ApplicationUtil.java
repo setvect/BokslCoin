@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * 어플리케이션의 의존적인 유틸성 메소드
@@ -59,4 +60,22 @@ public class ApplicationUtil {
         DateRange range = new DateRange(fromLocal, toLocal);
         return range;
     }
+
+    /**
+     * @param values
+     * @return 최대 낙폭 계산 - MDD(Max. Draw Down)
+     */
+    public static double getMdd(List<Double> values) {
+        double highValue = 0;
+        double mdd = 0;
+        for (Double v : values) {
+            if (highValue < v) {
+                highValue = v;
+            } else {
+                mdd = Math.min(mdd, v / highValue - 1);
+            }
+        }
+        return mdd;
+    }
+
 }
