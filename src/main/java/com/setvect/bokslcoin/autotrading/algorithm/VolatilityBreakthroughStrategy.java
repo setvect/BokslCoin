@@ -137,7 +137,7 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
         CandleDay yesterday = candleList.get(1);
 
         double targetValue = yesterday.getTradePrice() + (yesterday.getHighPrice() - yesterday.getLowPrice()) * k;
-        log.debug(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f %n"
+        log.debug(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
                 , targetValue, yesterday.getTradePrice(), yesterday.getHighPrice(), yesterday.getLowPrice(), k));
 
         return targetValue;
