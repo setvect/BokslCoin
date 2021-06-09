@@ -78,34 +78,34 @@ public class DateRange {
     /**
      * 날짜영역 객체 생성. 기본 날짜 포맷 (yyyy-MM-dd)으로 날짜 변환
      *
-     * @param st 시작날짜
-     * @param ed 종료날짜
+     * @param from 시작날짜
+     * @param to 종료날짜
      */
-    public DateRange(String st, String ed) {
-        this(st, ed, "yyyy-MM-dd'T'HH:mm:ss");
+    public DateRange(String from, String to) {
+        this(from, to, "yyyy-MM-dd'T'HH:mm:ss");
     }
 
     /**
      * 날짜영역 객체 생성. 기본 날짜 포맷 (yyyy-MM-dd)으로 날짜 변환
      *
-     * @param st     시작날짜
-     * @param ed     종료날짜
+     * @param from     시작날짜
+     * @param to     종료날짜
      * @param format 날짜 패턴 "yyyy, MM, dd, HH, mm, ss and more"
      */
-    public DateRange(String st, String ed, String format) {
-        from = DateUtil.getLocalDateTime(st, format);
-        to = DateUtil.getLocalDateTime(ed, format);
+    public DateRange(String from, String to, String format) {
+        this.from = DateUtil.getLocalDateTime(from, format);
+        this.to = DateUtil.getLocalDateTime(to, format);
     }
 
     /**
      * 날짜영역 객체 생성.
      *
-     * @param st 시작일
-     * @param ed 종료일
+     * @param from 시작일
+     * @param to 종료일
      */
-    public DateRange(LocalDateTime st, LocalDateTime ed) {
-        from = st;
-        to = ed;
+    public DateRange(LocalDateTime from, LocalDateTime to) {
+        this.from = from;
+        this.to = to;
     }
 
     /**

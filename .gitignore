@@ -5,6 +5,9 @@ build/
 !**/src/test/**/build/
 logs
 gradle.properties
+backtest-result/*.xlsx
+backtest-result/*.xls
+backtest-result/*.txt
 
 ### STS ###
 .apt_generated
