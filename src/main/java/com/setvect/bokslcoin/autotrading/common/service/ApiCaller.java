@@ -18,6 +18,7 @@ import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -83,14 +84,18 @@ public class ApiCaller {
      */
     @SneakyThrows
     public static String requestApiByPost(String apiUrl, Map<String, String> params, ConnectionInfo connectionInfo, AccessTokenMaker accessTokenMaker) {
-        String queryString = getQueryString(params);
+        // 파라미터 이름 순으로 정렬
+        TreeMap<String, String> orderParam = new TreeMap<>(params);
+        String queryString = getQueryString(orderParam);
 
         String url = connectionInfo.getBaseUrl() + apiUrl;
         HttpPost request = new HttpPost(url);
         request.setHeader("Content-Type", "application/json");
         request.addHeader("Authorization", accessTokenMaker.makeToken(queryString));
-        // null 값 제거
-        Map<String, String> map = params.entrySet().stream().filter(p -> p.getValue() != null).collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+        // null 값 제거, 파라미터 이름 순으로 정렬, querystring과 순서가 같아야 jwt 인증 오류 발생하지 않음
+        TreeMap<String, String> map = orderParam.entrySet().stream()
+                .filter(p -> p.getValue() != null)
+                .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue(), (p1, p2) -> p1, TreeMap::new));
         String requestBody = new Gson().toJson(map);
         request.setEntity(new StringEntity(requestBody));
 

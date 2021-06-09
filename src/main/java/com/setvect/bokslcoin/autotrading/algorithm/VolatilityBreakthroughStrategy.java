@@ -83,16 +83,16 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
         LocalDateTime now = LocalDateTime.now();
         double currentPrice = getCurrentPrice();
 
-        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,.00f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, coin, currentPrice));
+        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, coin, currentPrice));
 
         //  코인 매수를 했다면
         double balance = coinBalance.doubleValue();
         if (balance > 0.00001) {
             // 매도 시간 파악
-            if (askRange.isBetween(now)) {
-                log.info(String.format("★★★ 시장가 매도, 코인: %s 보유량: %,.00f, 현재가: %,.00f, 예상 금액: %,.00f", coin, balance, currentPrice, balance * currentPrice));
+//            if (askRange.isBetween(now)) {
+                log.info(String.format("★★★ 시장가 매도, 코인: %s 보유량: %,f, 현재가: %,f, 예상 금액: %,f", coin, balance, currentPrice, balance * currentPrice));
                 orderService.callOrderAskByMarket(coin, ApplicationUtil.toNumberString(balance));
-            }
+//            }
             return;
         }
         if (bidRange.isBetween(now)) {
@@ -107,7 +107,7 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
             BigDecimal krw = accountService.getBalance("KRW");
             // 매수 금액
             double askPrice = krw.doubleValue() * rate;
-            log.info(String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,.00f, 매수 금액: %,.00f,", coin, currentPrice, askPrice));
+            log.info(String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,f, 매수 금액: %,f,", coin, currentPrice, askPrice));
             orderService.callOrderBidByMarket(coin, ApplicationUtil.toNumberString(askPrice));
         }
     }
