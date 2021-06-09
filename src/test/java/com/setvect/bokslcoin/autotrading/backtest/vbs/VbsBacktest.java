@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest;
+package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
@@ -6,10 +6,6 @@ import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Test;
@@ -43,8 +39,8 @@ public class VbsBacktest {
         List<BacktestRow> testResult = backtest(condition);
         TestAnalysis testAnalysis = analysis(testResult);
 
-        System.out.printf("실재 수익: %,.2f%%\n", testAnalysis.getCoinYield() * 100);
-        System.out.printf("실재 MDD: %,.2f%%\n", testAnalysis.getCoinMdd() * 100);
+        System.out.printf("실제 수익: %,.2f%%\n", testAnalysis.getCoinYield() * 100);
+        System.out.printf("실제 MDD: %,.2f%%\n", testAnalysis.getCoinMdd() * 100);
         System.out.printf("실현 수익: %,.2f%%\n", testAnalysis.getRealYield() * 100);
         System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getRealMdd() * 100);
 
@@ -54,7 +50,7 @@ public class VbsBacktest {
         System.out.println("끝.");
     }
 
-    private TestAnalysis analysis(List<BacktestRow> testResult) {
+    protected TestAnalysis analysis(List<BacktestRow> testResult) {
         TestAnalysis testAnalysis = new TestAnalysis();
 
         double coinYield = testResult.get(testResult.size() - 1).getCandleDay().getTradePrice() / testResult.get(0).getCandleDay().getOpeningPrice() - 1;
@@ -74,7 +70,7 @@ public class VbsBacktest {
         return testAnalysis;
     }
 
-    private List<BacktestRow> backtest(VbsCondition condition) throws IOException {
+    protected List<BacktestRow> backtest(VbsCondition condition) throws IOException {
         // 분석기간 코인 일봉 데이터
         List<CandleDay> candleDays = getAnalysisCandleDays(condition.getRange(), condition.getDataFile());
         List<BacktestRow> acc = new ArrayList<>();
@@ -148,125 +144,5 @@ public class VbsBacktest {
         return ca;
     }
 
-    /**
-     * 변동성 돌파 전략 변수
-     */
-    @Builder
-    @Getter
-    public static class VbsCondition {
-        // 변동성 돌파 판단 비율
-        private final double k;
-        // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-        private final double rate;
-        // 분석 대상 기간
-        private final DateRange range;
-        // 대상 코인
-        private final File dataFile;
-        // 최초 투자 금액
-        private final double cash;
-        // 매매시 채결 가격 차이
-        // 시장가로 매매하기 때문에 한단계 낮거나 높은 호가로 매매가 되는 것을 고려함.
-        // 매수 채결 가격 = 목표가격 + tradeMargin
-        // 매도 채결 가격 = 종가 - tradeMargin
-        private final double tradeMargin;
-        //  매수 수수료
-        private final double feeBid;
-        //  매도 수수료
-        private final double feeAsk;
 
-    }
-
-    /**
-     * 날짜별 매매 정보
-     */
-    @Setter
-    @Getter
-    public static class BacktestRow {
-        private CandleDay candleDay;
-        // 목표가1
-        private double targetPrice;
-        // 매매 여부
-        private boolean trade;
-        // 매수 체결 가격
-        private double bidPrice;
-        // 매도 체결 가격
-        private double askPrice;
-        // 투자금
-        private double invest;
-        // 현금
-        private double cash;
-
-
-        // 매매 수수료
-        private double feePrice;
-        // 코인
-        private double coin;
-
-        public BacktestRow(CandleDay candle) {
-            this.candleDay = candle;
-        }
-
-        // 투자 수익
-        public double getGains() {
-            return invest * getRealYield();
-        }
-
-        /**
-         * @return 투자 결과<br>
-         * 투자금 + 투자 수익
-         */
-        public double getInvestResult() {
-            return invest + getGains();
-        }
-
-        /**
-         * @return 현금 + 투자 결과
-         * 투자금 + 투자 수익 - 수수료
-         */
-        public double getFinalResult() {
-            return getInvestResult() + cash - feePrice;
-        }
-
-
-        /**
-         * 시가에 매도 해서 종가에 팔았을 때 얻는 수익률
-         *
-         * @return 캔들상 수익률<br>
-         */
-        public double getCandleYield() {
-            return (candleDay.getTradePrice() / candleDay.getOpeningPrice()) - 1;
-        }
-
-        /**
-         * @return 실현 수익률
-         */
-        public double getRealYield() {
-            if (trade) {
-                return (askPrice / bidPrice) - 1;
-            }
-            return 0;
-        }
-
-        public String toString() {
-            String date = DateUtil.formatDateTime(candleDay.getCandleDateTimeUtc());
-            return String.format("날짜: %s, 시가: %,.0f, 고가:%,.0f, 저가:%,.0f, 종가:%,.0f, 단위 수익률: %,.2f%%, 매수 목표가: %,.0f, 매매여부: %s, 매수 체결 가격: %,.0f, 매도 체결 가격: %,.0f, 실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 수수료: %,.0f, 투자 결과: %,.0f, 현금 + 투자결과 - 수수료: %,.0f",
-                    date, candleDay.getOpeningPrice()
-                    , candleDay.getHighPrice(),
-                    candleDay.getLowPrice(), candleDay.getTradePrice(), getCandleYield() * 100,
-                    targetPrice, trade, bidPrice, askPrice, getRealYield() * 100, invest, cash, getGains(), feePrice, getInvestResult(), getFinalResult());
-        }
-    }
-
-    @Setter
-    @Getter
-    @ToString
-    static class TestAnalysis {
-        private double coinYield;
-        // 코인 차트 기준 최대 낙폭
-        private double coinMdd;
-        private double realYield;
-        // 실 투자 기준 최대 낙폭
-        private double realMdd;
-
-    }
 }
