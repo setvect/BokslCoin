@@ -4,4 +4,4 @@ remortPort=22
 remortUser=userid
 remortDir=/home/boksl/web
 authFile=C:/Users/Administrator/.ssh/id_rsa
-restartCommand=cd /home/home/boksl/bin;./BokslPortal.sh restart
+restartCommand=cd /home/home/boksl/bin;./BokslCoin.sh restart

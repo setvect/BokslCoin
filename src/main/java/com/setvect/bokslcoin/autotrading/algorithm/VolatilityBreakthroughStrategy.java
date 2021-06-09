@@ -90,14 +90,14 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
         if (balance > 0.00001) {
             // 매도 시간 파악
 //            if (askRange.isBetween(now)) {
-                log.info(String.format("★★★ 시장가 매도, 코인: %s 보유량: %,f, 현재가: %,f, 예상 금액: %,f", coin, balance, currentPrice, balance * currentPrice));
-                orderService.callOrderAskByMarket(coin, ApplicationUtil.toNumberString(balance));
+            log.info(String.format("★★★ 시장가 매도, 코인: %s 보유량: %,f, 현재가: %,f, 예상 금액: %,f", coin, balance, currentPrice, balance * currentPrice));
+            orderService.callOrderAskByMarket(coin, ApplicationUtil.toNumberString(balance));
 //            }
             return;
         }
         if (bidRange.isBetween(now)) {
             double targetValue = getTargetPrice();
-            log.debug("{} 목표가: {}. 현재가: {}", coin, ApplicationUtil.toNumberString(currentPrice), ApplicationUtil.toNumberString(targetValue));
+            log.debug(String.format("%s 목표가: %,f\t현재가: %,f", coin, targetValue, currentPrice));
 
             if (targetValue > currentPrice) {
                 log.info("목표가 도달하지 않음");
