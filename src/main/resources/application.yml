@@ -7,6 +7,7 @@ com:
   setvect:
     bokslcoin:
       autotrading:
+        enable: false
         api:
           # 엑세스 키: 환경 변수 또는 직접 입력
           accessKey: ${ACCESS_KEY}

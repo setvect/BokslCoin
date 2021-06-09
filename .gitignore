@@ -8,6 +8,7 @@ gradle.properties
 backtest-result/*.xlsx
 backtest-result/*.xls
 backtest-result/*.txt
+/craw-data/minute/
 
 ### STS ###
 .apt_generated
@@ -39,3 +40,4 @@ out/
 
 ### VS Code ###
 .vscode/
+
