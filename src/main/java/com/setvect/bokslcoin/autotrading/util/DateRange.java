@@ -82,7 +82,7 @@ public class DateRange {
      * @param ed 종료날짜
      */
     public DateRange(String st, String ed) {
-        this(st, ed, "yyyy-MM-dd");
+        this(st, ed, "yyyy-MM-dd'T'HH:mm:ss");
     }
 
     /**
@@ -94,7 +94,7 @@ public class DateRange {
      */
     public DateRange(String st, String ed, String format) {
         from = DateUtil.getLocalDateTime(st, format);
-        to = DateUtil.getLocalDateTime(st, format);
+        to = DateUtil.getLocalDateTime(ed, format);
     }
 
     /**
