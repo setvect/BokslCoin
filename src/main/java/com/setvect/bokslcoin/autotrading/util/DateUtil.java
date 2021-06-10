@@ -29,9 +29,18 @@ public class DateUtil {
         return LocalDateTime.parse(text, formatter);
     }
 
-    public static LocalDate getLocalDate(String timeStr, String pattern) {
+    /**
+     *
+     * @param dateStr yyyy-MM-dd 형태
+     * @return LocalDAte
+     */
+    public static LocalDate getLocalDate(String dateStr) {
+        return getLocalDate(dateStr, yyyy_MM_dd);
+    }
+    
+    public static LocalDate getLocalDate(String dateStr, String pattern) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
-        return LocalDate.parse(timeStr, formatter);
+        return LocalDate.parse(dateStr, formatter);
     }
 
     public static LocalTime getLocalTime(String timeStr) {
@@ -42,6 +51,14 @@ public class DateUtil {
     public static LocalTime getLocalTime(String timeStr, String pattern) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return LocalTime.parse(timeStr, formatter);
+    }
+
+    /**
+     * @param localDateTime
+     * @return yyyy-MM-dd 형태로 반환
+     */
+    public static String format(LocalDateTime localDateTime) {
+        return format(localDateTime, yyyy_MM_dd);
     }
 
     public static String format(LocalDateTime localDateTime, String pattern) {

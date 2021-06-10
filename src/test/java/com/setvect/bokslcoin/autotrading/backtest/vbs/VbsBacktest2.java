@@ -95,9 +95,9 @@ public class VbsBacktest2 {
                 .k(k) // 변동성 돌파 판단 비율
                 .rate(rate) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                 .range(range)// 분석 대상 기간
-                .dataFile(new File("./craw-data/KRW-DOGE.json"))// 대상 코인
+                .dataFile(new File("./craw-data/KRW-BTC.json"))// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
-                .tradeMargin(0)// 매매시 채결 가격 차이
+                .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
                 .build();

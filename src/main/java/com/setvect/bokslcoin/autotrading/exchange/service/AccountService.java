@@ -41,7 +41,7 @@ public class AccountService {
      * @param market 예) KRW, KRW-BTC
      * @return 내 계좌 정보
      */
-    public BigDecimal getBalance(String market) {
+    public Optional<Account> getAccount(String market) {
         String[] tokens = market.split("-");
         final String currency;
         final String unitCurrency;
@@ -60,7 +60,29 @@ public class AccountService {
                 .filter(p -> unitCurrency == null || p.getUnitCurrency().equals(unitCurrency))
                 .findAny();
 
-        return find.isPresent() ? new BigDecimal(Double.valueOf(find.get().getBalance())) : new BigDecimal(0.0);
+        return find;
     }
 
+    /**
+     * @param market 예) KRW, KRW-BTC
+     * @return 매수 평균 가격, 해당 코인이 없으면 null
+     */
+    public Optional<BigDecimal> getAvgBuyPrice(String market) {
+        Optional<Account> account = getAccount(market);
+        if (account.isPresent()) {
+            Double val = Double.valueOf(account.get().getAvgBuyPrice());
+            BigDecimal value = BigDecimal.valueOf(val);
+            return Optional.of(value);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * @param market 예) KRW, KRW-BTC
+     * @return 주문가능 금액/수량
+     */
+    public BigDecimal getBalance(String market) {
+        Optional<Account> account = getAccount(market);
+        return account.isPresent() ? BigDecimal.valueOf(Double.valueOf(account.get().getBalance())) : new BigDecimal(0.0);
+    }
 }
