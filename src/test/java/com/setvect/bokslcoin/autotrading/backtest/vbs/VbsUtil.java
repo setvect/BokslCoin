@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * 변동성 돌파전략 백테스트
  */
 public class VbsUtil {
-    public static TestAnalysis analysis(List<BacktestRow> testResult) {
+    public static TestAnalysis analysis(List<VbsBacktestRow> testResult) {
         TestAnalysis testAnalysis = new TestAnalysis();
         if (testResult.isEmpty()) {
             return testAnalysis;
@@ -43,14 +43,14 @@ public class VbsUtil {
         return testAnalysis;
     }
 
-    protected static List<BacktestRow> backtest(VbsCondition condition) throws IOException {
+    protected static List<VbsBacktestRow> backtest(VbsCondition condition) throws IOException {
         // 분석기간 코인 일봉 데이터
         List<CandleDay> candleDays = getAnalysisCandleDays(condition.getRange(), condition.getDataFile());
-        List<BacktestRow> acc = new ArrayList<>();
+        List<VbsBacktestRow> acc = new ArrayList<>();
 
         for (int i = 0; i < candleDays.size(); i++) {
             CandleDay candle = candleDays.get(i);
-            BacktestRow row = new BacktestRow(candle);
+            VbsBacktestRow row = new VbsBacktestRow(candle);
             acc.add(row);
             if (i == 0) {
                 row.setInvest(condition.getCash() * condition.getRate());
@@ -60,7 +60,7 @@ public class VbsUtil {
             double targetPrice = getTargetValue(candleDays.get(i - 1), condition.getK());
             row.setTargetPrice(targetPrice);
 
-            BacktestRow beforeRow = acc.get(i - 1);
+            VbsBacktestRow beforeRow = acc.get(i - 1);
             row.setInvest(beforeRow.getFinalResult() * condition.getRate());
             row.setCash(beforeRow.getFinalResult() - row.getInvest());
             if (targetPrice <= candle.getHighPrice()) {
@@ -73,10 +73,10 @@ public class VbsUtil {
         return acc;
     }
 
-    public static void makeReport(VbsCondition condition, List<BacktestRow> acc) throws IOException {
+    public static void makeReport(VbsCondition condition, List<VbsBacktestRow> acc) throws IOException {
         String header = "날짜,시가,고가,저가,종가,단위 수익률,매수 목표가,매매여부,매수 체결 가격,매도 체결 가격,실현 수익률,투자금,현금,투자 수익,수수료,투자 결과,현금 + 투자결과 - 수수료";
         StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
-        for (BacktestRow row : acc) {
+        for (VbsBacktestRow row : acc) {
             String date = DateUtil.formatDateTime(row.getCandleDay().getCandleDateTimeUtc());
             report.append(String.format("%s\t", date));
             report.append(String.format("%,.0f\t", row.getCandleDay().getOpeningPrice()));

@@ -26,7 +26,7 @@ public class VbsBacktest1 {
                 .build();
 
         // === 2. 백테스팅 ===
-        List<BacktestRow> testResult = VbsUtil.backtest(condition);
+        List<VbsBacktestRow> testResult = VbsUtil.backtest(condition);
         TestAnalysis testAnalysis = VbsUtil.analysis(testResult);
 
         System.out.printf("실제 수익: %,.2f%%\n", testAnalysis.getCoinYield() * 100);

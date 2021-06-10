@@ -10,7 +10,7 @@ import lombok.Setter;
  */
 @Setter
 @Getter
-public class BacktestRow {
+public class VbsBacktestRow {
     private CandleDay candleDay;
     // 목표가1
     private double targetPrice;
@@ -31,7 +31,7 @@ public class BacktestRow {
     // 코인
     private double coin;
 
-    public BacktestRow(CandleDay candle) {
+    public VbsBacktestRow(CandleDay candle) {
         this.candleDay = candle;
     }
 
