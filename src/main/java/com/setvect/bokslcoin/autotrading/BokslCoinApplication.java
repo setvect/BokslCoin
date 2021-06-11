@@ -6,8 +6,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
-public class UpbitAutoTradingApplication {
+public class BokslCoinApplication {
     public static void main(String[] args) {
-        SpringApplication.run(UpbitAutoTradingApplication.class, args);
+        SpringApplication.run(BokslCoinApplication.class, args);
     }
 }

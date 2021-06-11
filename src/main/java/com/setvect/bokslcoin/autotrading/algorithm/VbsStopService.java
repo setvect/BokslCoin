@@ -9,6 +9,8 @@ import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,6 +59,9 @@ public class VbsStopService implements CoinTrading {
     @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.gainStop}")
     private double gainStop;
 
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.tradePeriod}")
+    private TradePeriod tradePeriod;
+
     /**
      * 매수 접수 시간 범위
      */
@@ -94,10 +99,37 @@ public class VbsStopService implements CoinTrading {
         GAIN
     }
 
+    /**
+     * 매매 주기
+     */
+    @AllArgsConstructor
+    @Getter
+    public enum TradePeriod {
+        P_60(55, 4, 1),
+        P_240(230, 9, 1),
+        P_1440(1410, 29, 1);
+        /**
+         * 매수 기간(분)
+         */
+        int bidMinute;
+        /**
+         * 매수, 매도 사이에 매매가 일어나지 않는 시간(분)
+         */
+        int intermissionMinute;
+        /**
+         * 매도 기간(분)
+         */
+        int askMinute;
+
+        public int getTotal() {
+            return bidMinute + intermissionMinute + askMinute;
+        }
+    }
+
     @Override
     public void apply() {
         CandleMinute candle = candleService.getMinute(1, market);
-        initTime(candle.getCandleDateTimeUtc(), 50, 9, 1);
+        initTime(candle.getCandleDateTimeUtc(), tradePeriod);
         Optional<Account> account = accountService.getAccount(market);
         BigDecimal coinBalance = AccountService.getBalance(account);
         double currentPrice = candle.getTradePrice();
@@ -179,27 +211,20 @@ public class VbsStopService implements CoinTrading {
      * 230 + 9 + 1 = 240
      * 1410 + 29 + 1 = 1440
      *
-     * @param baseDate           기준 날짜
-     * @param bidMinute          매수 기간(분)
-     * @param intermissionMinute 매수, 매도 사이에 매매가 일어나지 않는 시간(분)
-     * @param askMinute          매도 기간(분)
+     * @param baseDate    기준 날짜
+     * @param tradePeriod 매매 주기
      */
-    private void initTime(LocalDateTime baseDate, int bidMinute, int intermissionMinute, int askMinute) {
-        int total = bidMinute + intermissionMinute + askMinute;
-
-        if (60 * 24 % total != 0) {
-            throw new RuntimeException("bidMinute, intermissionMinute, askMinute 합계가 1440의 약수가 되게 입력해 주세요.");
-        }
-
+    private void initTime(LocalDateTime baseDate, TradePeriod tradePeriod) {
+        int total = tradePeriod.getTotal();
         int minuteOfDay = baseDate.getHour() * 60 + baseDate.getMinute();
 
         int hour = minuteOfDay / total;
         int minute = minuteOfDay % total;
         LocalTime bidFrom = LocalTime.of(hour, minute);
-        LocalTime bidTo = bidFrom.plusMinutes(bidMinute);
+        LocalTime bidTo = bidFrom.plusMinutes(tradePeriod.getBidMinute());
 
-        LocalTime askFrom = bidTo.plusMinutes(intermissionMinute);
-        LocalTime askTo = askFrom.plusMinutes(askMinute);
+        LocalTime askFrom = bidTo.plusMinutes(tradePeriod.getIntermissionMinute());
+        LocalTime askTo = askFrom.plusMinutes(tradePeriod.getAskMinute());
 
         // 매도 범위
         this.bidRange = ApplicationUtil.getDateRange(baseDate.toLocalDate(), bidFrom, bidTo);

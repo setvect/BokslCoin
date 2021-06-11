@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 public class TradingScheduleService {
     private final CoinTrading conCoinTrading;
 
-
     private final boolean enable;
 
     public TradingScheduleService(

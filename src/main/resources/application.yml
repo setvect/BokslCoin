@@ -41,5 +41,7 @@ com:
             loseStop: 0.05
             # 익절 매도
             gainStop: 0.1
+            # 매매 주기(P_60, P_240, P_1440)
+            tradePeriod: P_60
 
 ---
