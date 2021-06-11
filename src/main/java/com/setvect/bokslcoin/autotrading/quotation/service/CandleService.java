@@ -31,6 +31,17 @@ public class CandleService {
      *
      * @param unit   분 단위. 가능한 값 : 1, 3, 5, 15, 10, 30, 60, 240
      * @param market 마켓 코드 (ex. KRW-BTC)
+     * @return 분(Minute) 캔들
+     */
+    public CandleMinute getMinute(int unit, String market) {
+        return getMinute(1, market, 1, null).get(0);
+    }
+
+    /**
+     * 현재 시간 기준으로 분(Minute) 캔들
+     *
+     * @param unit   분 단위. 가능한 값 : 1, 3, 5, 15, 10, 30, 60, 240
+     * @param market 마켓 코드 (ex. KRW-BTC)
      * @param count  캔들 개수(최대 200개까지 요청 가능)
      * @return 분(Minute) 캔들
      */
@@ -71,7 +82,7 @@ public class CandleService {
      * @return 일단위 캔들
      */
     public List<CandleDay> getDay(String market, int count) {
-        return getDay(market,count,null);
+        return getDay(market, count, null);
     }
 
     /**

@@ -70,6 +70,11 @@ public class DateUtil {
         return format(localDateTime, yyyy_MM_dd_HH_mm_ss);
     }
 
+    public static String format(LocalTime localTime, String pattern) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
+        return localTime.format(formatter);
+    }
+
 
     public static LocalDateTime convert(long timeInMillis) {
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(timeInMillis), TimeZone.getDefault().toZoneId());

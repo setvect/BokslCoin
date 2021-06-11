@@ -15,7 +15,7 @@ public interface TradeService {
      * @param tradePrice 매도 가격
      * @param askType    매도 유형
      */
-    void ask(Double tradePrice, VbsStopService.AskType askType);
+    void ask(Double tradePrice, VbsStopServiceDeleteMe.AskType askType);
 
     /**
      * * @param targetValue 매수 목표가

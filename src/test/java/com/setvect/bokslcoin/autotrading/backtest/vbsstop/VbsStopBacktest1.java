@@ -2,7 +2,7 @@ package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeService;
-import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
+import com.setvect.bokslcoin.autotrading.algorithm.VbsStopServiceDeleteMe;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
@@ -43,7 +43,7 @@ public class VbsStopBacktest1 {
 
         TestTradeService tradeService = new TestTradeService(condition);
 
-        VbsStopService vbsStopService = VbsStopService.builder()
+        VbsStopServiceDeleteMe vbsStopService = VbsStopServiceDeleteMe.builder()
                 .tradeService(tradeService)
                 .market(condition.getMarket())
                 .k(condition.getK())
@@ -144,7 +144,7 @@ class TestTradeService implements TradeService {
     }
 
     @Override
-    public void ask(Double askPrice, VbsStopService.AskType askType) {
+    public void ask(Double askPrice, VbsStopServiceDeleteMe.AskType askType) {
         this.isTrade = true;
         this.askPrice = askPrice - condition.getTradeMargin();
     }

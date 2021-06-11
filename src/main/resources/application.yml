@@ -19,7 +19,7 @@ com:
           fixedDelay: 10000
         algorithm:
           # 매매 알고리즘 지정
-          name: vbs
+          name: vbs # vbs, vbsStop
           # 변동성 돌파 알고리즘 관련 설정값
           vbs:
             # 매수, 매도 대상 코인
@@ -28,5 +28,18 @@ com:
             k: 0.5
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
             rate: 0.5
+
+          # 변동성 돌파 알고리즘 관련 설정값
+          vbsStop:
+            # 매수, 매도 대상 코인
+            market: KRW-BTC
+            # 변동성 돌파 판단 비율
+            k: 0.5
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            rate: 0.5
+            # 손절 매도
+            loseStop: 0.05
+            # 익절 매도
+            gainStop: 0.1
 
 ---

@@ -42,8 +42,8 @@ public class ApplicationUtil {
     /**
      * UTC를 기준으로 범위를 만들고, 로컬 컴퓨터(서버)에 Zone을 적용시켜 날짜 범위 반환
      *
-     * @param fromTimeStr HH:mm:ss
-     * @param toTimeStr   HH:mm:ss
+     * @param fromTimeStr 시작 시간 HH:mm:ss
+     * @param toTimeStr   종료 시간 HH:mm:ss
      * @return 오늘 날짜로 입력 시간으로 범위를 설정함
      */
     public static DateRange getDateRange(String fromTimeStr, String toTimeStr) {
@@ -54,8 +54,8 @@ public class ApplicationUtil {
      * UTC를 기준으로 범위를 만들고, 로컬 컴퓨터(서버)에 Zone을 적용시켜 날짜 범위 반환
      *
      * @param baseDate    기준 날짜
-     * @param fromTimeStr HH:mm:ss
-     * @param toTimeStr   HH:mm:ss
+     * @param fromTimeStr 시작 시간 HH:mm:ss
+     * @param toTimeStr   종료 시간 HH:mm:ss
      * @return 오늘 날짜로 입력 시간으로 범위를 설정함
      */
     public static DateRange getDateRange(LocalDate baseDate, String fromTimeStr, String toTimeStr) {
@@ -63,6 +63,19 @@ public class ApplicationUtil {
         LocalTime toTime = DateUtil.getLocalTime(toTimeStr);
 
         // UTC 기준으로 날짜
+        return getDateRange(baseDate, fromTime, toTime);
+    }
+
+    /**
+     * UTC를 기준으로 범위를 만들고, 로컬 컴퓨터(서버)에 Zone을 적용시켜 날짜 범위 반환
+     *
+     * @param baseDate 기준 날짜
+     * @param fromTime 시작 시간
+     * @param toTime   종료 시간
+     * @return 오늘 날짜로 입력 시간으로 범위를 설정함
+     */
+
+    public static DateRange getDateRange(LocalDate baseDate, LocalTime fromTime, LocalTime toTime) {
         ZonedDateTime fromUtc = ZonedDateTime.of(baseDate.getYear(), baseDate.getMonthValue(), baseDate.getDayOfMonth(), fromTime.getHour(), fromTime.getMinute(), fromTime.getSecond(), 0, ZoneId.of("UTC"));
         ZonedDateTime toUtc = ZonedDateTime.of(fromUtc.toLocalDateTime(), ZoneId.of("UTC")).withHour(toTime.getHour()).withMinute(toTime.getMinute()).withSecond(toTime.getSecond());
 
