@@ -69,6 +69,10 @@ public class AccountService {
      */
     public Optional<BigDecimal> getAvgBuyPrice(String market) {
         Optional<Account> account = getAccount(market);
+        return getAvgBuyPrice(account);
+    }
+
+    public static Optional<BigDecimal> getAvgBuyPrice(Optional<Account> account) {
         if (account.isPresent()) {
             Double val = Double.valueOf(account.get().getAvgBuyPrice());
             BigDecimal value = BigDecimal.valueOf(val);
@@ -83,6 +87,10 @@ public class AccountService {
      */
     public BigDecimal getBalance(String market) {
         Optional<Account> account = getAccount(market);
+        return getBalance(account);
+    }
+
+    public static BigDecimal getBalance(Optional<Account> account) {
         return account.isPresent() ? BigDecimal.valueOf(Double.valueOf(account.get().getBalance())) : new BigDecimal(0.0);
     }
 }

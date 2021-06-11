@@ -1,6 +1,6 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbs;
+package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
 
-import com.setvect.bokslcoin.autotrading.model.CandleDay;
+import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +11,7 @@ import lombok.Setter;
 @Setter
 @Getter
 public class VbsStopBacktestRow {
-    private CandleDay candleDay;
+    private Candle candle;
     // 목표가1
     private double targetPrice;
     // 매매 여부
@@ -21,23 +21,24 @@ public class VbsStopBacktestRow {
     // 매도 체결 가격
     private double askPrice;
     // 투자금
-    private double invest;
+    private double investmentAmount;
     // 현금
     private double cash;
-
-
     // 매매 수수료
     private double feePrice;
-    // 코인
-    private double coin;
 
-    public VbsStopBacktestRow(CandleDay candle) {
-        this.candleDay = candle;
+    /**
+     * 직전 캔들 종가
+     */
+    private Double beforeTradePrice = Double.valueOf(0);
+
+    public VbsStopBacktestRow(Candle candle) {
+        this.candle = candle;
     }
 
     // 투자 수익
     public double getGains() {
-        return invest * getRealYield();
+        return investmentAmount * getRealYield();
     }
 
     /**
@@ -45,7 +46,7 @@ public class VbsStopBacktestRow {
      * 투자금 + 투자 수익
      */
     public double getInvestResult() {
-        return invest + getGains();
+        return investmentAmount + getGains();
     }
 
     /**
@@ -63,7 +64,8 @@ public class VbsStopBacktestRow {
      * @return 캔들상 수익률<br>
      */
     public double getCandleYield() {
-        return (candleDay.getTradePrice() / candleDay.getOpeningPrice()) - 1;
+        double diff = candle.getTradePrice() - beforeTradePrice;
+        return diff / beforeTradePrice;
     }
 
     /**
@@ -77,11 +79,11 @@ public class VbsStopBacktestRow {
     }
 
     public String toString() {
-        String date = DateUtil.formatDateTime(candleDay.getCandleDateTimeUtc());
-        return String.format("날짜: %s, 시가: %,.0f, 고가:%,.0f, 저가:%,.0f, 종가:%,.0f, 단위 수익률: %,.2f%%, 매수 목표가: %,.0f, 매매여부: %s, 매수 체결 가격: %,.0f, 매도 체결 가격: %,.0f, 실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 수수료: %,.0f, 투자 결과: %,.0f, 현금 + 투자결과 - 수수료: %,.0f",
-                date, candleDay.getOpeningPrice()
-                , candleDay.getHighPrice(),
-                candleDay.getLowPrice(), candleDay.getTradePrice(), getCandleYield() * 100,
-                targetPrice, trade, bidPrice, askPrice, getRealYield() * 100, invest, cash, getGains(), feePrice, getInvestResult(), getFinalResult());
+        String date = DateUtil.formatDateTime(candle.getCandleDateTimeUtc());
+        return String.format("날짜: %s, 시가: %,.0f, 고가:%,.0f, 저가:%,.0f, 종가:%,.0f, 직전 종가:%,.0f, 단위 수익률: %,.2f%%, 매수 목표가: %,.0f, 매매여부: %s, 매수 체결 가격: %,.0f, 매도 체결 가격: %,.0f, 실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 수수료: %,.0f, 투자 결과: %,.0f, 현금 + 투자결과 - 수수료: %,.0f",
+                date, candle.getOpeningPrice()
+                , candle.getHighPrice(),
+                candle.getLowPrice(), candle.getTradePrice(), beforeTradePrice, getCandleYield() * 100,
+                targetPrice, trade, bidPrice, askPrice, getRealYield() * 100, investmentAmount, cash, getGains(), feePrice, getInvestResult(), getFinalResult());
     }
 }

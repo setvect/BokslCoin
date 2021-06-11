@@ -3,6 +3,7 @@ package com.setvect.bokslcoin.autotrading.util;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -46,11 +47,23 @@ public class ApplicationUtil {
      * @return 오늘 날짜로 입력 시간으로 범위를 설정함
      */
     public static DateRange getDateRange(String fromTimeStr, String toTimeStr) {
+        return getDateRange(LocalDate.now(), fromTimeStr, toTimeStr);
+    }
+
+    /**
+     * UTC를 기준으로 범위를 만들고, 로컬 컴퓨터(서버)에 Zone을 적용시켜 날짜 범위 반환
+     *
+     * @param baseDate    기준 날짜
+     * @param fromTimeStr HH:mm:ss
+     * @param toTimeStr   HH:mm:ss
+     * @return 오늘 날짜로 입력 시간으로 범위를 설정함
+     */
+    public static DateRange getDateRange(LocalDate baseDate, String fromTimeStr, String toTimeStr) {
         LocalTime fromTime = DateUtil.getLocalTime(fromTimeStr);
         LocalTime toTime = DateUtil.getLocalTime(toTimeStr);
 
         // UTC 기준으로 날짜
-        ZonedDateTime fromUtc = ZonedDateTime.now(ZoneId.of("UTC")).withHour(fromTime.getHour()).withMinute(fromTime.getMinute()).withSecond(fromTime.getSecond());
+        ZonedDateTime fromUtc = ZonedDateTime.of(baseDate.getYear(), baseDate.getMonthValue(), baseDate.getDayOfMonth(), fromTime.getHour(), fromTime.getMinute(), fromTime.getSecond(), 0, ZoneId.of("UTC"));
         ZonedDateTime toUtc = ZonedDateTime.of(fromUtc.toLocalDateTime(), ZoneId.of("UTC")).withHour(toTime.getHour()).withMinute(toTime.getMinute()).withSecond(toTime.getSecond());
 
         // 로컬 타임존으로 변경

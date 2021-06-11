@@ -100,7 +100,7 @@ public class VolatilityBreakthroughStrategy implements CoinTrading {
             log.debug(String.format("%s 목표가: %,f\t현재가: %,f", coin, targetValue, currentPrice));
 
             if (targetValue > currentPrice) {
-                log.info("목표가 도달하지 않음");
+                log.debug("목표가 도달하지 않음");
                 return;
             }
 

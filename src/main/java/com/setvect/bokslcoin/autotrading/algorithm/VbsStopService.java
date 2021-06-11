@@ -1,7 +1,8 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
-import com.setvect.bokslcoin.autotrading.model.CandleDay;
+import com.setvect.bokslcoin.autotrading.model.Account;
+import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
@@ -50,8 +51,6 @@ public class VbsStopService {
     private final double gainStop;
 
     private final TradeService tradeService;
-
-    private final AccountService accountService;
 
     /**
      * 총 현금을 기준으로 투자 비율
@@ -109,38 +108,46 @@ public class VbsStopService {
     }
 
     @Builder
-    public VbsStopService(TradeService tradeService, AccountService accountService, String market, double k, double investRatio, double loseStop, double gainStop) {
+    public VbsStopService(TradeService tradeService, String market, double k, double investRatio, double loseStop, double gainStop) {
         this.market = market;
         this.loseStop = loseStop;
         this.gainStop = gainStop;
         this.tradeService = tradeService;
-        this.accountService = accountService;
         this.investRatio = investRatio;
         this.k = k;
     }
 
     /**
      * @param candleMinute 분봉 데이터
-     * @param yesterday    어제 일봉 데이터
+     * @param beforePeriod 직전 그룹 데이터
      */
-    public void process(CandleMinute candleMinute, CandleDay yesterday) {
+    public void process(CandleMinute candleMinute, Candle beforePeriod, Optional<Account> account) {
         LocalDateTime candleDateTimeUtc = candleMinute.getCandleDateTimeUtc();
         LocalDateTime candleDateTimeKst = candleMinute.getCandleDateTimeKst();
+
+
         if (currentDay != candleDateTimeUtc.getDayOfMonth()) {
             // 날짜가 변경되면 매도 초기화
             asked = false;
-            log.info(String.format("change day. CurrentDay(UTC): %s \n", DateUtil.formatDateTime(candleDateTimeUtc)));
+            initTime(candleDateTimeUtc);
+            log.info(String.format("change day. CurrentDay(UTC): %s", DateUtil.formatDateTime(candleDateTimeUtc)));
+            currentDay = candleDateTimeUtc.getDayOfMonth();
+            if (beforePeriod != null) {
+                double targetValue = getTargetPrice(beforePeriod);
+                tradeService.applyTargetPrice(targetValue);
+            }
         }
 
-        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,f", DateUtil.formatDateTime(candleMinute.getCandleDateTimeKst()), bidRange, askRange, market, candleMinute.getTradePrice()));
-        Optional<BigDecimal> avgByPrice = accountService.getAvgBuyPrice(market);
+//        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,f", DateUtil.formatDateTime(candleMinute.getCandleDateTimeKst()), bidRange, askRange, market, candleMinute.getTradePrice()));
+
+        Optional<BigDecimal> avgByPrice = AccountService.getAvgBuyPrice(account);
 
         // 매수를 했을 경우 매도 타이밍 체크
         if (avgByPrice.isPresent()) {
             // 매도 시간이면 무조건 매도
 
             if (askRange.isBetween(candleDateTimeKst)) {
-                doAsk(AskType.TIME);
+                doAsk(candleMinute.getTradePrice(), AskType.TIME);
             }
 
             double avgPrice = avgByPrice.get().doubleValue();
@@ -148,13 +155,13 @@ public class VbsStopService {
             // 이익인 경우
             if (rate > 0) {
                 if (this.gainStop <= rate) {
-                    doAsk(AskType.GAIN);
+                    doAsk(candleMinute.getTradePrice(), AskType.GAIN);
                 }
             }
             // 손실인 경우
             else {
                 if (this.loseStop <= -rate) {
-                    doAsk(AskType.LOSS);
+                    doAsk(candleMinute.getTradePrice(), AskType.LOSS);
                 }
             }
             return;
@@ -165,53 +172,57 @@ public class VbsStopService {
             return;
         }
 
-        if (bidRange.isBetween(candleDateTimeKst)) {
-            double targetValue = getTargetPrice(yesterday);
-            log.debug(String.format("%s 목표가: %,f\t현재가: %,f",market, targetValue, candleMinute.getTradePrice()));
-
+        if (bidRange.isBetween(candleDateTimeKst) && beforePeriod != null) {
+//            log.debug(String.format("%s 목표가: %,f\t현재가: %,f", market, targetValue, candleMinute.getTradePrice()));
+            double targetValue = getTargetPrice(beforePeriod);
             if (targetValue > candleMinute.getTradePrice()) {
-                log.info("목표가 도달하지 않음");
+//                log.debug("목표가 도달하지 않음");
                 return;
             }
 
-            BigDecimal krw = accountService.getBalance("KRW");
+            BigDecimal krw = AccountService.getBalance(account);
             // 매수 금액
-            double askPrice = krw.doubleValue() * investRatio;
-            log.info(String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,f, 매수 금액: %,f,", market, investRatio, askPrice));
-            doBid(askPrice);
+            double investmentAmount = krw.doubleValue() * investRatio;
+            log.info(String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,f, 매수 금액: %,f,", market, investRatio, investmentAmount));
+            doBid(investmentAmount, krw.doubleValue() - investmentAmount);
         }
-
     }
 
     /**
      * 매수
-     * @param askPrice
+     *
+     * @param investment 투자금액
+     * @param cash       현금
      */
-    private void doBid(double askPrice) {
-        tradeService.bid(askPrice);
+    private void doBid(double investment, double cash) {
+        tradeService.bid(investment, cash);
     }
 
-    private void doAsk(AskType askType) {
-        tradeService.ask(askType);
+    private void doAsk(Double askPrice, AskType askType) {
+        tradeService.ask(askPrice, askType);
         asked = true;
     }
 
     /**
      * 매수, 매도 시간 범위 설정
+     *
+     * @param baseUtc
      */
-    private void initTime() {
+    private void initTime(LocalDateTime baseUtc) {
         // 매도 범위
-        this.bidRange = ApplicationUtil.getDateRange(BID_FROM_TIME, BID_TO_TIME);
-        this.askRange = ApplicationUtil.getDateRange(ASK_FROM_TIME, ASK_TO_TIME);
+        this.bidRange = ApplicationUtil.getDateRange(baseUtc.toLocalDate(), BID_FROM_TIME, BID_TO_TIME);
+        this.askRange = ApplicationUtil.getDateRange(baseUtc.toLocalDate(), ASK_FROM_TIME, ASK_TO_TIME);
     }
 
     /**
      * @return 매수를 하기위한 목표 가격
      */
-    private double getTargetPrice(CandleDay yesterday) {
-        double targetValue = yesterday.getTradePrice() + (yesterday.getHighPrice() - yesterday.getLowPrice()) * k;
-        log.debug(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
-                , targetValue, yesterday.getTradePrice(), yesterday.getHighPrice(), yesterday.getLowPrice(), k));
+    private double getTargetPrice(Candle candle) {
+        double targetValue = candle.getTradePrice() + (candle.getHighPrice() - candle.getLowPrice()) * k;
+//        log.debug(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
+//                , targetValue, candle.getTradePrice(), candle.getHighPrice(), candle.getLowPrice(), k));
         return targetValue;
     }
+
+
 }
