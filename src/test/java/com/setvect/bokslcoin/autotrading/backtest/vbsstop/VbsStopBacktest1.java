@@ -1,32 +1,55 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
 
 import com.google.gson.reflect.TypeToken;
-import com.setvect.bokslcoin.autotrading.algorithm.TradeService;
-import com.setvect.bokslcoin.autotrading.algorithm.VbsStopServiceDeleteMe;
-import com.setvect.bokslcoin.autotrading.model.Account;
-import com.setvect.bokslcoin.autotrading.model.Candle;
+import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
+import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
+import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
-import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
+import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
+import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-/**
- * 변동성 돌파 전략 + 손절, 익절 알고리즘 백테스트
- */
+import static org.mockito.Mockito.*;
+
+@SpringBootTest
+@ActiveProfiles("local")
+@Slf4j
 public class VbsStopBacktest1 {
+
+    @Mock
+    private AccountService accountService;
+    @Mock
+    private CandleService candleService;
+    @Mock
+    private OrderService orderService;
+    @Mock
+    private TradeEvent tradeEvent;
+    @InjectMocks
+    private VbsStopService vbsStopService;
+
     @Test
-    public void backtest() throws IOException {
+    public void backtest() throws InterruptedException, IOException {
         // === 1. 변수값 설정 ===
         VbsStopCondition condition = VbsStopCondition.builder()
                 .k(0.5) // 변동성 돌파 판단 비율
@@ -37,162 +60,91 @@ public class VbsStopBacktest1 {
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
-                .loseRate(0.05) // 손절 라인
-                .gainRate(0.1) //익절 라인
+                .loseStopRate(0.05) // 손절 라인
+                .gainStopRate(0.1) //익절 라인
+                .tradePeriod(VbsStopService.TradePeriod.P_1440) //매매 주기
                 .build();
 
-        TestTradeService tradeService = new TestTradeService(condition);
+        ReflectionTestUtils.setField(vbsStopService, "market", condition.getMarket());
+        ReflectionTestUtils.setField(vbsStopService, "k", condition.getK());
+        ReflectionTestUtils.setField(vbsStopService, "gainRate", condition.getGainStopRate());
+        ReflectionTestUtils.setField(vbsStopService, "loseStopRate", condition.getLoseStopRate());
+        ReflectionTestUtils.setField(vbsStopService, "gainStopRate", condition.getGainStopRate());
+        ReflectionTestUtils.setField(vbsStopService, "tradePeriod", condition.getTradePeriod());
 
-        VbsStopServiceDeleteMe vbsStopService = VbsStopServiceDeleteMe.builder()
-                .tradeService(tradeService)
-                .market(condition.getMarket())
-                .k(condition.getK())
-                .investRatio(condition.getInvestRatio())
-                .gainStop(condition.getGainRate())
-                .loseStop(condition.getLoseRate())
-                .build();
 
         // === 2. 백테스팅 ===
         File dataDir = new File("./craw-data/minute");
-        DateRange range = condition.getRange();
-        LocalDateTime current = range.getFrom();
-        Candle beforePeriod = null;
-        Candle currentPeriod = null;
+        CandleDataIterator candleDataIterator = new CandleDataIterator(dataDir, condition);
 
-        while (condition.getRange().isBetween(current)) {
+
+        when(candleService.getMinute(anyInt(), anyString())).then((aa) -> {
+            if (candleDataIterator.hasNext()) {
+                return candleDataIterator.next();
+            }
+            return null;
+        });
+
+
+        vbsStopService.apply();
+        TimeUnit.SECONDS.sleep(20);
+        System.out.println("끝");
+    }
+
+    class CandleDataIterator implements Iterator<CandleMinute> {
+        private final File dataDir;
+        private final VbsStopCondition condition;
+        private Iterator<CandleMinute> currentCandleIterator;
+        List<CandleMinute> currentCandleBundle;
+        LocalDateTime current;
+
+        public CandleDataIterator(File dataDir, VbsStopCondition condition) throws IOException {
+            this.dataDir = dataDir;
+            this.condition = condition;
+            current = condition.getRange().getFrom();
+            this.currentCandleIterator = Collections.emptyIterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            // 현재
+            boolean exist = currentCandleIterator.hasNext();
+            if (!exist) {
+                List<CandleMinute> candleList = nextBundle();
+                this.currentCandleIterator = candleList.iterator();
+            }
+            return this.currentCandleIterator.hasNext();
+        }
+
+        @Override
+        public CandleMinute next() {
+            if (hasNext()) {
+                CandleMinute next = currentCandleIterator.next();
+                log.debug(next.toString());
+                return next;
+            }
+            throw new NoSuchElementException();
+        }
+
+        @SneakyThrows
+        private List<CandleMinute> nextBundle() {
             String dataFileName = String.format("%s-minute(%s).json", condition.getMarket(), DateUtil.format(current, "yyyy-MM"));
             File dataFile = new File(dataDir, dataFileName);
+            if (!dataFile.exists()) {
+                log.warn("no exist file: {}", dataFile.getAbsolutePath());
+                return Collections.emptyList();
+            }
             List<CandleMinute> candles = GsonUtil.GSON.fromJson(FileUtils.readFileToString(dataFile, "utf-8"), new TypeToken<List<CandleMinute>>() {
             }.getType());
-            System.out.printf("load data file: %s%n", dataFileName);
+            log.info(String.format("load data file: %s%n", dataFileName));
 
+            List<CandleMinute> candleFiltered = candles.stream().filter(p -> condition.getRange().isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
             // 과거 데이터를 먼저(날짜 기준 오름 차순 정렬)
-            Collections.reverse(candles);
-            int currentDay = 0;
-            for (CandleMinute candle : candles) {
-                if (!range.isBetween(candle.getCandleDateTimeUtc())) {
-                    continue;
-                }
-                int day = candle.getCandleDateTimeUtc().getDayOfMonth();
-                if (currentDay != day) {
-                    tradeService.setBuyPrice(currentDay);
-                    tradeService.setCurrentPeriod(currentPeriod);
-                    if (beforePeriod != null) {
-                        tradeService.setBeforeTradePrice(beforePeriod.getTradePrice());
-                    }
-                    tradeService.endPeriod();
+            Collections.reverse(candleFiltered);
 
-                    currentDay = day;
-                    // todo
-                    beforePeriod = currentPeriod;
-                    currentPeriod = new Candle();
-                    currentPeriod.setCandleDateTimeUtc(candle.getCandleDateTimeUtc());
-
-                    currentPeriod.setCandleDateTimeKst(candle.getCandleDateTimeKst());
-                    currentPeriod.setOpeningPrice(candle.getOpeningPrice());
-                }
-
-                currentPeriod.setHighPrice(Math.max(currentPeriod.getHighPrice(), candle.getHighPrice()));
-                currentPeriod.setLowPrice(Math.min(currentPeriod.getLowPrice() == 0 ? Integer.MAX_VALUE : currentPeriod.getLowPrice(), candle.getLowPrice()));
-                currentPeriod.setTradePrice(candle.getTradePrice());
-                Optional<Account> account = tradeService.getAccount();
-                vbsStopService.process(candle, beforePeriod, account);
-
-            }
+            // 다음달 가르킴
             current = current.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).plusMonths(1);
+            return candleFiltered;
         }
-
-        // === 3. 리포트 ===
-        System.out.println("끝.");
     }
 }
-
-class TestTradeService implements TradeService {
-    private final VbsStopCondition condition;
-    private Account account = null;
-    private double buyPrice;
-    private Candle currentPeriod;
-
-    private List<VbsStopBacktestRow> tradeHistory = new ArrayList<>();
-    private boolean isTrade;
-    private double targetPrice;
-    private double bidPrice;
-    private double askPrice;
-    private double investment;
-    private double cash;
-    private double beforeTradePrice;
-
-    public void setBeforeTradePrice(double beforeTradePrice) {
-        this.beforeTradePrice = beforeTradePrice;
-    }
-
-    public TestTradeService(VbsStopCondition condition) {
-        this.condition = condition;
-    }
-
-    @Override
-    public void bid(double investment, double cash) {
-        account = new Account();
-        account.setAvgBuyPrice(ApplicationUtil.toNumberString(buyPrice));
-        account.setBalance(ApplicationUtil.toNumberString(condition.getCash()));
-        this.bidPrice = targetPrice + condition.getTradeMargin();
-        this.cash = cash;
-        this.investment = investment;
-        account.setAvgBuyPrice(ApplicationUtil.toNumberString(investment));
-        account.setBalance(ApplicationUtil.toNumberString(bidPrice));
-        System.out.printf("매수목표가: %,f, 매수가: %,f, 현재가: %,f, 매수금액:%,f\n", targetPrice, bidPrice, buyPrice, investment);
-    }
-
-    @Override
-    public void ask(Double askPrice, VbsStopServiceDeleteMe.AskType askType) {
-        this.isTrade = true;
-        this.askPrice = askPrice - condition.getTradeMargin();
-    }
-
-    @Override
-    public void applyTargetPrice(double targetPrice) {
-        this.targetPrice = targetPrice;
-    }
-
-    public void endPeriod() {
-        if (currentPeriod == null) {
-            return;
-        }
-        VbsStopBacktestRow trade = new VbsStopBacktestRow(currentPeriod);
-        trade.setTargetPrice(targetPrice);
-        trade.setTrade(isTrade);
-        trade.setBidPrice(bidPrice);
-        trade.setAskPrice(askPrice);
-        trade.setInvestmentAmount(investment);
-        trade.setCash(cash);
-        trade.setBeforeTradePrice(beforeTradePrice);
-
-        /**
-         * 매수, 매도 수수료
-         */
-        double feeTotal = investment * condition.getFeeAsk() + investment * condition.getFeeBid();
-        trade.setFeePrice(feeTotal);
-        tradeHistory.add(trade);
-        System.out.println(trade);
-        isTrade = false;
-        bidPrice = 0;
-        askPrice = 0;
-        account = null;
-    }
-
-    public void setBuyPrice(double buyPrice) {
-        this.buyPrice = buyPrice;
-    }
-
-    public void setCurrentPeriod(Candle currentPeriod) {
-        this.currentPeriod = currentPeriod;
-    }
-
-    public Optional<Account> getAccount() {
-        if (account == null) {
-            return Optional.empty();
-        }
-        return Optional.of(account);
-    }
-}
-

@@ -1,10 +1,12 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 /**
  * 매매시 발생하는 이벤트
  */
+@Service
 @Slf4j
 public class BasicTradeEvent implements TradeEvent {
     @Override

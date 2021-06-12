@@ -50,14 +50,14 @@ public class VbsStopService implements CoinTrading {
      * 총 현금을 기준으로 투자 비율
      * 1은 100%, 0.5은 50% 투자
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.rate}")
-    private double rate;
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.gainRate}")
+    private double gainRate;
 
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.loseStop}")
-    private double loseStop;
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.loseStopRate}")
+    private double loseStopRate;
 
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.gainStop}")
-    private double gainStop;
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.gainStopRate}")
+    private double gainStopRate;
 
     @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.tradePeriod}")
     private TradePeriod tradePeriod;
@@ -156,13 +156,13 @@ public class VbsStopService implements CoinTrading {
             }
             // 이익인 경우
             else if (rate > 0) {
-                if (this.gainStop <= rate) {
+                if (this.gainStopRate <= rate) {
                     reason = AskReason.GAIN;
                 }
             }
             // 손실인 경우
             else {
-                if (this.loseStop <= -rate) {
+                if (this.loseStopRate <= -rate) {
                     reason = AskReason.LOSS;
                 }
             }
@@ -185,7 +185,7 @@ public class VbsStopService implements CoinTrading {
     private void doBid(double currentPrice) {
         BigDecimal krw = accountService.getBalance("KRW");
         // 매수 금액
-        double askPrice = krw.doubleValue() * rate;
+        double askPrice = krw.doubleValue() * gainRate;
         orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(askPrice));
         tradeEvent.bid(market, currentPrice, askPrice);
     }

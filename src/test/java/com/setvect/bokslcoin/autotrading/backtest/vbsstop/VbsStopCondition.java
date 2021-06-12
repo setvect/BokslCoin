@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
 
+import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,12 +36,13 @@ public class VbsStopCondition {
      * 손절 손실율<br>
      * 예를 들어 0.05이면 수익율이 -5%가 되면 손절 매도
      */
-    private final double loseRate;
+    private final double loseStopRate;
 
     /**
      * 익절 수익율<br>
      * 예를 들어 0.1이면 수익율이 10%가 되면 익절 매도
      */
-    private final double gainRate;
+    private final double gainStopRate;
+    private final VbsStopService.TradePeriod tradePeriod;
 
 }

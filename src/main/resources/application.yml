@@ -36,11 +36,11 @@ com:
             # 변동성 돌파 판단 비율
             k: 0.5
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-            rate: 0.5
+            gainRate: 0.5
             # 손절 매도
-            loseStop: 0.05
+            loseStopRate: 0.05
             # 익절 매도
-            gainStop: 0.1
+            gainStopRate: 0.1
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_60
 
