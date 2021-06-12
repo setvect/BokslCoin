@@ -51,8 +51,8 @@ public class VbsStopService implements CoinTrading {
      * 총 현금을 기준으로 투자 비율
      * 1은 100%, 0.5은 50% 투자
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.gainRate}")
-    private double gainRate;
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.investRatio}")
+    private double investRatio;
 
     @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.loseStopRate}")
     private double loseStopRate;
@@ -131,12 +131,12 @@ public class VbsStopService implements CoinTrading {
     public void apply() {
         CandleMinute candle = candleService.getMinute(1, market);
         initTime(candle.getCandleDateTimeUtc(), tradePeriod);
-        Optional<Account> account = accountService.getAccount(market);
-        BigDecimal coinBalance = AccountService.getBalance(account);
+        Optional<Account> coinAccount = accountService.getAccount(market);
+        BigDecimal coinBalance = AccountService.getBalance(coinAccount);
         double currentPrice = candle.getTradePrice();
 
         //  코인 매수를 했다면
-        LocalDateTime now = candle.getCandleDateTimeKst();
+        LocalDateTime now = candle.getCandleDateTimeUtc();
 
         // 새로운 날짜면 매매 다시 초기화
         if (day != now.getDayOfMonth()) {
@@ -159,8 +159,13 @@ public class VbsStopService implements CoinTrading {
 
         double balance = coinBalance.doubleValue();
         if (balance > 0.00001) {
-            double rate = getYield(candle, account);
-
+            double rate = getYield(candle, coinAccount);
+            Account account = coinAccount.get();
+            log.info(String.format("매입단가: %,.0f, 현재가격: %,.0f, 투자금: %,.0f, 수익율: %.2f%%",
+                    Double.valueOf(account.getAvgBuyPrice()),
+                    candle.getTradePrice(),
+                    getInvestCash(account),
+                    rate * 100));
             // 매도 시간 파악
             AskReason reason = null;
             if (askRange.isBetween(now)) {
@@ -194,12 +199,20 @@ public class VbsStopService implements CoinTrading {
         }
     }
 
+    /**
+     * @param coinAccount
+     * @return 원화 기준 투자금
+     */
+    private double getInvestCash(Account coinAccount) {
+        return Double.valueOf(coinAccount.getAvgBuyPrice()) * Double.valueOf(coinAccount.getBalance());
+    }
+
     private void doBid(double currentPrice) {
         BigDecimal krw = accountService.getBalance("KRW");
         // 매수 금액
-        double askPrice = krw.doubleValue() * gainRate;
-        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(askPrice));
-        tradeEvent.bid(market, currentPrice, askPrice);
+        double bidPrice = krw.doubleValue() * investRatio;
+        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
+        tradeEvent.bid(market, currentPrice, bidPrice);
     }
 
     private void doAsk(double currentPrice, double balance, AskReason reason) {

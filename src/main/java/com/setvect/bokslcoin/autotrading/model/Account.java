@@ -16,7 +16,7 @@ public class Account {
     /**
      * 주문가능 금액/수량
      */
-    private String balance;
+    private String balance = "0";
     /**
      * 주문 중 묶여있는 금액/수량
      */

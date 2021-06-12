@@ -1,6 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
 
 import com.google.gson.reflect.TypeToken;
+import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
@@ -21,6 +22,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -52,8 +54,8 @@ public class VbsStopBacktest1 {
     private CandleService candleService;
     @Mock
     private OrderService orderService;
-    @Mock
-    private TradeEvent tradeEvent;
+    @Spy
+    private TradeEvent tradeEvent = new BasicTradeEvent();
     @InjectMocks
     private VbsStopService vbsStopService;
 
@@ -76,7 +78,7 @@ public class VbsStopBacktest1 {
 
         ReflectionTestUtils.setField(vbsStopService, "market", condition.getMarket());
         ReflectionTestUtils.setField(vbsStopService, "k", condition.getK());
-        ReflectionTestUtils.setField(vbsStopService, "gainRate", condition.getGainStopRate());
+        ReflectionTestUtils.setField(vbsStopService, "investRatio", condition.getInvestRatio());
         ReflectionTestUtils.setField(vbsStopService, "loseStopRate", condition.getLoseStopRate());
         ReflectionTestUtils.setField(vbsStopService, "gainStopRate", condition.getGainStopRate());
         ReflectionTestUtils.setField(vbsStopService, "tradePeriod", condition.getTradePeriod());
@@ -99,20 +101,57 @@ public class VbsStopBacktest1 {
 
         // AccountService
         Account krwAccount = new Account();
+        Account coinAccount = new Account();
         krwAccount.setBalance(ApplicationUtil.toNumberString(condition.getCash()));
-        when(accountService.getBalance(eq("KRW"))).then((method) -> {
-            return BigDecimal.valueOf(Double.valueOf(krwAccount.getBalance()));
+        when(accountService.getBalance(anyString())).then((method) -> {
+            if (method.getArgument(0).equals("KRW")) {
+                return BigDecimal.valueOf(Double.valueOf(krwAccount.getBalance()));
+            }
+            return BigDecimal.valueOf(Double.valueOf(coinAccount.getBalance()));
         });
 
-        when(accountService.getAccount(eq("KRW"))).then((method) -> {
-            return Optional.of(krwAccount);
+        when(accountService.getAccount(anyString())).then((method) -> {
+            if (method.getArgument(0).equals("KRW")) {
+                return Optional.of(krwAccount);
+            }
+            return Optional.of(coinAccount);
+        });
+
+        // 매수
+        when(orderService.callOrderBidByMarket(anyString(), anyString())).then(method -> {
+            CandleMinute candle = candleDataIterator.getCurrentCandleMinute();
+            double bidPrice = candle.getTradePrice() + condition.getTradeMargin();
+            coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(bidPrice));
+            double cash = Double.valueOf(method.getArgument(1));
+
+            // 남은 현금 계산
+            double fee = cash * condition.getFeeBid();
+            double remainCash = Double.parseDouble(krwAccount.getBalance()) - cash - fee;
+            krwAccount.setBalance(ApplicationUtil.toNumberString(remainCash));
+
+            String balance = ApplicationUtil.toNumberString(cash / bidPrice);
+            coinAccount.setBalance(balance);
+            return null;
+        });
+        // 매도
+        when(orderService.callOrderAskByMarket(anyString(), anyString())).then(method -> {
+            CandleMinute candle = candleDataIterator.getCurrentCandleMinute();
+            double balance = Double.parseDouble(coinAccount.getBalance());
+            double askPrice = candle.getTradePrice() - condition.getTradeMargin();
+            double cash = askPrice * balance;
+            double fee = cash * condition.getFeeAsk();
+
+            double totalCash = Double.parseDouble(krwAccount.getBalance()) + cash - fee;
+            krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
+            coinAccount.setBalance("0");
+            coinAccount.setAvgBuyPrice(null);
+            return null;
         });
 
         // === 3. 백테스팅 ===
         while (candleDataIterator.hasNext()) {
             vbsStopService.apply();
         }
-
 
         System.out.println("끝");
     }
@@ -126,6 +165,7 @@ public class VbsStopBacktest1 {
         private LocalDateTime current;
 
         private Queue<Candle> beforeData = new CircularFifoQueue<>(60 * 24 * 2);
+        private CandleMinute currentCandleMinute;
 
         public CandleDataIterator(File dataDir, VbsStopCondition condition) throws IOException {
             this.dataDir = dataDir;
@@ -148,12 +188,16 @@ public class VbsStopBacktest1 {
         @Override
         public CandleMinute next() {
             if (hasNext()) {
-                CandleMinute next = currentCandleIterator.next();
-                beforeData.add(next);
-                current = next.getCandleDateTimeUtc();
-                return next;
+                currentCandleMinute = currentCandleIterator.next();
+                beforeData.add(currentCandleMinute);
+                current = currentCandleMinute.getCandleDateTimeUtc();
+                return currentCandleMinute;
             }
             throw new NoSuchElementException();
+        }
+
+        public CandleMinute getCurrentCandleMinute() {
+            return this.currentCandleMinute;
         }
 
         @SneakyThrows
