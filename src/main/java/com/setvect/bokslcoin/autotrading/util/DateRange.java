@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.util;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Calendar;
 
@@ -79,7 +80,7 @@ public class DateRange {
      * 날짜영역 객체 생성. 기본 날짜 포맷 (yyyy-MM-dd)으로 날짜 변환
      *
      * @param from 시작날짜
-     * @param to 종료날짜
+     * @param to   종료날짜
      */
     public DateRange(String from, String to) {
         this(from, to, "yyyy-MM-dd'T'HH:mm:ss");
@@ -88,7 +89,7 @@ public class DateRange {
     /**
      * 날짜영역 객체 생성. 기본 날짜 포맷 (yyyy-MM-dd)으로 날짜 변환
      *
-     * @param from     시작날짜
+     * @param from   시작날짜
      * @param to     종료날짜
      * @param format 날짜 패턴 "yyyy, MM, dd, HH, mm, ss and more"
      */
@@ -101,7 +102,7 @@ public class DateRange {
      * 날짜영역 객체 생성.
      *
      * @param from 시작일
-     * @param to 종료일
+     * @param to   종료일
      */
     public DateRange(LocalDateTime from, LocalDateTime to) {
         this.from = from;
@@ -161,5 +162,10 @@ public class DateRange {
     @Override
     public String toString() {
         return DateUtil.formatDateTime(from) + " ~ " + DateUtil.formatDateTime(to);
+    }
+
+    public long getDiffMinute() {
+        Duration dur = Duration.between(from, to);
+        return (dur.getSeconds() / 60);
     }
 }

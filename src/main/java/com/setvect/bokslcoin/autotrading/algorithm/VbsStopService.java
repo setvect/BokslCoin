@@ -3,6 +3,7 @@ package com.setvect.bokslcoin.autotrading.algorithm;
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
+import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
@@ -79,7 +80,7 @@ public class VbsStopService implements CoinTrading {
     /**
      * 매수 목표 주가, 해당 가격 이상이면 매수
      */
-    private double targetPrice;
+    private Double targetPrice;
 
     /**
      * 매도 유형
@@ -139,10 +140,21 @@ public class VbsStopService implements CoinTrading {
 
         // 새로운 날짜면 매매 다시 초기화
         if (day != now.getDayOfMonth()) {
+            log.info("change Date: " + candle.getCandleDateTimeKst());
             tradeCompleteOfPeriod = false;
+            day = now.getDayOfMonth();
+
             targetPrice = getTargetPrice();
+            if (targetPrice == null) {
+                return;
+            }
+
             tradeEvent.registerTargetPrice(targetPrice);
         }
+        if (targetPrice == null) {
+            return;
+        }
+
         log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, market, currentPrice));
 
         double balance = coinBalance.doubleValue();
@@ -218,9 +230,8 @@ public class VbsStopService implements CoinTrading {
         int total = tradePeriod.getTotal();
         int minuteOfDay = baseDate.getHour() * 60 + baseDate.getMinute();
 
-        int hour = minuteOfDay / total;
-        int minute = minuteOfDay % total;
-        LocalTime bidFrom = LocalTime.of(hour, minute);
+        int hour = (minuteOfDay / total) * (total / 60);
+        LocalTime bidFrom = LocalTime.of(hour, 0);
         LocalTime bidTo = bidFrom.plusMinutes(tradePeriod.getBidMinute());
 
         LocalTime askFrom = bidTo.plusMinutes(tradePeriod.getIntermissionMinute());
@@ -234,14 +245,31 @@ public class VbsStopService implements CoinTrading {
     /**
      * @return 매수를 하기위한 목표 가격
      */
-    private double getTargetPrice() {
-        List<CandleDay> candleList = candleService.getDay(market, 2);
-        CandleDay yesterday = candleList.get(1);
+    private Double getTargetPrice() {
+        Candle after = getBeforePeriod();
+        if (after == null) {
+            return null;
+        }
 
-        double targetPrice = yesterday.getTradePrice() + (yesterday.getHighPrice() - yesterday.getLowPrice()) * k;
+        double targetPrice = after.getTradePrice() + (after.getHighPrice() - after.getLowPrice()) * k;
         log.debug(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
-                , targetPrice, yesterday.getTradePrice(), yesterday.getHighPrice(), yesterday.getLowPrice(), k));
+                , targetPrice, after.getTradePrice(), after.getHighPrice(), after.getLowPrice(), k));
 
         return targetPrice;
+    }
+
+    private Candle getBeforePeriod() {
+        switch (tradePeriod) {
+            case P_60:
+                List<CandleMinute> t1 = candleService.getMinute(60, market, 2);
+                return t1.get(1);
+            case P_240:
+                List<CandleMinute> t2 = candleService.getMinute(240, market, 2);
+                return t2.get(1);
+            case P_1440:
+                List<CandleDay> t3 = candleService.getDay(market, 2);
+                return t3.get(1);
+        }
+        return null;
     }
 }

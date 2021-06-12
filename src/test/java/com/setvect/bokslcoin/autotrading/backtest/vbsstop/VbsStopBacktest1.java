@@ -5,13 +5,18 @@ import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
+import com.setvect.bokslcoin.autotrading.model.Account;
+import com.setvect.bokslcoin.autotrading.model.Candle;
+import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
+import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -22,12 +27,16 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
+import java.util.Queue;
 import java.util.stream.Collectors;
 
 import static org.mockito.Mockito.*;
@@ -73,21 +82,38 @@ public class VbsStopBacktest1 {
         ReflectionTestUtils.setField(vbsStopService, "tradePeriod", condition.getTradePeriod());
 
 
-        // === 2. 백테스팅 ===
+        // === 2. Mock 만들기 ===
+        // candleService
         File dataDir = new File("./craw-data/minute");
         CandleDataIterator candleDataIterator = new CandleDataIterator(dataDir, condition);
-
-
-        when(candleService.getMinute(anyInt(), anyString())).then((aa) -> {
+        when(candleService.getMinute(anyInt(), anyString())).then((method) -> {
             if (candleDataIterator.hasNext()) {
                 return candleDataIterator.next();
             }
             return null;
         });
 
+        when(candleService.getDay(anyString(), eq(2))).then((method) -> candleDataIterator.beforeDayCandle());
+        when(candleService.getMinute(eq(60), anyString(), eq(2))).then((method) -> candleDataIterator.before60Minute());
+        when(candleService.getMinute(eq(240), anyString(), eq(2))).then((method) -> candleDataIterator.before240Minute());
 
-        vbsStopService.apply();
-        TimeUnit.SECONDS.sleep(20);
+        // AccountService
+        Account krwAccount = new Account();
+        krwAccount.setBalance(ApplicationUtil.toNumberString(condition.getCash()));
+        when(accountService.getBalance(eq("KRW"))).then((method) -> {
+            return BigDecimal.valueOf(Double.valueOf(krwAccount.getBalance()));
+        });
+
+        when(accountService.getAccount(eq("KRW"))).then((method) -> {
+            return Optional.of(krwAccount);
+        });
+
+        // === 3. 백테스팅 ===
+        while (candleDataIterator.hasNext()) {
+            vbsStopService.apply();
+        }
+
+
         System.out.println("끝");
     }
 
@@ -95,13 +121,16 @@ public class VbsStopBacktest1 {
         private final File dataDir;
         private final VbsStopCondition condition;
         private Iterator<CandleMinute> currentCandleIterator;
-        List<CandleMinute> currentCandleBundle;
-        LocalDateTime current;
+        private List<CandleMinute> currentCandleBundle;
+        private LocalDateTime bundleDate;
+        private LocalDateTime current;
+
+        private Queue<Candle> beforeData = new CircularFifoQueue<>(60 * 24 * 2);
 
         public CandleDataIterator(File dataDir, VbsStopCondition condition) throws IOException {
             this.dataDir = dataDir;
             this.condition = condition;
-            current = condition.getRange().getFrom();
+            bundleDate = condition.getRange().getFrom();
             this.currentCandleIterator = Collections.emptyIterator();
         }
 
@@ -120,7 +149,8 @@ public class VbsStopBacktest1 {
         public CandleMinute next() {
             if (hasNext()) {
                 CandleMinute next = currentCandleIterator.next();
-                log.debug(next.toString());
+                beforeData.add(next);
+                current = next.getCandleDateTimeUtc();
                 return next;
             }
             throw new NoSuchElementException();
@@ -128,7 +158,7 @@ public class VbsStopBacktest1 {
 
         @SneakyThrows
         private List<CandleMinute> nextBundle() {
-            String dataFileName = String.format("%s-minute(%s).json", condition.getMarket(), DateUtil.format(current, "yyyy-MM"));
+            String dataFileName = String.format("%s-minute(%s).json", condition.getMarket(), DateUtil.format(bundleDate, "yyyy-MM"));
             File dataFile = new File(dataDir, dataFileName);
             if (!dataFile.exists()) {
                 log.warn("no exist file: {}", dataFile.getAbsolutePath());
@@ -143,8 +173,70 @@ public class VbsStopBacktest1 {
             Collections.reverse(candleFiltered);
 
             // 다음달 가르킴
-            current = current.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).plusMonths(1);
+            bundleDate = bundleDate.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).plusMonths(1);
             return candleFiltered;
+        }
+
+        public List<CandleDay> beforeDayCandle() {
+            LocalDateTime from = current.minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime to = from.plusDays(1).minusNanos(1);
+            DateRange range = new DateRange(from, to);
+
+            List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
+            System.out.println(filtered.size() + ", " + beforeData.size());
+            // 하루가 다 안차면 빈값 반환
+            if (filtered.size() != 1440) {
+                return Arrays.asList(null, null);
+            }
+            CandleDay period = new CandleDay();
+            Candle first = filtered.get(0);
+            Candle last = filtered.get(filtered.size() - 1);
+            period.setOpeningPrice(first.getOpeningPrice());
+            period.setCandleDateTimeUtc(first.getCandleDateTimeUtc());
+            period.setCandleDateTimeKst(first.getCandleDateTimeKst());
+            period.setTradePrice(last.getTradePrice());
+            double low = filtered.stream().mapToDouble(p -> p.getLowPrice()).min().getAsDouble();
+            period.setLowPrice(low);
+            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).min().getAsDouble();
+            period.setHighPrice(high);
+            return Arrays.asList(null, period);
+        }
+
+        public List<CandleMinute> before60Minute() {
+            LocalDateTime from = bundleDate.minusHours(1).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime to = from.plusHours(1).minusNanos(1);
+            return getCandleMinutes(from, to);
+        }
+
+        public List<CandleMinute> before240Minute() {
+            int diffHour = bundleDate.getHour() % 4 + 4;
+            LocalDateTime from = bundleDate.minusHours(diffHour).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime to = from.plusHours(4).minusNanos(1);
+            return getCandleMinutes(from, to);
+        }
+
+        private List<CandleMinute> getCandleMinutes(LocalDateTime from, LocalDateTime to) {
+            Duration duration = Duration.between(from, to);
+            long diffMinute = duration.getSeconds() % 60;
+
+            DateRange range = new DateRange(from, to);
+            List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
+            // 한시간이 다 안차면 빈값 반환
+            if (filtered.size() != diffMinute) {
+                return Arrays.asList(null, null);
+            }
+            CandleMinute period = new CandleMinute();
+            Candle first = filtered.get(0);
+            Candle last = filtered.get(filtered.size() - 1);
+            period.setOpeningPrice(first.getOpeningPrice());
+            period.setCandleDateTimeUtc(first.getCandleDateTimeUtc());
+            period.setCandleDateTimeKst(first.getCandleDateTimeKst());
+            period.setTradePrice(last.getTradePrice());
+            double low = filtered.stream().mapToDouble(p -> p.getLowPrice()).min().getAsDouble();
+            period.setLowPrice(low);
+            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).min().getAsDouble();
+            period.setHighPrice(high);
+            return Arrays.asList(null, period);
         }
     }
 }
