@@ -20,6 +20,8 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -76,7 +78,7 @@ public class VbsStopService implements CoinTrading {
      */
     private boolean tradeCompleteOfPeriod;
 
-    private int day = 0;
+    private int periodIdx = 0;
     /**
      * 매수 목표 주가, 해당 가격 이상이면 매수
      */
@@ -130,25 +132,26 @@ public class VbsStopService implements CoinTrading {
     @Override
     public void apply() {
         CandleMinute candle = candleService.getMinute(1, market);
-        initTime(candle.getCandleDateTimeUtc(), tradePeriod);
+        ZonedDateTime nowUtc = candle.getCandleDateTimeUtc().atZone(ZoneId.of("UTC"));
+        LocalDateTime now = nowUtc.toLocalDateTime();
+        initTime(now, tradePeriod);
         Optional<Account> coinAccount = accountService.getAccount(market);
         BigDecimal coinBalance = AccountService.getBalance(coinAccount);
         double currentPrice = candle.getTradePrice();
 
-        //  코인 매수를 했다면
-        LocalDateTime now = candle.getCandleDateTimeUtc();
+        int dayHourMinuteSum = now.getDayOfMonth() * 1440 + now.getHour() * 60 + now.getMinute();
+        int currentPeriod = dayHourMinuteSum / tradePeriod.getTotal();
 
         // 새로운 날짜면 매매 다시 초기화
-        if (day != now.getDayOfMonth()) {
-            log.info("change Date: " + candle.getCandleDateTimeKst());
+        if (periodIdx != currentPeriod) {
+            tradeEvent.newPeriod(nowUtc);
             tradeCompleteOfPeriod = false;
-            day = now.getDayOfMonth();
+            periodIdx = currentPeriod;
 
             targetPrice = getTargetPrice();
             if (targetPrice == null) {
                 return;
             }
-
             tradeEvent.registerTargetPrice(targetPrice);
         }
         if (targetPrice == null) {
@@ -158,10 +161,11 @@ public class VbsStopService implements CoinTrading {
         log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, market, currentPrice));
 
         double balance = coinBalance.doubleValue();
+        // 코인을 매수 했다면 매도 조건 판단
         if (balance > 0.00001) {
             double rate = getYield(candle, coinAccount);
             Account account = coinAccount.get();
-            log.info(String.format("매입단가: %,.0f, 현재가격: %,.0f, 투자금: %,.0f, 수익율: %.2f%%",
+            log.debug(String.format("매입단가: %,.0f, 현재가격: %,.0f, 투자금: %,.0f, 수익율: %.2f%%",
                     Double.valueOf(account.getAvgBuyPrice()),
                     candle.getTradePrice(),
                     getInvestCash(account),

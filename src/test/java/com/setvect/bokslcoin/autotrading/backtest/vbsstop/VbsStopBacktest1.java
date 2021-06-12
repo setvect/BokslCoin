@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -88,16 +90,16 @@ public class VbsStopBacktest1 {
         // candleService
         File dataDir = new File("./craw-data/minute");
         CandleDataIterator candleDataIterator = new CandleDataIterator(dataDir, condition);
-        when(candleService.getMinute(anyInt(), anyString())).then((method) -> {
+        when(candleService.getMinute(anyInt(), anyString())).then((invocation) -> {
             if (candleDataIterator.hasNext()) {
                 return candleDataIterator.next();
             }
             return null;
         });
 
-        when(candleService.getDay(anyString(), eq(2))).then((method) -> candleDataIterator.beforeDayCandle());
-        when(candleService.getMinute(eq(60), anyString(), eq(2))).then((method) -> candleDataIterator.before60Minute());
-        when(candleService.getMinute(eq(240), anyString(), eq(2))).then((method) -> candleDataIterator.before240Minute());
+        when(candleService.getDay(anyString(), eq(2))).then((invocation) -> candleDataIterator.beforeDayCandle());
+        when(candleService.getMinute(eq(60), anyString(), eq(2))).then((invocation) -> candleDataIterator.before60Minute());
+        when(candleService.getMinute(eq(240), anyString(), eq(2))).then((invocation) -> candleDataIterator.before240Minute());
 
         // AccountService
         Account krwAccount = new Account();
@@ -117,12 +119,28 @@ public class VbsStopBacktest1 {
             return Optional.of(coinAccount);
         });
 
+
+        // 새로운 매매주기
+        doAnswer(invocation -> {
+            ZonedDateTime startUtc = invocation.getArgument(0);
+            LocalDateTime localDateTime = startUtc.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+            log.info("새로운 매매주기: {}", DateUtil.formatDateTime(localDateTime));
+            return null;
+        }).when(tradeEvent).newPeriod(notNull());
+
+        doAnswer(invocation -> {
+            double targetPrice = invocation.getArgument(0);
+            log.info(String.format("매수 목표가: %,.0f ", targetPrice));
+            return null;
+        }).when(tradeEvent).registerTargetPrice(anyDouble());
+
+
         // 매수
-        when(orderService.callOrderBidByMarket(anyString(), anyString())).then(method -> {
-            CandleMinute candle = candleDataIterator.getCurrentCandleMinute();
-            double bidPrice = candle.getTradePrice() + condition.getTradeMargin();
+        doAnswer(invocation -> {
+            double tradePrice = invocation.getArgument(1);
+            double bidPrice = tradePrice + condition.getTradeMargin();
             coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(bidPrice));
-            double cash = Double.valueOf(method.getArgument(1));
+            double cash = invocation.getArgument(2);
 
             // 남은 현금 계산
             double fee = cash * condition.getFeeBid();
@@ -132,12 +150,14 @@ public class VbsStopBacktest1 {
             String balance = ApplicationUtil.toNumberString(cash / bidPrice);
             coinAccount.setBalance(balance);
             return null;
-        });
+        }).when(tradeEvent).bid(anyString(), anyDouble(), anyDouble());
+
         // 매도
-        when(orderService.callOrderAskByMarket(anyString(), anyString())).then(method -> {
-            CandleMinute candle = candleDataIterator.getCurrentCandleMinute();
+        doAnswer(invocation -> {
+            VbsStopService.AskReason reason = invocation.getArgument(3);
+            double tradePrice = invocation.getArgument(2);
             double balance = Double.parseDouble(coinAccount.getBalance());
-            double askPrice = candle.getTradePrice() - condition.getTradeMargin();
+            double askPrice = tradePrice - condition.getTradeMargin();
             double cash = askPrice * balance;
             double fee = cash * condition.getFeeAsk();
 
@@ -146,7 +166,8 @@ public class VbsStopBacktest1 {
             coinAccount.setBalance("0");
             coinAccount.setAvgBuyPrice(null);
             return null;
-        });
+        }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
+
 
         // === 3. 백테스팅 ===
         while (candleDataIterator.hasNext()) {
@@ -227,7 +248,6 @@ public class VbsStopBacktest1 {
             DateRange range = new DateRange(from, to);
 
             List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            System.out.println(filtered.size() + ", " + beforeData.size());
             // 하루가 다 안차면 빈값 반환
             if (filtered.size() != 1440) {
                 return Arrays.asList(null, null);
