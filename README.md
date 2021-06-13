@@ -17,6 +17,7 @@ com:
   setvect:
     bokslcoin:
       autotrading:
+        enable: true
         api:
           # 엑세스 키: 환경 변수 또는 직접 입력
           accessKey: ${ACCESS_KEY}
@@ -24,11 +25,11 @@ com:
           secretKey: ${SECRET_KEY}
           url: https://api.upbit.com
         schedule:
-          # 시황 체크 주기
+          # 시세 체크 주기
           fixedDelay: 10000
         algorithm:
           # 매매 알고리즘 지정
-          name: vbs
+          name: vbs # vbs, vbsStop, vbsTrailingStop
           # 변동성 돌파 알고리즘 관련 설정값
           vbs:
             # 매수, 매도 대상 코인
@@ -37,6 +38,38 @@ com:
             k: 0.5
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
             rate: 0.5
+
+          # 변동성 돌파 + 손절/익절 알고리즘 관련 설정값
+          vbsStop:
+            # 매수, 매도 대상 코인
+            market: KRW-BTC
+            # 변동성 돌파 판단 비율
+            k: 0.5
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            investRatio: 0.5
+            # 손절 매도
+            loseStopRate: 0.05
+            # 익절 매도
+            gainStopRate: 0.1
+            # 매매 주기(P_60, P_240, P_1440)
+            tradePeriod: P_1440
+
+          # 변동성 돌파 + 손절 + 트레일링 스탑 알고리즘 관련 설정값
+          vbsTrailingStop:
+            # 매수, 매도 대상 코인
+            market: KRW-BTC
+            # 변동성 돌파 판단 비율
+            k: 0.5
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            investRatio: 0.5
+            # 손절 매도
+            loseStopRate: 0.05
+            # 트레일링 스탑 진입점
+            gainStopRate: 0.1
+            # gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 매도
+            trailingStopRate: 0.7
+            # 매매 주기(P_60, P_240, P_1440)
+            tradePeriod: P_1440
 ```
 
 ### 1.1.2. IDE 환경에서 실행
@@ -98,9 +131,21 @@ gradle makeInstallFile
 
 ※ 업비트 경우 UTC 기준으로 하루을 계산함. 우리나라(UTC+9)는 오늘 09:00 ~ 다음날 09:00까지가 하루임.
 
-### 1.4.2. TODO 추가
+### 1.4.2. 변동성 돌파전략 + 손절/익절 `알고리즘 이름: vbsStop`
+1. 매수 목표가 구함
+    - 매수 목표가 = 전일 종가 + (전일 고가 - 전일 고가) * 변동성 돌파 비율 k
+2. 매수 목표가를 돌파하면 시장가 매수
+3. 매수가 대비 손절 또는 익절 수익이 나면 시장가 매도
+4. 당일 장이 끝나는 시점에 매수 상태이면 시장가 매도
 
-## 1.5. 클로링
+### 1.4.3. 변동성 돌파전략 + 손절 + 트레일링 스탑 `알고리즘 이름: vbsTrailingStop`
+1. 매수 목표가 구함
+    - 매수 목표가 = 전일 종가 + (전일 고가 - 전일 고가) * 변동성 돌파 비율 k
+2. 매수 목표가를 돌파하면 시장가 매수
+3. 매수가 대비 수익률이 손절 가격 이하로 떨어지면 매도
+4. 매수가 대비 수익룰이 트레일링 스탑 진입점에 돌파 하면 [트레일링 스탑](https://m.blog.naver.com/scruw/221976012878) 알고리즘 적용하여 시장가 매도
+
+## 1.5. 시세 데이터 클로링
 - `Crawling.java`를 사용해 원하는 코인의 일봉 데이터를 수집할 수 있음
 - 수집한 데이터는 백테스트에 사용
 

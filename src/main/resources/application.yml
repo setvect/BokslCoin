@@ -15,11 +15,11 @@ com:
           secretKey: ${SECRET_KEY}
           url: https://api.upbit.com
         schedule:
-          # 시황 체크 주기
+          # 시세 체크 주기
           fixedDelay: 10000
         algorithm:
           # 매매 알고리즘 지정
-          name: vbs # vbs, vbsStop
+          name: vbs # vbs, vbsStop, vbsTrailingStop
           # 변동성 돌파 알고리즘 관련 설정값
           vbs:
             # 매수, 매도 대상 코인
@@ -44,8 +44,8 @@ com:
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_1440
 
-          # 변동성 돌파 + 손절/익절 알고리즘 + 트레일링 스탑 관련 설정값
-          vbsStopTrailingStop:
+          # 변동성 돌파 + 손절 + 트레일링 스탑 알고리즘 관련 설정값
+          vbsTrailingStop:
             # 매수, 매도 대상 코인
             market: KRW-BTC
             # 변동성 돌파 판단 비율
@@ -58,7 +58,6 @@ com:
             gainStopRate: 0.1
             # gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 매도
             trailingStopRate: 0.7
-
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_1440
 

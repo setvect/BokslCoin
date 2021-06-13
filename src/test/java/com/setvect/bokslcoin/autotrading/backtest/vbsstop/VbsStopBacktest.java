@@ -234,7 +234,7 @@ public class VbsStopBacktest {
         }).when(tradeEvent).newPeriod(notNull());
 
 
-        // 시황 체크
+        // 시세 체크
         doAnswer(invocation -> {
             Candle currentCandle = invocation.getArgument(0);
             VbsStopBacktestRow backtestRow = backtestInfoAtom.get();

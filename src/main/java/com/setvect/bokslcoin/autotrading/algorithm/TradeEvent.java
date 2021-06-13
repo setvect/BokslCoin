@@ -15,7 +15,7 @@ public interface TradeEvent {
     void newPeriod(CandleMinute candle);
 
     /**
-     * 시황 체크
+     * 시세 체크
      *
      * @param candle 분봉
      */
