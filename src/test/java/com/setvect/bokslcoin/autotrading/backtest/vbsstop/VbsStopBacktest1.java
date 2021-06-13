@@ -4,6 +4,7 @@ import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
+import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
@@ -24,6 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.stereotype.Service;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -45,6 +47,7 @@ import java.util.stream.Collectors;
 
 import static org.mockito.Mockito.*;
 
+
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
@@ -54,8 +57,6 @@ public class VbsStopBacktest1 {
     private AccountService accountService;
     @Mock
     private CandleService candleService;
-    @Mock
-    private OrderService orderService;
     @Spy
     private TradeEvent tradeEvent = new BasicTradeEvent();
     @InjectMocks
@@ -69,15 +70,15 @@ public class VbsStopBacktest1 {
         VbsStopCondition condition = VbsStopCondition.builder()
                 .k(0.5) // 변동성 돌파 판단 비율
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                .range(new DateRange("2021-01-01T00:00:00", "2021-01-02T23:59:59"))// 분석 대상 기간 (UTC)
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"))// 분석 대상 기간 (UTC)
                 .market("KRW-BTC")// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
                 .loseStopRate(0.05) // 손절 라인
-                .gainStopRate(0.1) //익절 라인
-                .tradePeriod(VbsStopService.TradePeriod.P_240) //매매 주기
+                .gainStopRate(0.05) //익절 라인
+                .tradePeriod(VbsStopService.TradePeriod.P_1440) //매매 주기
                 .build();
 
         ReflectionTestUtils.setField(vbsStopService, "market", condition.getMarket());
@@ -86,7 +87,6 @@ public class VbsStopBacktest1 {
         ReflectionTestUtils.setField(vbsStopService, "loseStopRate", condition.getLoseStopRate());
         ReflectionTestUtils.setField(vbsStopService, "gainStopRate", condition.getGainStopRate());
         ReflectionTestUtils.setField(vbsStopService, "tradePeriod", condition.getTradePeriod());
-
 
         // === 2. Mock 만들기 ===
         // candleService
@@ -126,6 +126,7 @@ public class VbsStopBacktest1 {
         doAnswer(invocation -> {
             Candle currentCandle = invocation.getArgument(0);
             VbsStopBacktestRow backtestRow = new VbsStopBacktestRow(currentCandle);
+            backtestRow.setCash(Double.parseDouble(krwAccount.getBalance()));
             basetestInfoAtom.set(backtestRow);
             tradeHistory.add(backtestRow);
             if (tradeHistory.size() >= 2) {
@@ -134,7 +135,7 @@ public class VbsStopBacktest1 {
                 backtestRow.setBeforeTradePrice(beforeTradePrice);
             }
 
-            log.info("새로운 매매주기: {}", DateUtil.formatDateTime(currentCandle.getCandleDateTimeKst()));
+            log.debug("새로운 매매주기: {}", DateUtil.formatDateTime(currentCandle.getCandleDateTimeKst()));
             return null;
         }).when(tradeEvent).newPeriod(notNull());
 
@@ -153,7 +154,6 @@ public class VbsStopBacktest1 {
 
         doAnswer(invocation -> {
             double targetPrice = invocation.getArgument(0);
-            log.info(String.format("매수 목표가: %,.0f ", targetPrice));
             VbsStopBacktestRow backtestRow = basetestInfoAtom.get();
             backtestRow.setTargetPrice(targetPrice);
             return null;
@@ -161,6 +161,7 @@ public class VbsStopBacktest1 {
 
         // 매수
         doAnswer(invocation -> {
+            VbsStopBacktestRow backtestRow = basetestInfoAtom.get();
             double tradePrice = invocation.getArgument(1);
             double bidPrice = tradePrice + condition.getTradeMargin();
             coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(bidPrice));
@@ -175,7 +176,7 @@ public class VbsStopBacktest1 {
             String balance = ApplicationUtil.toNumberString(investAmount / bidPrice);
             coinAccount.setBalance(balance);
 
-            VbsStopBacktestRow backtestRow = basetestInfoAtom.get();
+
             backtestRow.setTrade(true);
             backtestRow.setBidPrice(bidPrice);
             backtestRow.setInvestmentAmount(investAmount);
@@ -205,12 +206,19 @@ public class VbsStopBacktest1 {
             return null;
         }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
 
-
         // === 3. 백테스팅 ===
         while (candleDataIterator.hasNext()) {
             vbsStopService.apply();
         }
-        tradeHistory.stream().forEach(p -> System.out.println(p));
+
+        TestAnalysis testAnalysis = VbsStopUtil.analysis(tradeHistory);
+        System.out.printf("실제 수익: %,.2f%%\n", testAnalysis.getCoinYield() * 100);
+        System.out.printf("실제 MDD: %,.2f%%\n", testAnalysis.getCoinMdd() * 100);
+        System.out.printf("실현 수익: %,.2f%%\n", testAnalysis.getRealYield() * 100);
+        System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getRealMdd() * 100);
+
+        // === 4. 리포트 ===
+        VbsStopUtil.makeReport(condition, tradeHistory, testAnalysis);
 
         System.out.println("끝");
     }
@@ -219,14 +227,12 @@ public class VbsStopBacktest1 {
         private final File dataDir;
         private final VbsStopCondition condition;
         private Iterator<CandleMinute> currentCandleIterator;
-        private List<CandleMinute> currentCandleBundle;
         private LocalDateTime bundleDate;
-        private LocalDateTime current;
+        private LocalDateTime currentUtc;
 
         private Queue<Candle> beforeData = new CircularFifoQueue<>(60 * 24 * 2);
-//        private CandleMinute currentCandleMinute;
 
-        public CandleDataIterator(File dataDir, VbsStopCondition condition) throws IOException {
+        public CandleDataIterator(File dataDir, VbsStopCondition condition) {
             this.dataDir = dataDir;
             this.condition = condition;
             bundleDate = condition.getRange().getFrom();
@@ -249,15 +255,11 @@ public class VbsStopBacktest1 {
             if (hasNext()) {
                 CandleMinute currentCandleMinute = currentCandleIterator.next();
                 beforeData.add(currentCandleMinute);
-                current = currentCandleMinute.getCandleDateTimeUtc();
+                currentUtc = currentCandleMinute.getCandleDateTimeUtc();
                 return currentCandleMinute;
             }
             throw new NoSuchElementException();
         }
-
-//        public CandleMinute getCurrentCandleMinute() {
-//            return this.currentCandleMinute;
-//        }
 
         @SneakyThrows
         private List<CandleMinute> nextBundle() {
@@ -269,7 +271,7 @@ public class VbsStopBacktest1 {
             }
             List<CandleMinute> candles = GsonUtil.GSON.fromJson(FileUtils.readFileToString(dataFile, "utf-8"), new TypeToken<List<CandleMinute>>() {
             }.getType());
-            log.info(String.format("load data file: %s%n", dataFileName));
+            log.info(String.format("load data file: %s", dataFileName));
 
             List<CandleMinute> candleFiltered = candles.stream().filter(p -> condition.getRange().isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
             // 과거 데이터를 먼저(날짜 기준 오름 차순 정렬)
@@ -281,13 +283,14 @@ public class VbsStopBacktest1 {
         }
 
         public List<CandleDay> beforeDayCandle() {
-            LocalDateTime from = current.minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime from = currentUtc.minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
             LocalDateTime to = from.plusDays(1).minusNanos(1);
             DateRange range = new DateRange(from, to);
 
             List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            // 하루가 다 안차면 빈값 반환
-            if (filtered.size() != 1440) {
+            // 수집이 안된 시간도 있음(업비트 오류로 판단)
+            // 그래서 분봉 데이터가 일정 갯수 이상 되면 계산
+            if (filtered.size() < VbsStopService.TradePeriod.P_1440.getTotal() / 2) {
                 return Arrays.asList(null, null);
             }
             CandleDay period = new CandleDay();
@@ -305,14 +308,14 @@ public class VbsStopBacktest1 {
         }
 
         public List<CandleMinute> before60Minute() {
-            LocalDateTime from = current.minusHours(1).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime from = currentUtc.minusHours(1).withMinute(0).withSecond(0).withNano(0);
             LocalDateTime to = from.plusHours(1).minusNanos(1);
             return getCandleMinutes(from, to);
         }
 
         public List<CandleMinute> before240Minute() {
-            int diffHour = current.getHour() % 4 + 4;
-            LocalDateTime from = current.minusHours(diffHour).withMinute(0).withSecond(0).withNano(0);
+            int diffHour = currentUtc.getHour() % 4 + 4;
+            LocalDateTime from = currentUtc.minusHours(diffHour).withMinute(0).withSecond(0).withNano(0);
             LocalDateTime to = from.plusHours(4).minusNanos(1);
             return getCandleMinutes(from, to);
         }
@@ -323,8 +326,9 @@ public class VbsStopBacktest1 {
 
             DateRange range = new DateRange(from, to);
             List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            // 한시간이 다 안차면 빈값 반환
-            if (filtered.size() != diffMinute) {
+            // 수집이 안된 시간도 있음(업비트 오류로 판단)
+            // 그래서 분봉 데이터가 일정 갯수 이상 되면 계산
+            if (filtered.size() < diffMinute / 2) {
                 return Arrays.asList(null, null);
             }
             CandleMinute period = new CandleMinute();

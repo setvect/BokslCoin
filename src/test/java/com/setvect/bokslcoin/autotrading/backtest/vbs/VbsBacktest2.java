@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
+import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;

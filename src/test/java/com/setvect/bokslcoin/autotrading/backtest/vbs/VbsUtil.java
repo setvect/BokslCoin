@@ -1,6 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
 import com.google.gson.reflect.TypeToken;
+import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;

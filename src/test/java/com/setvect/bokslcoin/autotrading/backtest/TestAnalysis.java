@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbs;
+package com.setvect.bokslcoin.autotrading.backtest;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -4,6 +4,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.ToString;
 
 import java.io.File;
 
@@ -12,6 +13,7 @@ import java.io.File;
  */
 @Builder
 @Getter
+@ToString
 public class VbsStopCondition {
     // 변동성 돌파 판단 비율
     private final double k;

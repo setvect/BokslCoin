@@ -271,7 +271,7 @@ public class VbsStopService implements CoinTrading {
         }
 
         double targetPrice = after.getTradePrice() + (after.getHighPrice() - after.getLowPrice()) * k;
-        log.info(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
+        log.debug(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
                 , targetPrice, after.getTradePrice(), after.getHighPrice(), after.getLowPrice(), k));
 
         return targetPrice;
