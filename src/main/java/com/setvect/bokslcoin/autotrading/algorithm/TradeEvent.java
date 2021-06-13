@@ -1,13 +1,25 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
-import java.time.ZonedDateTime;
+import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 
 /**
  * 매매시 발생하는 이벤트
  */
 public interface TradeEvent {
 
-    void newPeriod(ZonedDateTime startUtc);
+    /**
+     * 새로운 분석 주기
+     *
+     * @param candle 분봉
+     */
+    void newPeriod(CandleMinute candle);
+
+    /**
+     * 시황 체크
+     *
+     * @param candle 분봉
+     */
+    void check(CandleMinute candle);
 
     /**
      * @param market     코인

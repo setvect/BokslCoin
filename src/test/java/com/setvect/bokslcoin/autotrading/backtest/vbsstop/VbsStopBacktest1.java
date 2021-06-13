@@ -32,8 +32,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -41,6 +40,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.mockito.Mockito.*;
@@ -61,13 +61,15 @@ public class VbsStopBacktest1 {
     @InjectMocks
     private VbsStopService vbsStopService;
 
+    private List<VbsStopBacktestRow> tradeHistory = new ArrayList<>();
+
     @Test
     public void backtest() throws InterruptedException, IOException {
         // === 1. 변수값 설정 ===
         VbsStopCondition condition = VbsStopCondition.builder()
                 .k(0.5) // 변동성 돌파 판단 비율
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                .range(new DateRange("2021-01-01T00:00:00", "2021-01-07T23:59:59"))// 분석 대상 기간
+                .range(new DateRange("2021-01-01T00:00:00", "2021-01-02T23:59:59"))// 분석 대상 기간 (UTC)
                 .market("KRW-BTC")// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
@@ -75,7 +77,7 @@ public class VbsStopBacktest1 {
                 .feeAsk(0.0005)//  매도 수수료
                 .loseStopRate(0.05) // 손절 라인
                 .gainStopRate(0.1) //익절 라인
-                .tradePeriod(VbsStopService.TradePeriod.P_1440) //매매 주기
+                .tradePeriod(VbsStopService.TradePeriod.P_240) //매매 주기
                 .build();
 
         ReflectionTestUtils.setField(vbsStopService, "market", condition.getMarket());
@@ -118,37 +120,67 @@ public class VbsStopBacktest1 {
             }
             return Optional.of(coinAccount);
         });
-
+        AtomicReference<VbsStopBacktestRow> basetestInfoAtom = new AtomicReference<>();
 
         // 새로운 매매주기
         doAnswer(invocation -> {
-            ZonedDateTime startUtc = invocation.getArgument(0);
-            LocalDateTime localDateTime = startUtc.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
-            log.info("새로운 매매주기: {}", DateUtil.formatDateTime(localDateTime));
+            Candle currentCandle = invocation.getArgument(0);
+            VbsStopBacktestRow backtestRow = new VbsStopBacktestRow(currentCandle);
+            basetestInfoAtom.set(backtestRow);
+            tradeHistory.add(backtestRow);
+            if (tradeHistory.size() >= 2) {
+                VbsStopBacktestRow beforeBacktestRow = tradeHistory.get(tradeHistory.size() - 2);
+                double beforeTradePrice = beforeBacktestRow.getCandle().getTradePrice();
+                backtestRow.setBeforeTradePrice(beforeTradePrice);
+            }
+
+            log.info("새로운 매매주기: {}", DateUtil.formatDateTime(currentCandle.getCandleDateTimeKst()));
             return null;
         }).when(tradeEvent).newPeriod(notNull());
+
+
+        // 시황 체크
+        doAnswer(invocation -> {
+            Candle currentCandle = invocation.getArgument(0);
+            VbsStopBacktestRow backtestRow = basetestInfoAtom.get();
+            Candle candle = backtestRow.getCandle();
+            candle.setLowPrice(Math.min(candle.getLowPrice(), currentCandle.getLowPrice()));
+            candle.setHighPrice(Math.max(candle.getHighPrice(), currentCandle.getHighPrice()));
+            candle.setTradePrice(currentCandle.getTradePrice());
+
+            return null;
+        }).when(tradeEvent).check(notNull());
 
         doAnswer(invocation -> {
             double targetPrice = invocation.getArgument(0);
             log.info(String.format("매수 목표가: %,.0f ", targetPrice));
+            VbsStopBacktestRow backtestRow = basetestInfoAtom.get();
+            backtestRow.setTargetPrice(targetPrice);
             return null;
         }).when(tradeEvent).registerTargetPrice(anyDouble());
-
 
         // 매수
         doAnswer(invocation -> {
             double tradePrice = invocation.getArgument(1);
             double bidPrice = tradePrice + condition.getTradeMargin();
             coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(bidPrice));
-            double cash = invocation.getArgument(2);
+            double investAmount = invocation.getArgument(2);
 
             // 남은 현금 계산
-            double fee = cash * condition.getFeeBid();
-            double remainCash = Double.parseDouble(krwAccount.getBalance()) - cash - fee;
+            double fee = investAmount * condition.getFeeBid();
+            double cash = Double.parseDouble(krwAccount.getBalance()) - investAmount;
+            double remainCash = cash - fee;
             krwAccount.setBalance(ApplicationUtil.toNumberString(remainCash));
 
-            String balance = ApplicationUtil.toNumberString(cash / bidPrice);
+            String balance = ApplicationUtil.toNumberString(investAmount / bidPrice);
             coinAccount.setBalance(balance);
+
+            VbsStopBacktestRow backtestRow = basetestInfoAtom.get();
+            backtestRow.setTrade(true);
+            backtestRow.setBidPrice(bidPrice);
+            backtestRow.setInvestmentAmount(investAmount);
+            backtestRow.setCash(cash);
+            backtestRow.setFeePrice(fee);
             return null;
         }).when(tradeEvent).bid(anyString(), anyDouble(), anyDouble());
 
@@ -165,6 +197,11 @@ public class VbsStopBacktest1 {
             krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
             coinAccount.setBalance("0");
             coinAccount.setAvgBuyPrice(null);
+
+            VbsStopBacktestRow backtestRow = basetestInfoAtom.get();
+            backtestRow.setAskPrice(askPrice);
+            backtestRow.setAskReason(invocation.getArgument(3));
+            backtestRow.setFeePrice(backtestRow.getFeePrice() + fee);
             return null;
         }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
 
@@ -173,6 +210,7 @@ public class VbsStopBacktest1 {
         while (candleDataIterator.hasNext()) {
             vbsStopService.apply();
         }
+        tradeHistory.stream().forEach(p -> System.out.println(p));
 
         System.out.println("끝");
     }
@@ -186,7 +224,7 @@ public class VbsStopBacktest1 {
         private LocalDateTime current;
 
         private Queue<Candle> beforeData = new CircularFifoQueue<>(60 * 24 * 2);
-        private CandleMinute currentCandleMinute;
+//        private CandleMinute currentCandleMinute;
 
         public CandleDataIterator(File dataDir, VbsStopCondition condition) throws IOException {
             this.dataDir = dataDir;
@@ -209,7 +247,7 @@ public class VbsStopBacktest1 {
         @Override
         public CandleMinute next() {
             if (hasNext()) {
-                currentCandleMinute = currentCandleIterator.next();
+                CandleMinute currentCandleMinute = currentCandleIterator.next();
                 beforeData.add(currentCandleMinute);
                 current = currentCandleMinute.getCandleDateTimeUtc();
                 return currentCandleMinute;
@@ -217,9 +255,9 @@ public class VbsStopBacktest1 {
             throw new NoSuchElementException();
         }
 
-        public CandleMinute getCurrentCandleMinute() {
-            return this.currentCandleMinute;
-        }
+//        public CandleMinute getCurrentCandleMinute() {
+//            return this.currentCandleMinute;
+//        }
 
         @SneakyThrows
         private List<CandleMinute> nextBundle() {
@@ -261,27 +299,27 @@ public class VbsStopBacktest1 {
             period.setTradePrice(last.getTradePrice());
             double low = filtered.stream().mapToDouble(p -> p.getLowPrice()).min().getAsDouble();
             period.setLowPrice(low);
-            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).min().getAsDouble();
+            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).max().getAsDouble();
             period.setHighPrice(high);
             return Arrays.asList(null, period);
         }
 
         public List<CandleMinute> before60Minute() {
-            LocalDateTime from = bundleDate.minusHours(1).withMinute(0).withSecond(0).withNano(0);
+            LocalDateTime from = current.minusHours(1).withMinute(0).withSecond(0).withNano(0);
             LocalDateTime to = from.plusHours(1).minusNanos(1);
             return getCandleMinutes(from, to);
         }
 
         public List<CandleMinute> before240Minute() {
-            int diffHour = bundleDate.getHour() % 4 + 4;
-            LocalDateTime from = bundleDate.minusHours(diffHour).withMinute(0).withSecond(0).withNano(0);
+            int diffHour = current.getHour() % 4 + 4;
+            LocalDateTime from = current.minusHours(diffHour).withMinute(0).withSecond(0).withNano(0);
             LocalDateTime to = from.plusHours(4).minusNanos(1);
             return getCandleMinutes(from, to);
         }
 
         private List<CandleMinute> getCandleMinutes(LocalDateTime from, LocalDateTime to) {
             Duration duration = Duration.between(from, to);
-            long diffMinute = duration.getSeconds() % 60;
+            long diffMinute = duration.getSeconds() / 60 + 1;
 
             DateRange range = new DateRange(from, to);
             List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
@@ -298,7 +336,7 @@ public class VbsStopBacktest1 {
             period.setTradePrice(last.getTradePrice());
             double low = filtered.stream().mapToDouble(p -> p.getLowPrice()).min().getAsDouble();
             period.setLowPrice(low);
-            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).min().getAsDouble();
+            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).max().getAsDouble();
             period.setHighPrice(high);
             return Arrays.asList(null, period);
         }

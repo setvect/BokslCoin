@@ -132,19 +132,20 @@ public class VbsStopService implements CoinTrading {
     @Override
     public void apply() {
         CandleMinute candle = candleService.getMinute(1, market);
-        ZonedDateTime nowUtc = candle.getCandleDateTimeUtc().atZone(ZoneId.of("UTC"));
-        LocalDateTime now = nowUtc.toLocalDateTime();
-        initTime(now, tradePeriod);
+        ZonedDateTime nowUtcZoned = candle.getCandleDateTimeUtc().atZone(ZoneId.of("UTC"));
+        LocalDateTime nowUtc = nowUtcZoned.toLocalDateTime();
+        LocalDateTime nowKst = candle.getCandleDateTimeKst();
+        initTime(nowUtc, tradePeriod);
         Optional<Account> coinAccount = accountService.getAccount(market);
         BigDecimal coinBalance = AccountService.getBalance(coinAccount);
         double currentPrice = candle.getTradePrice();
 
-        int dayHourMinuteSum = now.getDayOfMonth() * 1440 + now.getHour() * 60 + now.getMinute();
+        int dayHourMinuteSum = nowUtc.getDayOfMonth() * 1440 + nowUtc.getHour() * 60 + nowUtc.getMinute();
         int currentPeriod = dayHourMinuteSum / tradePeriod.getTotal();
 
         // 새로운 날짜면 매매 다시 초기화
         if (periodIdx != currentPeriod) {
-            tradeEvent.newPeriod(nowUtc);
+            tradeEvent.newPeriod(candle);
             tradeCompleteOfPeriod = false;
             periodIdx = currentPeriod;
 
@@ -154,6 +155,7 @@ public class VbsStopService implements CoinTrading {
             }
             tradeEvent.registerTargetPrice(targetPrice);
         }
+        tradeEvent.check(candle);
         if (targetPrice == null) {
             return;
         }
@@ -172,7 +174,7 @@ public class VbsStopService implements CoinTrading {
                     rate * 100));
             // 매도 시간 파악
             AskReason reason = null;
-            if (askRange.isBetween(now)) {
+            if (askRange.isBetween(nowKst)) {
                 reason = AskReason.TIME;
             }
             // 이익인 경우
@@ -192,8 +194,8 @@ public class VbsStopService implements CoinTrading {
                 doAsk(currentPrice, balance, reason);
             }
 
-        } else if (bidRange.isBetween(now) && !tradeCompleteOfPeriod) {
-//            log.debug(String.format("%s 목표가: %,f\t현재가: %,f", market, targetValue, currentPrice));
+        } else if (bidRange.isBetween(nowKst) && !tradeCompleteOfPeriod) {
+            log.debug(String.format("%s 목표가: %,f\t현재가: %,f", market, targetPrice, currentPrice));
 
             if (targetPrice > currentPrice) {
 //                log.debug("목표가 도달하지 않음");
@@ -269,7 +271,7 @@ public class VbsStopService implements CoinTrading {
         }
 
         double targetPrice = after.getTradePrice() + (after.getHighPrice() - after.getLowPrice()) * k;
-        log.debug(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
+        log.info(String.format("목표가: %,.2f = 종가: %,.2f + (고가: %,.2f - 저가: %,.2f) * K값: %,.2f"
                 , targetPrice, after.getTradePrice(), after.getHighPrice(), after.getLowPrice(), k));
 
         return targetPrice;

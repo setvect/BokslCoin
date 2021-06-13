@@ -17,7 +17,7 @@ public class VbsStopCondition {
     private final double k;
     // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
     private final double investRatio;
-    // 분석 대상 기간
+    // 분석 대상 기간(UTC)
     private final DateRange range;
     // 대상 코인
     private final String market;

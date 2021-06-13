@@ -1,12 +1,12 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
+import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 /**
  * 매매시 발생하는 이벤트
@@ -15,9 +15,14 @@ import java.time.ZonedDateTime;
 @Slf4j
 public class BasicTradeEvent implements TradeEvent {
     @Override
-    public void newPeriod(ZonedDateTime startUtc) {
-        LocalDateTime localDateTime = startUtc.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
+    public void newPeriod(CandleMinute candle) {
+        LocalDateTime localDateTime = candle.getCandleDateTimeUtc();
         log.info("새로운 매매주기: {}", DateUtil.formatDateTime(localDateTime));
+    }
+
+    @Override
+    public void check(CandleMinute candle) {
+        //notting
     }
 
     @Override
