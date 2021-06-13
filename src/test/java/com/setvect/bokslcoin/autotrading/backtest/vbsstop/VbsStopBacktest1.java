@@ -75,14 +75,14 @@ public class VbsStopBacktest1 {
         VbsStopCondition condition = VbsStopCondition.builder()
                 .k(0.5) // 변동성 돌파 판단 비율
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"))// 분석 대상 기간 (UTC)
+                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59"))// 분석 대상 기간 (UTC)
                 .market("KRW-BTC")// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
-                .loseStopRate(0.05) // 손절 라인
-                .gainStopRate(0.05) //익절 라인
+                .loseStopRate(0.03) // 손절 라인
+                .gainStopRate(0.50) //익절 라인
                 .tradePeriod(VbsStopService.TradePeriod.P_1440) //매매 주기
                 .build();
 
@@ -116,9 +116,9 @@ public class VbsStopBacktest1 {
         );
 
         for (DateRange range : rangeList) {
-            for (double k = 0.1; k <= 1; k = Math.round((k + 0.1) * 100.0) / 100.0) {
+            for (double gainStopRate = 0.01; gainStopRate <= 0.20; gainStopRate = Math.round((gainStopRate + 0.01) * 100.0) / 100.0) {
                 condition = VbsStopCondition.builder()
-                        .k(k) // 변동성 돌파 판단 비율
+                        .k(0.5) // 변동성 돌파 판단 비율
                         .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                         .range(range)// 분석 대상 기간 (UTC)
                         .market("KRW-BTC")// 대상 코인
@@ -126,8 +126,8 @@ public class VbsStopBacktest1 {
                         .tradeMargin(1_000)// 매매시 채결 가격 차이
                         .feeBid(0.0005) //  매수 수수료
                         .feeAsk(0.0005)//  매도 수수료
-                        .loseStopRate(0.9) // 손절 라인
-                        .gainStopRate(0.9) //익절 라인
+                        .loseStopRate(0.01) // 손절 라인
+                        .gainStopRate(gainStopRate) //익절 라인
                         .tradePeriod(VbsStopService.TradePeriod.P_1440) //매매 주기
                         .comment("-")
                         .build();
