@@ -7,7 +7,7 @@ com:
   setvect:
     bokslcoin:
       autotrading:
-        enable: false
+        enable: true
         api:
           # 엑세스 키: 환경 변수 또는 직접 입력
           accessKey: ${ACCESS_KEY}
@@ -29,7 +29,7 @@ com:
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
             rate: 0.5
 
-          # 변동성 돌파 알고리즘 관련 설정값
+          # 변동성 돌파 + 손절/익절 알고리즘 관련 설정값
           vbsStop:
             # 매수, 매도 대상 코인
             market: KRW-BTC
@@ -42,5 +42,23 @@ com:
             # 익절 매도
             gainStopRate: 0.1
             # 매매 주기(P_60, P_240, P_1440)
-            tradePeriod: P_60
+            tradePeriod: P_1440
+
+          # 변동성 돌파 + 손절/익절 알고리즘 + 트레일링 스탑 관련 설정값
+          vbsStopTrailingStop:
+            # 매수, 매도 대상 코인
+            market: KRW-BTC
+            # 변동성 돌파 판단 비율
+            k: 0.5
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            investRatio: 0.5
+            # 손절 매도
+            loseStopRate: 0.05
+            # 트레일링 스탑 진입점
+            gainStopRate: 0.1
+            # gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 매도
+            trailingStopRate: 0.7
+
+            # 매매 주기(P_60, P_240, P_1440)
+            tradePeriod: P_1440
 

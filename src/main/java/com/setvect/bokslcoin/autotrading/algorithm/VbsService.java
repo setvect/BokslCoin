@@ -24,7 +24,7 @@ import java.util.List;
 @Service("vbs")
 @Slf4j
 @RequiredArgsConstructor
-public class VolatilityBreakthroughStrategy implements CoinTrading {
+public class VbsService implements CoinTrading {
     /**
      * 매수 가능 시작 시간
      */

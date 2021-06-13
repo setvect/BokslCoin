@@ -106,7 +106,9 @@ gradle makeInstallFile
 
 ## 1.6. 백테스트
 - 과거 데이터를 사용해 만든 알고리즘을 검증
-- `VbsBacktest.java` 변동성 돌파 전략 백테스트 소스코드
+- `VbsBacktest1.java` 변동성 돌파 전략 백테스트 소스코드
+  - 소스코드상에 변수값을 조절해서 테스트 결과 얻음
+- `VbsStopBacktest.java` 변동성 돌파 전략 + 손절/익절 백테스트 소스코드
   - 소스코드상에 변수값을 조절해서 테스트 결과 얻음
 
 

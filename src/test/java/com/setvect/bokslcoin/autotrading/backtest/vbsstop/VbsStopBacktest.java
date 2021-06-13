@@ -51,7 +51,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
-public class VbsStopBacktest1 {
+public class VbsStopBacktest {
     @Mock
     private AccountService accountService;
 

@@ -16,8 +16,8 @@ public class TradingScheduleService {
 
     public TradingScheduleService(
             ApplicationContext context,
-            @Value("${com.setvect.bokslcoin.autotrading.algorithm.name}") String name, @Value("com.setvect.bokslcoin.autotrading.enable") String enable) {
-        this.enable = Boolean.getBoolean(enable);
+            @Value("${com.setvect.bokslcoin.autotrading.algorithm.name}") String name, @Value("${com.setvect.bokslcoin.autotrading.enable}") String enable) {
+        this.enable = Boolean.parseBoolean(enable);
         this.conCoinTrading = (CoinTrading) context.getBean(name);
     }
 

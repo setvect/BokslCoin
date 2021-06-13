@@ -31,7 +31,7 @@
             <appender-ref ref="FILE" />
             <appender-ref ref="STDOUT" />
         </root>
-        <logger name="com.setvect.bokslcoin" level="INFO" additivity="false">
+        <logger name="com.setvect.bokslcoin" level="DEBUG" additivity="false">
             <appender-ref ref="FILE" />
             <appender-ref ref="STDOUT" />
         </logger>
