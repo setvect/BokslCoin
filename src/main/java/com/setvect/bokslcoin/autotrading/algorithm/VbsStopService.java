@@ -78,7 +78,7 @@ public class VbsStopService implements CoinTrading {
      */
     private boolean tradeCompleteOfPeriod;
 
-    private int periodIdx = 0;
+    private int periodIdx = -1;
     /**
      * 매수 목표 주가, 해당 가격 이상이면 매수
      */

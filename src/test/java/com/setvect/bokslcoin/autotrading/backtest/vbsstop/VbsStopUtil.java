@@ -49,17 +49,17 @@ public class VbsStopUtil {
         report.append(String.format("실현 수익\t %,.2f%%", testAnalysis.getRealYield() * 100) + "\n");
         report.append(String.format("실현 MDD\t %,.2f%%", testAnalysis.getRealMdd() * 100) + "\n");
         report.append("\n\n-----------\n");
-        report.append(String.format("변동성 비율\t %,.2f", condition.getK()) + "\n");
-        report.append(String.format("투자비율\t %,.2f%%", condition.getInvestRatio() * 100) + "\n");
         report.append(String.format("분석기간\t %s", condition.getRange()) + "\n");
+        report.append(String.format("분석주기\t %s", condition.getTradePeriod()) + "\n");
         report.append(String.format("대상 코인\t %s", condition.getMarket()) + "\n");
+        report.append(String.format("변동성 비율(K)\t %,.2f", condition.getK()) + "\n");
+        report.append(String.format("투자비율\t %,.2f%%", condition.getInvestRatio() * 100) + "\n");
         report.append(String.format("최초 투자금액\t %,f", condition.getCash()) + "\n");
         report.append(String.format("매매 마진\t %,f", condition.getTradeMargin()) + "\n");
         report.append(String.format("매수 수수료\t %,.2f%%", condition.getFeeBid() * 100) + "\n");
         report.append(String.format("매도 수수료\t %,.2f%%", condition.getFeeAsk() * 100) + "\n");
         report.append(String.format("손절\t %,.2f%%", condition.getLoseStopRate() * 100) + "\n");
         report.append(String.format("익절\t %,.2f%%", condition.getGainStopRate() * 100) + "\n");
-        report.append(String.format("분석주기\t %s", condition.getTradePeriod()) + "\n");
 
 
         File reportFile = new File("./backtest-result", reportFileName);

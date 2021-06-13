@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.io.File;
-
 /**
  * 변동성 돌파 + 손절 + 익절 전략 변수
  */
@@ -47,4 +45,8 @@ public class VbsStopCondition {
     private final double gainStopRate;
     private final VbsStopService.TradePeriod tradePeriod;
 
+    /**
+     * 조건에 대한 설명. 리포트에서 사용하기 위함
+     */
+    private final String comment;
 }
