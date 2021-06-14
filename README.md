@@ -65,9 +65,10 @@ com:
             # 손절 매도
             loseStopRate: 0.05
             # 트레일링 스탑 진입점
-            gainStopRate: 0.1
-            # gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 매도
-            trailingStopRate: 0.7
+            gainStopRate: 0.03
+             # gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 시장가 매도
+             # 예를 들어 trailingStopRate 값이 0.02일 때 고점 수익률이 12%인 상태에서 10%미만으로 떨어지면 시장가 매도
+            trailingStopRate: 0.02
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_1440
 ```
@@ -81,7 +82,7 @@ com:
          ACCESS_KEY=엑세스키;SECRET_KEY=보안키
          ```
 1. Active Profiles: `local`
-1. `UpbitAutoTradingApplication` 클래스 실행
+1. `BokslCoinApplication` 클래스 실행
 
 ## 1.2. 빌드
 
@@ -137,6 +138,7 @@ gradle makeInstallFile
 2. 매수 목표가를 돌파하면 시장가 매수
 3. 매수가 대비 손절 또는 익절 수익이 나면 시장가 매도
 4. 당일 장이 끝나는 시점에 매수 상태이면 시장가 매도
+5. 매매 주기에 매매는 2번 이상 이루어 지지 않음
 
 ### 1.4.3. 변동성 돌파전략 + 손절 + 트레일링 스탑 `알고리즘 이름: vbsTrailingStop`
 1. 매수 목표가 구함
@@ -144,6 +146,8 @@ gradle makeInstallFile
 2. 매수 목표가를 돌파하면 시장가 매수
 3. 매수가 대비 수익률이 손절 가격 이하로 떨어지면 매도
 4. 매수가 대비 수익룰이 트레일링 스탑 진입점에 돌파 하면 [트레일링 스탑](https://m.blog.naver.com/scruw/221976012878) 알고리즘 적용하여 시장가 매도
+5. 매도 시간이 되고 현재 수익율이 `손절율`과 `트레일링 스탑`진입점 사이이면 시장가 매도
+6. 매매 주기에 매매는 2번 이상 이루어 지지 않음
 
 ## 1.5. 시세 데이터 클로링
 - `Crawling.java`를 사용해 원하는 코인의 일봉 데이터를 수집할 수 있음

@@ -5,10 +5,11 @@ build/
 !**/src/test/**/build/
 logs
 gradle.properties
+!backtest-result/.keep
 backtest-result/*.xlsx
 backtest-result/*.xls
 backtest-result/*.txt
-backtest-result/old/
+backtest-result/**
 /craw-data/minute/
 temp
 

@@ -34,7 +34,7 @@ public interface TradeEvent {
      * @param tradePrice 매도 당시 가격
      * @param reason     매도 이유
      */
-    void ask(String market, double balance, double tradePrice, VbsStopService.AskReason reason);
+    void ask(String market, double balance, double tradePrice, AskReason reason);
 
     /**
      * @param targetPrice 매수 목표가

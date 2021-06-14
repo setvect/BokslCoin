@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
+package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
 
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
@@ -12,7 +12,7 @@ import lombok.ToString;
 @Builder
 @Getter
 @ToString
-public class VbsStopCondition {
+public class VbsTrailingStopCondition {
     // 변동성 돌파 판단 비율
     private final double k;
     // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -43,8 +43,13 @@ public class VbsStopCondition {
      * 예를 들어 0.1이면 수익율이 10%가 되면 익절 매도
      */
     private final double gainStopRate;
-    private final TradePeriod tradePeriod;
+    /**
+     * gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 시장가 매도
+     * 예를 들어 trailingStopRate 값이 0.02일 때 고점 수익률이 12%인 상태에서 10%미만으로 떨어지면 시장가 매도
+     */
+    private final double trailingStopRate;
 
+    private final TradePeriod tradePeriod;
     /**
      * 조건에 대한 설명. 리포트에서 사용하기 위함
      */

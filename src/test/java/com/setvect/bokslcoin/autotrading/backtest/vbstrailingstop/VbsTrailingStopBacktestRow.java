@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
+package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.model.Candle;
@@ -11,7 +11,7 @@ import lombok.Setter;
  */
 @Setter
 @Getter
-public class VbsStopBacktestRow {
+public class VbsTrailingStopBacktestRow {
     private Candle candle;
     // 목표가1
     private double targetPrice;
@@ -28,13 +28,21 @@ public class VbsStopBacktestRow {
     // 매매 수수료
     private double feePrice;
     private AskReason askReason;
+    /**
+     * 트레일링 스탑 진입 여부
+     */
+    private boolean trailingTrigger;
+    /**
+     * 최고 수익률
+     */
+    private double highYield;
 
     /**
      * 직전 캔들 종가
      */
     private Double beforeTradePrice = Double.valueOf(0);
 
-    public VbsStopBacktestRow(Candle candle) {
+    public VbsTrailingStopBacktestRow(Candle candle) {
         this.candle = candle;
     }
 
@@ -83,10 +91,15 @@ public class VbsStopBacktestRow {
     public String toString() {
         String dateKst = DateUtil.formatDateTime(candle.getCandleDateTimeKst());
         String dateUtc = DateUtil.formatDateTime(candle.getCandleDateTimeUtc());
-        return String.format("날짜(KST): %s, 날짜(UTC): %s, 시가: %,.0f, 고가:%,.0f, 저가:%,.0f, 종가:%,.0f, 직전 종가:%,.0f, 단위 수익률: %,.2f%%, 매수 목표가: %,.0f, 매매여부: %s, 매수 체결 가격: %,.0f, 매도 체결 가격: %,.0f, 매도 이유: %s, 실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 수수료: %,.0f, 투자 결과: %,.0f, 현금 + 투자결과 - 수수료: %,.0f",
-                dateKst, dateUtc, candle.getOpeningPrice()
-                , candle.getHighPrice(),
-                candle.getLowPrice(), candle.getTradePrice(), beforeTradePrice, getCandleYield() * 100,
-                targetPrice, trade, bidPrice, askPrice, askReason == null ? "" : askReason, getRealYield() * 100, investmentAmount, cash, getGains(), feePrice, getInvestResult(), getFinalResult());
+        return String.format("날짜(KST): %s, 날짜(UTC): %s, 시가: %,.0f, 고가:%,.0f, 저가:%,.0f, " +
+                        "종가:%,.0f, 직전 종가:%,.0f, 단위 수익률: %,.2f%%, 매수 목표가: %,.0f, 매매여부: %s, " +
+                        "매수 체결 가격: %,.0f, 트레일링 스탑 진입: %s, 최고수익률: %,.2f%%, 매도 체결 가격: %,.0f, 매도 이유: %s, " +
+                        "실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 수수료: %,.0f, " +
+                        "투자 결과: %,.0f, 현금 + 투자결과 - 수수료: %,.0f",
+                dateKst, dateUtc, candle.getOpeningPrice(), candle.getHighPrice(), candle.getLowPrice(),
+                candle.getTradePrice(), beforeTradePrice, getCandleYield() * 100, targetPrice, trade,
+                bidPrice, trailingTrigger, highYield * 100, askPrice, askReason == null ? "" : askReason,
+                getRealYield() * 100, investmentAmount, cash, getGains(), feePrice,
+                getInvestResult(), getFinalResult());
     }
 }

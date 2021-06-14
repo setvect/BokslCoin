@@ -1,11 +1,11 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbsstop;
+package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
-import com.setvect.bokslcoin.autotrading.algorithm.VbsStopService;
+import com.setvect.bokslcoin.autotrading.algorithm.VbsTrailingStopService;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
@@ -49,11 +49,10 @@ import java.util.stream.Collectors;
 
 import static org.mockito.Mockito.*;
 
-
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
-public class VbsStopBacktest {
+public class VbsTrailingStopBacktest {
     @Mock
     private AccountService accountService;
 
@@ -67,28 +66,28 @@ public class VbsStopBacktest {
     private TradeEvent tradeEvent = new BasicTradeEvent();
 
     @InjectMocks
-    private VbsStopService vbsStopService;
+    private VbsTrailingStopService vbsTrailingStopService;
 
-    private List<VbsStopBacktestRow> tradeHistory;
+    private List<VbsTrailingStopBacktestRow> tradeHistory;
 
     @Test
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
-        VbsStopCondition condition = VbsStopCondition.builder()
+        VbsTrailingStopCondition condition = VbsTrailingStopCondition.builder()
                 .k(0.5) // 변동성 돌파 판단 비율
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59"))// 분석 대상 기간 (UTC)
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"))// 분석 대상 기간 (UTC)
                 .market("KRW-BTC")// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
-                .loseStopRate(0.03) // 손절 라인
-                .gainStopRate(0.50) //익절 라인
+                .loseStopRate(0.50) // 손절 라인
+                .gainStopRate(0.50) //트레일링 스탑 진입점
+                .trailingStopRate(0.02) // 트레일링 스탑 하락 매도률
                 .tradePeriod(TradePeriod.P_1440) //매매 주기
                 .build();
 
-        injectionFieldValue(condition);
         // === 2. 백테스트 ===
         TestAnalysis testAnalysis = backtest(condition);
         System.out.printf("실제 수익: %,.2f%%\n", testAnalysis.getCoinYield() * 100);
@@ -97,17 +96,17 @@ public class VbsStopBacktest {
         System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getRealMdd() * 100);
 
         // === 3. 리포트 ===
-        VbsStopUtil.makeReport(condition, tradeHistory, testAnalysis);
+        VbsTrailingStopUtil.makeReport(condition, tradeHistory, testAnalysis);
 
         System.out.println("끝");
     }
 
     @Test
     public void multiBacktest() throws IOException {
-        String header = "분석기간,분석주기,대상 코인,변동성 비율(K),투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,손절,익절,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD";
+        String header = "분석기간,분석주기,대상 코인,변동성 비율(K),투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,손절,트레일링스탑 진입률,트레일링스탑 매도률,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD";
 
         StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
-        VbsStopCondition condition;
+        VbsTrailingStopCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
                 new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"),
@@ -119,7 +118,7 @@ public class VbsStopBacktest {
 
         for (DateRange range : rangeList) {
             for (double gainStopRate = 0.01; gainStopRate <= 0.20; gainStopRate = Math.round((gainStopRate + 0.01) * 100.0) / 100.0) {
-                condition = VbsStopCondition.builder()
+                condition = VbsTrailingStopCondition.builder()
                         .k(0.5) // 변동성 돌파 판단 비율
                         .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                         .range(range)// 분석 대상 기간 (UTC)
@@ -129,7 +128,8 @@ public class VbsStopBacktest {
                         .feeBid(0.0005) //  매수 수수료
                         .feeAsk(0.0005)//  매도 수수료
                         .loseStopRate(0.01) // 손절 라인
-                        .gainStopRate(gainStopRate) //익절 라인
+                        .gainStopRate(gainStopRate) // 트레일링 스탑 진입
+                        .trailingStopRate(0.02) // 트레일링 매도률
                         .tradePeriod(TradePeriod.P_1440) //매매 주기
                         .comment("-")
                         .build();
@@ -150,7 +150,7 @@ public class VbsStopBacktest {
         System.out.println("끝");
     }
 
-    private StringBuffer getReportRow(VbsStopCondition condition, TestAnalysis testAnalysis) {
+    private StringBuffer getReportRow(VbsTrailingStopCondition condition, TestAnalysis testAnalysis) {
         StringBuffer reportRow = new StringBuffer();
         reportRow.append(String.format("%s\t", condition.getRange()));
         reportRow.append(String.format("%s\t", condition.getTradePeriod()));
@@ -163,6 +163,7 @@ public class VbsStopBacktest {
         reportRow.append(String.format("%,.2f%%\t", condition.getFeeAsk() * 100));
         reportRow.append(String.format("%,.2f%%\t", condition.getLoseStopRate() * 100));
         reportRow.append(String.format("%,.2f%%\t", condition.getGainStopRate() * 100));
+        reportRow.append(String.format("%,.2f%%\t", condition.getTrailingStopRate() * 100));
         reportRow.append(String.format("%s\t", condition.getComment()));
         reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCoinYield() * 100));
         reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCoinMdd() * 100));
@@ -171,20 +172,20 @@ public class VbsStopBacktest {
         return reportRow;
     }
 
-    private TestAnalysis backtest(VbsStopCondition condition) {
+    private TestAnalysis backtest(VbsTrailingStopCondition condition) {
         injectionFieldValue(condition);
         tradeHistory = new ArrayList<>();
 
         CandleDataIterator candleDataIterator = initMock(condition);
         while (candleDataIterator.hasNext()) {
-            vbsStopService.apply();
+            vbsTrailingStopService.apply();
         }
         Mockito.reset(candleService, orderService, accountService, tradeEvent);
-        return VbsStopUtil.analysis(tradeHistory);
+        return VbsTrailingStopUtil.analysis(tradeHistory);
     }
 
 
-    private CandleDataIterator initMock(VbsStopCondition condition) {
+    private CandleDataIterator initMock(VbsTrailingStopCondition condition) {
         File dataDir = new File("./craw-data/minute");
         CandleDataIterator candleDataIterator = new CandleDataIterator(dataDir, condition);
         // CandleService
@@ -216,22 +217,36 @@ public class VbsStopBacktest {
             }
             return Optional.of(coinAccount);
         });
-        AtomicReference<VbsStopBacktestRow> backtestInfoAtom = new AtomicReference<>();
+        AtomicReference<VbsTrailingStopBacktestRow> backtestInfoAtom = new AtomicReference<>();
 
         // 새로운 매매주기
         doAnswer(invocation -> {
+            VbsTrailingStopBacktestRow beforeBacktestRow = backtestInfoAtom.get();
             Candle currentCandle = invocation.getArgument(0);
-            VbsStopBacktestRow backtestRow = new VbsStopBacktestRow(currentCandle);
-            backtestRow.setCash(Double.parseDouble(krwAccount.getBalance()));
-            backtestInfoAtom.set(backtestRow);
-            tradeHistory.add(backtestRow);
-            if (tradeHistory.size() >= 2) {
-                VbsStopBacktestRow beforeBacktestRow = tradeHistory.get(tradeHistory.size() - 2);
+            VbsTrailingStopBacktestRow backtestRow = new VbsTrailingStopBacktestRow(currentCandle);
+
+            if (beforeBacktestRow != null) {
+                //  매수는 했는데 매도를 하지 않았을 경우
+                if (beforeBacktestRow.getBidPrice() != 0 && beforeBacktestRow.getAskPrice() == 0) {
+                    // 아직 매도하지 않았으므로 매도 채결가격은 매수 채결가격과 동일하게
+                    beforeBacktestRow.setAskPrice(beforeBacktestRow.getBidPrice());
+                    beforeBacktestRow.setAskReason(AskReason.SKIP);
+
+                    backtestRow.setTrade(beforeBacktestRow.isTrade());
+                    backtestRow.setBidPrice(beforeBacktestRow.getBidPrice());
+                    backtestRow.setInvestmentAmount(beforeBacktestRow.getInvestmentAmount());
+                }
                 double beforeTradePrice = beforeBacktestRow.getCandle().getTradePrice();
                 backtestRow.setBeforeTradePrice(beforeTradePrice);
             }
 
+            backtestRow.setCash(Double.parseDouble(krwAccount.getBalance()));
+            backtestInfoAtom.set(backtestRow);
+            tradeHistory.add(backtestRow);
+
             log.debug("새로운 매매주기: {}", DateUtil.formatDateTime(currentCandle.getCandleDateTimeKst()));
+
+
             return null;
         }).when(tradeEvent).newPeriod(notNull());
 
@@ -239,25 +254,30 @@ public class VbsStopBacktest {
         // 시세 체크
         doAnswer(invocation -> {
             Candle currentCandle = invocation.getArgument(0);
-            VbsStopBacktestRow backtestRow = backtestInfoAtom.get();
+            VbsTrailingStopBacktestRow backtestRow = backtestInfoAtom.get();
             Candle candle = backtestRow.getCandle();
             candle.setLowPrice(Math.min(candle.getLowPrice(), currentCandle.getLowPrice()));
             candle.setHighPrice(Math.max(candle.getHighPrice(), currentCandle.getHighPrice()));
             candle.setTradePrice(currentCandle.getTradePrice());
+            backtestRow.setHighYield(Math.max(backtestRow.getHighYield(), vbsTrailingStopService.getHighYield()));
+            if (vbsTrailingStopService.isTrailingTrigger()) {
+                backtestRow.setTrailingTrigger(true);
+            }
 
             return null;
         }).when(tradeEvent).check(notNull());
 
+        // 목표가 등록
         doAnswer(invocation -> {
             double targetPrice = invocation.getArgument(0);
-            VbsStopBacktestRow backtestRow = backtestInfoAtom.get();
+            VbsTrailingStopBacktestRow backtestRow = backtestInfoAtom.get();
             backtestRow.setTargetPrice(targetPrice);
             return null;
         }).when(tradeEvent).registerTargetPrice(anyDouble());
 
         // 매수
         doAnswer(invocation -> {
-            VbsStopBacktestRow backtestRow = backtestInfoAtom.get();
+            VbsTrailingStopBacktestRow backtestRow = backtestInfoAtom.get();
             double tradePrice = invocation.getArgument(1);
             double bidPrice = tradePrice + condition.getTradeMargin();
             coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(bidPrice));
@@ -295,7 +315,7 @@ public class VbsStopBacktest {
             coinAccount.setBalance("0");
             coinAccount.setAvgBuyPrice(null);
 
-            VbsStopBacktestRow backtestRow = backtestInfoAtom.get();
+            VbsTrailingStopBacktestRow backtestRow = backtestInfoAtom.get();
             backtestRow.setAskPrice(askPrice);
             backtestRow.setAskReason(invocation.getArgument(3));
             backtestRow.setFeePrice(backtestRow.getFeePrice() + fee);
@@ -304,26 +324,27 @@ public class VbsStopBacktest {
         return candleDataIterator;
     }
 
-    private void injectionFieldValue(VbsStopCondition condition) {
-        ReflectionTestUtils.setField(vbsStopService, "market", condition.getMarket());
-        ReflectionTestUtils.setField(vbsStopService, "k", condition.getK());
-        ReflectionTestUtils.setField(vbsStopService, "investRatio", condition.getInvestRatio());
-        ReflectionTestUtils.setField(vbsStopService, "loseStopRate", condition.getLoseStopRate());
-        ReflectionTestUtils.setField(vbsStopService, "gainStopRate", condition.getGainStopRate());
-        ReflectionTestUtils.setField(vbsStopService, "tradePeriod", condition.getTradePeriod());
-        ReflectionTestUtils.setField(vbsStopService, "periodIdx", -1);
+    private void injectionFieldValue(VbsTrailingStopCondition condition) {
+        ReflectionTestUtils.setField(vbsTrailingStopService, "market", condition.getMarket());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "k", condition.getK());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "investRatio", condition.getInvestRatio());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "loseStopRate", condition.getLoseStopRate());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "gainStopRate", condition.getGainStopRate());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "tradePeriod", condition.getTradePeriod());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "trailingStopRate", condition.getTrailingStopRate());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "periodIdx", -1);
     }
 
     class CandleDataIterator implements Iterator<CandleMinute> {
         private final File dataDir;
-        private final VbsStopCondition condition;
+        private final VbsTrailingStopCondition condition;
         private Iterator<CandleMinute> currentCandleIterator;
         private LocalDateTime bundleDate;
         private LocalDateTime currentUtc;
 
         private Queue<Candle> beforeData = new CircularFifoQueue<>(60 * 24 * 2);
 
-        public CandleDataIterator(File dataDir, VbsStopCondition condition) {
+        public CandleDataIterator(File dataDir, VbsTrailingStopCondition condition) {
             this.dataDir = dataDir;
             this.condition = condition;
             bundleDate = condition.getRange().getFrom();
