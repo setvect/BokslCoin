@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -65,31 +66,33 @@ public class Crawling {
     @Test
     public void 분봉수집() throws IOException, InterruptedException {
         makeSaveDir(SAVE_DIR_MINUTE);
-        String market = "KRW-BTC";
+        List<String> marketList = Arrays.asList("KRW-ETH", "KRW-XRP", "KRW-DOGE");
 
-        List<CandleMinute> acc = new ArrayList<>();
-        LocalDateTime to = null;
-        int month = LocalDateTime.now(ZoneId.of("UTC")).getMonth().getValue();
-        for (int i = 0; i < 13_000; i++) {
-            List<CandleMinute> data = candleService.getMinute(1, market, 200, to);
-            if (data.isEmpty()) {
-                break;
-            }
-            for (CandleMinute d : data) {
-                LocalDateTime candleDateTimeUtc = d.getCandleDateTimeUtc();
-                if (candleDateTimeUtc.getMonth().getValue() != month) {
-                    saveFileMinute(market, acc);
-                    acc.clear();
-                    month = candleDateTimeUtc.getMonth().getValue();
+        for (String market : marketList) {
+            List<CandleMinute> acc = new ArrayList<>();
+            LocalDateTime to = null;
+            int month = LocalDateTime.now(ZoneId.of("UTC")).getMonth().getValue();
+            for (int i = 0; i < 13_000; i++) {
+                List<CandleMinute> data = candleService.getMinute(1, market, 200, to);
+                if (data.isEmpty()) {
+                    break;
                 }
-                acc.add(d);
+                for (CandleMinute d : data) {
+                    LocalDateTime candleDateTimeUtc = d.getCandleDateTimeUtc();
+                    if (candleDateTimeUtc.getMonth().getValue() != month) {
+                        saveFileMinute(market, acc);
+                        acc.clear();
+                        month = candleDateTimeUtc.getMonth().getValue();
+                    }
+                    acc.add(d);
+                }
+                to = data.get(data.size() - 1).getCandleDateTimeUtc();
+                System.out.println(i + " 번째");
+                // API 횟수 제한 때문에 딜레이 적용
+                TimeUnit.MILLISECONDS.sleep(180);
             }
-            to = data.get(data.size() - 1).getCandleDateTimeUtc();
-            System.out.println(i + " 번째");
-            // API 횟수 제한 때문에 딜레이 적용
-            TimeUnit.MILLISECONDS.sleep(180);
+            saveFileMinute(market, acc);
         }
-        saveFileMinute(market, acc);
     }
 
     private void saveFileMinute(String market, List<CandleMinute> acc) throws IOException {

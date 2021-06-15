@@ -7,7 +7,7 @@ com:
   setvect:
     bokslcoin:
       autotrading:
-        enable: true
+        enable: false
         api:
           # 엑세스 키: 환경 변수 또는 직접 입력
           accessKey: ${ACCESS_KEY}
@@ -19,7 +19,7 @@ com:
           fixedDelay: 10000
         algorithm:
           # 매매 알고리즘 지정
-          name: vbs # vbs, vbsStop, vbsTrailingStop
+          name: vbsTrailingStop # vbs, vbsStop, vbsTrailingStop
           # 변동성 돌파 알고리즘 관련 설정값
           vbs:
             # 매수, 매도 대상 코인

@@ -140,7 +140,7 @@ public class VbsTrailingStopService implements CoinTrading {
             return;
         }
 
-        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, market, currentPrice));
+        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,.0f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, market, currentPrice));
 
         double balance = coinBalance.doubleValue();
         // 코인을 매수 했다면 매도 조건 판단
@@ -160,8 +160,11 @@ public class VbsTrailingStopService implements CoinTrading {
 
             // 매도 시간 파악
             AskReason reason = null;
-            // 트레링이 스탑 진입 판단
-            if (trailingTrigger) {
+            // 손절 판단
+            if (-this.loseStopRate >= rate) {
+                reason = AskReason.LOSS;
+            } else if (trailingTrigger) {
+                // 트레일링 스탑 하락 검증 판단
                 if (rate < highYield - trailingStopRate) {
                     reason = AskReason.GAIN;
                 }
@@ -169,10 +172,6 @@ public class VbsTrailingStopService implements CoinTrading {
             // 트레링이 스탑 진입 판단
             else if (this.gainStopRate <= rate) {
                 trailingTrigger = true;
-            }
-            // 손절 판단
-            else if (-this.loseStopRate >= rate) {
-                reason = AskReason.LOSS;
             }
             //  매도 시간
             else if (askRange.isBetween(nowKst)) {
@@ -184,7 +183,7 @@ public class VbsTrailingStopService implements CoinTrading {
             }
 
         } else if (bidRange.isBetween(nowKst) && !tradeCompleteOfPeriod) {
-            log.debug(String.format("%s 목표가: %,f\t현재가: %,f", market, targetPrice, currentPrice));
+            log.debug(String.format("%s 목표가: %,.0f\t현재가: %,.0f", market, targetPrice, currentPrice));
 
             if (targetPrice > currentPrice) {
                 return;
