@@ -149,7 +149,7 @@ public class VbsTrailingStopService implements CoinTrading {
             highYield = Math.max(highYield, rate);
 
             Account account = coinAccount.get();
-            log.info(String.format("매입단가: %,.0f, 현재가격: %,.0f, 투자금: %,.0f, 수익율: %.2f%%, 트레일링 스탑: %s, 최고 수익률: %.2f%%,",
+            log.debug(String.format("매입단가: %,.0f, 현재가격: %,.0f, 투자금: %,.0f, 수익율: %.2f%%, 트레일링 스탑: %s, 최고 수익률: %.2f%%,",
                     Double.valueOf(account.getAvgBuyPrice()),
                     candle.getTradePrice(),
                     getInvestCash(account),

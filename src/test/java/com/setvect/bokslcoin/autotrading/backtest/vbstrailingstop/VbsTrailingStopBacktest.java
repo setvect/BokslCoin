@@ -74,17 +74,28 @@ public class VbsTrailingStopBacktest {
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
         VbsTrailingStopCondition condition = VbsTrailingStopCondition.builder()
-                .k(0.5) // 변동성 돌파 판단 비율
-                .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"))// 분석 대상 기간 (UTC)
                 .market("KRW-BTC")// 대상 코인
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+//                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
+//                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
+//                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
+//                .range(new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59")) // 횡보+하락장
+//                .range(new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59")) // 횡보+하락장
+//                .range(new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59")) // 하락장1
+//                .range(new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59")) // 하락장2
+//                .range(new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59")) // 하락장3
+//                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
+//                .range(new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
+//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+                .k(0.5) // 변동성 돌파 판단 비율
+                .investRatio(0.9) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
-                .loseStopRate(0.50) // 손절 라인
-                .gainStopRate(0.50) //트레일링 스탑 진입점
-                .trailingStopRate(0.02) // 트레일링 스탑 하락 매도률
+                .loseStopRate(0.01) // 손절 라인
+                .gainStopRate(0.02) //트레일링 스탑 진입점
+                .trailingStopRate(0.04) // 트레일링 스탑 하락 매도률
                 .tradePeriod(TradePeriod.P_1440) //매매 주기
                 .build();
 
@@ -109,15 +120,24 @@ public class VbsTrailingStopBacktest {
         VbsTrailingStopCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
-                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"),
-                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"),
-                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"),
-                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"),
-                new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")
+                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
+                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
+                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
+                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장
+                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장
+                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
+                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
+                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
+                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
+                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
+                new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59") // 전체 기간
         );
 
+        int count = 0;
         for (DateRange range : rangeList) {
-            for (double gainStopRate = 0.01; gainStopRate <= 0.20; gainStopRate = Math.round((gainStopRate + 0.01) * 100.0) / 100.0) {
+            for (double loseStopRate = 0.01; loseStopRate <= 0.1; loseStopRate = Math.round((loseStopRate + 0.01) * 100.0) / 100.0) {
+//                for (double trailingStopRate = 0.01; trailingStopRate <= 0.1; trailingStopRate = Math.round((trailingStopRate + 0.01) * 100.0) / 100.0) {
+//                    for (double gainStopRate = 0.02; gainStopRate <= 0.10; gainStopRate = Math.round((gainStopRate + 0.02) * 100.0) / 100.0) {
                 condition = VbsTrailingStopCondition.builder()
                         .k(0.5) // 변동성 돌파 판단 비율
                         .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -127,9 +147,9 @@ public class VbsTrailingStopBacktest {
                         .tradeMargin(1_000)// 매매시 채결 가격 차이
                         .feeBid(0.0005) //  매수 수수료
                         .feeAsk(0.0005)//  매도 수수료
-                        .loseStopRate(0.01) // 손절 라인
-                        .gainStopRate(gainStopRate) // 트레일링 스탑 진입
-                        .trailingStopRate(0.02) // 트레일링 매도률
+                        .loseStopRate(loseStopRate) // 손절 라인
+                        .gainStopRate(0.02) // 트레일링 스탑 진입
+                        .trailingStopRate(0.04) // 트레일링 매도률
                         .tradePeriod(TradePeriod.P_1440) //매매 주기
                         .comment("-")
                         .build();
@@ -138,6 +158,12 @@ public class VbsTrailingStopBacktest {
                 TestAnalysis testAnalysis;
                 testAnalysis = backtest(condition);
                 report.append(getReportRow(condition, testAnalysis) + "\n");
+//                    }
+//                }
+                // -- 결과 저장 --
+                File reportFile = new File("./backtest-result", "변동성돌파,손절,익절_전략_백테스트_분석결과_" + (++count) + ".txt");
+                FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
+                System.out.println("결과 파일:" + reportFile.getName());
             }
         }
 
@@ -180,6 +206,15 @@ public class VbsTrailingStopBacktest {
         while (candleDataIterator.hasNext()) {
             vbsTrailingStopService.apply();
         }
+        // 맨 마지막에 매도가 이루어 지지 않으면 종가로 매도
+        VbsTrailingStopBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
+        if (lastBacktestRow.getAskPrice() == 0) {
+            lastBacktestRow.setAskPrice(lastBacktestRow.getCandle().getTradePrice());
+            lastBacktestRow.setFeePrice(lastBacktestRow.getInvestmentAmount() * condition.getFeeAsk());
+            lastBacktestRow.setAskReason(AskReason.TIME);
+        }
+
+
         Mockito.reset(candleService, orderService, accountService, tradeEvent);
         return VbsTrailingStopUtil.analysis(tradeHistory);
     }
@@ -307,10 +342,10 @@ public class VbsTrailingStopBacktest {
             double tradePrice = invocation.getArgument(2);
             double balance = Double.parseDouble(coinAccount.getBalance());
             double askPrice = tradePrice - condition.getTradeMargin();
-            double cash = askPrice * balance;
-            double fee = cash * condition.getFeeAsk();
+            double askAmount = askPrice * balance;
+            double fee = askAmount * condition.getFeeAsk();
 
-            double totalCash = Double.parseDouble(krwAccount.getBalance()) + cash - fee;
+            double totalCash = Double.parseDouble(krwAccount.getBalance()) + askAmount - fee;
             krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
             coinAccount.setBalance("0");
             coinAccount.setAvgBuyPrice(null);
