@@ -31,7 +31,7 @@ public class BasicTradeEvent implements TradeEvent {
 
     @Override
     public void ask(String market, double balance, double tradePrice, AskReason reason) {
-        log.info(String.format("★★★ 시장가 매도, 코인: %s 보유량: %,.0f, 현재가: %,.0f, 예상 금액: %,.0f, 매도이유: %s", market, balance, tradePrice, balance * tradePrice, reason));
+        log.info(String.format("★★★ 시장가 매도, 코인: %s 보유량: %f, 현재가: %,.0f, 예상 금액: %,.0f, 매도이유: %s", market, balance, tradePrice, balance * tradePrice, reason));
     }
 
     @Override
