@@ -14,6 +14,7 @@ import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
+import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
@@ -27,6 +28,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -54,6 +56,9 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("local")
 @Slf4j
 public class VbsStopBacktest {
+    @Autowired
+    private SlackMessageService slackMessageService;
+
     @Mock
     private AccountService accountService;
 
@@ -64,7 +69,7 @@ public class VbsStopBacktest {
     private OrderService orderService;
 
     @Spy
-    private TradeEvent tradeEvent = new BasicTradeEvent();
+    private TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
 
     @InjectMocks
     private VbsStopService vbsStopService;
@@ -249,11 +254,11 @@ public class VbsStopBacktest {
         }).when(tradeEvent).check(notNull());
 
         doAnswer(invocation -> {
-            double targetPrice = invocation.getArgument(0);
+            double targetPrice = invocation.getArgument(1);
             VbsStopBacktestRow backtestRow = backtestInfoAtom.get();
             backtestRow.setTargetPrice(targetPrice);
             return null;
-        }).when(tradeEvent).registerTargetPrice(anyDouble());
+        }).when(tradeEvent).registerTargetPrice(anyString(), anyDouble());
 
         // 매수
         doAnswer(invocation -> {

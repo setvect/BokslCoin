@@ -1,6 +1,16 @@
 package com.setvect.bokslcoin.autotrading.util;
 
+import lombok.SneakyThrows;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -9,6 +19,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 어플리케이션의 의존적인 유틸성 메소드
@@ -104,4 +115,33 @@ public class ApplicationUtil {
         return mdd;
     }
 
+    public static String request(String url, HttpRequestBase request) throws IOException {
+        HttpClient client = HttpClientBuilder.create().build();
+
+        HttpResponse response = client.execute(request);
+
+        int statusCode = response.getStatusLine().getStatusCode();
+        HttpEntity entity = response.getEntity();
+        String responseText = EntityUtils.toString(entity, "UTF-8");
+
+        if (statusCode != 200 && statusCode != 201) {
+            String message = String.format("Error, Status: %d, URL: %s, Message: %s", statusCode, url, responseText);
+            throw new RuntimeException(message);
+        }
+        return responseText;
+    }
+
+    public static String getQueryString(Map<String, String> params) {
+        String queryString = params.entrySet().stream()
+                .map(p -> p.getKey() + "=" + urlEncodeUTF8(p.getValue()))
+                .reduce((p1, p2) -> p1 + "&" + p2)
+                .orElse("");
+        return queryString;
+    }
+
+
+    @SneakyThrows
+    private static String urlEncodeUTF8(String s) {
+        return URLEncoder.encode(s, "UTF-8");
+    }
 }

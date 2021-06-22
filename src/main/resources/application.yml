@@ -7,6 +7,7 @@ com:
   setvect:
     bokslcoin:
       autotrading:
+        # true 매매 진행, false면 매매를 포함한 시세 확인을 하지 않음
         enable: false
         api:
           # 엑세스 키: 환경 변수 또는 직접 입력
@@ -62,3 +63,11 @@ com:
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_1440
 
+        slack:
+          # 이벤트 발생시 슬랙메시지 전달 여부
+          # 만약 슬렉 메시지를 받고 싶지 않으면 false로 셋팅 후 항목 token, channelId 값을 비워둠
+          enable: false
+          # 'xoxb'로 시작하는 슬렉 App oAuth Key
+          token:
+          # 메시지 전달 채널 ID
+          channelId:

@@ -3,6 +3,7 @@ package com.setvect.bokslcoin.autotrading.common.service;
 import com.google.gson.Gson;
 import com.setvect.bokslcoin.autotrading.AccessTokenMaker;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
+import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
@@ -58,7 +59,7 @@ public class ApiCaller {
             request.addHeader("Authorization", accessTokenMaker.makeToken(queryString));
         }
 
-        return request(url, request);
+        return ApplicationUtil.request(url, request);
     }
 
     @SneakyThrows
@@ -70,7 +71,7 @@ public class ApiCaller {
         request.setHeader("Content-Type", "application/json");
         request.addHeader("Authorization", accessTokenMaker.makeToken(queryString));
 
-        return request(url, request);
+        return ApplicationUtil.request(url, request);
     }
 
     /**
@@ -99,22 +100,9 @@ public class ApiCaller {
         String requestBody = new Gson().toJson(map);
         request.setEntity(new StringEntity(requestBody));
 
-        return request(url, request);
+        return ApplicationUtil.request(url, request);
     }
 
-    private static String request(String url, HttpRequestBase request) throws IOException {
-        HttpClient client = HttpClientBuilder.create().build();
-        HttpResponse response = client.execute(request);
-        int statusCode = response.getStatusLine().getStatusCode();
-        HttpEntity entity = response.getEntity();
-        String jsonText = EntityUtils.toString(entity, "UTF-8");
-
-        if (statusCode != 200 && statusCode != 201) {
-            String message = String.format("Error, Status: %d, URL: %s, Message: %s", statusCode, url, jsonText);
-            throw new RuntimeException(message);
-        }
-        return jsonText;
-    }
 
     private static String getQueryString(Map<String, String> params) {
         return params.entrySet().stream()

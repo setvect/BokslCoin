@@ -31,7 +31,11 @@
             <appender-ref ref="FILE" />
             <appender-ref ref="STDOUT" />
         </root>
-        <logger name="com.setvect.bokslcoin" level="DEBUG" additivity="false">
+        <!--apache http client 상세 로그를 보고 싶으면 DEBUG로 변경-->
+        <logger name="org.apache.http" level="INFO" additivity="false">
+            <appender-ref ref="STDOUT" />
+        </logger>
+        <logger name="com.setvect.bokslcoin" level="INFO" additivity="false">
             <appender-ref ref="FILE" />
             <appender-ref ref="STDOUT" />
         </logger>

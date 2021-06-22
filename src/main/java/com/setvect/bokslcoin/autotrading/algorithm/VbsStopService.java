@@ -107,7 +107,7 @@ public class VbsStopService implements CoinTrading {
             if (targetPrice == null) {
                 return;
             }
-            tradeEvent.registerTargetPrice(targetPrice);
+            tradeEvent.registerTargetPrice(market, targetPrice);
         }
         tradeEvent.check(candle);
         if (targetPrice == null) {

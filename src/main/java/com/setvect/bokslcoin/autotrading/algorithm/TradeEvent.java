@@ -39,5 +39,5 @@ public interface TradeEvent {
     /**
      * @param targetPrice 매수 목표가
      */
-    void registerTargetPrice(double targetPrice);
+    void registerTargetPrice(String market, double targetPrice);
 }

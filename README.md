@@ -10,68 +10,8 @@
 
 ## 1.1. 실행
 
-### 1.1.1. 설정 파일 `application.yml`
-
-```yaml
-com:
-  setvect:
-    bokslcoin:
-      autotrading:
-        enable: true
-        api:
-          # 엑세스 키: 환경 변수 또는 직접 입력
-          accessKey: ${ACCESS_KEY}
-          # 보안 키: 환경 변수 또는 직접 입력
-          secretKey: ${SECRET_KEY}
-          url: https://api.upbit.com
-        schedule:
-          # 시세 체크 주기
-          fixedDelay: 10000
-        algorithm:
-          # 매매 알고리즘 지정
-          name: vbs # vbs, vbsStop, vbsTrailingStop
-          # 변동성 돌파 알고리즘 관련 설정값
-          vbs:
-            # 매수, 매도 대상 코인
-            coin: KRW-BTC
-            # 변동성 돌파 판단 비율
-            k: 0.5
-            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-            rate: 0.5
-
-          # 변동성 돌파 + 손절/익절 알고리즘 관련 설정값
-          vbsStop:
-            # 매수, 매도 대상 코인
-            market: KRW-BTC
-            # 변동성 돌파 판단 비율
-            k: 0.5
-            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-            investRatio: 0.5
-            # 손절 매도
-            loseStopRate: 0.05
-            # 익절 매도
-            gainStopRate: 0.1
-            # 매매 주기(P_60, P_240, P_1440)
-            tradePeriod: P_1440
-
-          # 변동성 돌파 + 손절 + 트레일링 스탑 알고리즘 관련 설정값
-          vbsTrailingStop:
-            # 매수, 매도 대상 코인
-            market: KRW-BTC
-            # 변동성 돌파 판단 비율
-            k: 0.5
-            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-            investRatio: 0.5
-            # 손절 매도
-            loseStopRate: 0.05
-            # 트레일링 스탑 진입점
-            gainStopRate: 0.03
-             # gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 시장가 매도
-             # 예를 들어 trailingStopRate 값이 0.02일 때 고점 수익률이 12%인 상태에서 10%미만으로 떨어지면 시장가 매도
-            trailingStopRate: 0.02
-            # 매매 주기(P_60, P_240, P_1440)
-            tradePeriod: P_1440
-```
+### 1.1.1. 설정 파일 
+- [application.yml](src/main/resources/application.yml) 참고
 
 ### 1.1.2. IDE 환경에서 실행
 
@@ -161,6 +101,13 @@ gradle makeInstallFile
   - 소스코드상에 변수값을 조절해서 테스트 결과 얻음
 - `VbsTrailingStopBacktest.java` 변동성 돌파 전략 + 손절 + 트레일링 스탑 백테스트 소스코드
    - 소스코드상에 변수값을 조절해서 테스트 결과 얻음
+
+## 1.7. Slack 메시지
+- 아래와 같은 이벤트 발생 시 지정한 SlackBot을 통해 메시지 전송
+    - 새로운 매매 주기 진입 매수 목표가
+    - 매수 이벤트 발생 시
+    - 매도 이벤트 발생 시
+    - 어플리케이션에서 발생하는 오류
 
 ## 1.7. 참고
 
