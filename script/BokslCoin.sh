@@ -41,7 +41,7 @@ start() {
     return 0
   fi
 
-  nohup $JAVA -Dlogging.config=../conf/logback-spring.xml -Dspring.profiles.active=local -jar ../lib/BokslCoin-1.0.0.jar --spring.config.location=file:../conf/BokslCoin.yml > $OUT_FILE 2>&1 &
+  nohup $JAVA -Dlogging.config=../conf/logback-spring.xml -Dspring.profiles.active=local -jar ../lib/BokslCoin-0.2.0.jar --spring.config.location=file:../conf/BokslCoin.yml > $OUT_FILE 2>&1 &
   echo $! > ${RUNNING_PID}
 
   if isrunning; then
@@ -54,7 +54,7 @@ start() {
 }
 
 console() {
-  $JAVA -Dlogging.config=../conf/logback-spring.xml -Dspring.profiles.active=local -jar ../lib/BokslCoin-1.0.0.jar --spring.config.location=file:../conf/BokslCoin.yml
+  $JAVA -Dlogging.config=../conf/logback-spring.xml -Dspring.profiles.active=local -jar ../lib/BokslCoin-0.2.0.jar --spring.config.location=file:../conf/BokslCoin.yml
 }
 
 restart() {
