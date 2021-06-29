@@ -1,8 +1,8 @@
-package com.setvect.bokslcoin.autotrading.quotation.service;
+package com.setvect.bokslcoin.autotrading.quotation;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
-import com.setvect.bokslcoin.autotrading.common.service.ApiCaller;
+import com.setvect.bokslcoin.autotrading.common.ApiCaller;
 import com.setvect.bokslcoin.autotrading.model.Ticker;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.schedule.service;
+package com.setvect.bokslcoin.autotrading.schedule;
 
 import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;

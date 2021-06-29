@@ -1,11 +1,11 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
-import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
-import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
+import com.setvect.bokslcoin.autotrading.exchange.AccountService;
+import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.Ticker;
-import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
-import com.setvect.bokslcoin.autotrading.quotation.service.TickerService;
+import com.setvect.bokslcoin.autotrading.quotation.CandleService;
+import com.setvect.bokslcoin.autotrading.quotation.TickerService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;

@@ -1,9 +1,9 @@
-package com.setvect.bokslcoin.autotrading.exchange.service;
+package com.setvect.bokslcoin.autotrading.exchange;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.AccessTokenMaker;
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
-import com.setvect.bokslcoin.autotrading.common.service.ApiCaller;
+import com.setvect.bokslcoin.autotrading.common.ApiCaller;
 import com.setvect.bokslcoin.autotrading.model.OrderChance;
 import com.setvect.bokslcoin.autotrading.model.OrderHistory;
 import com.setvect.bokslcoin.autotrading.model.OrderResult;

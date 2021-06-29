@@ -7,13 +7,13 @@ import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.VbsTrailingStopService;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
-import com.setvect.bokslcoin.autotrading.exchange.service.AccountService;
-import com.setvect.bokslcoin.autotrading.exchange.service.OrderService;
+import com.setvect.bokslcoin.autotrading.exchange.AccountService;
+import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
-import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
+import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
@@ -80,7 +80,8 @@ public class VbsTrailingStopBacktest {
         // === 1. 변수값 설정 ===
         VbsTrailingStopCondition condition = VbsTrailingStopCondition.builder()
                 .market("KRW-BTC")// 대상 코인
-                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+//                .range(new DateRange("2021-06-01T00:00:00", "2021-06-08T23:59:59"))
+//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -92,14 +93,15 @@ public class VbsTrailingStopBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59")) // 하락장3
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
 //                .range(new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
-//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
                 .k(0.5) // 변동성 돌파 판단 비율
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                .market("KRW-BTC")// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
-                .tradeMargin(0)// 매매시 채결 가격 차이
+                .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
-                .loseStopRate(0.02) // 손절 라인
+                .loseStopRate(0.05) // 손절 라인
                 .gainStopRate(0.02) //트레일링 스탑 진입점
                 .trailingStopRate(0.04) // 트레일링 스탑 하락 매도률
                 .tradePeriod(TradePeriod.P_1440) //매매 주기
@@ -156,9 +158,9 @@ public class VbsTrailingStopBacktest {
                     .tradeMargin(1_000)// 매매시 채결 가격 차이
                     .feeBid(0.0005) //  매수 수수료
                     .feeAsk(0.0005)//  매도 수수료
-                    .loseStopRate(0.02) // 손절 라인
-                    .gainStopRate(0.02) // 트레일링 스탑 진입
-                    .trailingStopRate(0.04) // 트레일링 매도률
+                    .loseStopRate(0.05) // 손절 라인
+                    .gainStopRate(0.02) //트레일링 스탑 진입점
+                    .trailingStopRate(0.05) // 트레일링 스탑 하락 매도률
                     .tradePeriod(TradePeriod.P_1440) //매매 주기
                     .comment("-")
                     .build();
@@ -167,6 +169,8 @@ public class VbsTrailingStopBacktest {
             TestAnalysis testAnalysis;
             testAnalysis = backtest(condition);
             report.append(getReportRow(condition, testAnalysis) + "\n");
+            VbsTrailingStopUtil.makeReport(condition, tradeHistory, testAnalysis);
+
             // -- 결과 저장 --
             File reportFile = new File("./backtest-result", "변동성돌파,손절,익절_전략_백테스트_분석결과_" + (++count) + ".txt");
             FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");

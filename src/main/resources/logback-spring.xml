@@ -2,7 +2,7 @@
 <configuration scan="true" scanPeriod="30 seconds">
 
     <property name="LOG_PATH" value="./logs/"/>
-    <property name="LOG_FILE_MAX_HISTORY" value="365"/>
+    <property name="LOG_FILE_MAX_HISTORY" value="20"/>
     <property name="LOG_PATH_NAME" value="${LOG_PATH}/bokslcoin.log" />
     <property name="LOG_PATTERN" value="%-5level %d{yy-MM-dd HH:mm:ss}[%thread] [%logger{20}:%line] - %msg%n"/>
 

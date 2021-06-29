@@ -4,7 +4,7 @@ import com.google.gson.Gson;
 import com.setvect.bokslcoin.autotrading.TestCommonUtil;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
-import com.setvect.bokslcoin.autotrading.quotation.service.CandleService;
+import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

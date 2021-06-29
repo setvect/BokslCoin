@@ -13,7 +13,7 @@ import lombok.Setter;
 @Getter
 public class VbsTrailingStopBacktestRow {
     private Candle candle;
-    // 목표가1
+    // 목표가
     private double targetPrice;
     // 매매 여부
     private boolean trade;
@@ -69,7 +69,7 @@ public class VbsTrailingStopBacktestRow {
 
 
     /**
-     * 시가에 매도 해서 종가에 팔았을 때 얻는 수익률
+     * 직전 캔들 종가에 매수 해서 종가에 매도 했을 때 얻는 수익률
      *
      * @return 캔들상 수익률<br>
      */

@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.common.service;
+package com.setvect.bokslcoin.autotrading.common;
 
 import com.google.gson.Gson;
 import com.setvect.bokslcoin.autotrading.AccessTokenMaker;
