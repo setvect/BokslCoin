@@ -1,6 +1,6 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
 
-import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.AskReason;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.Getter;

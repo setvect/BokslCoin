@@ -1,5 +1,7 @@
-package com.setvect.bokslcoin.autotrading.algorithm;
+package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
+import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
+import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
@@ -10,6 +12,7 @@ import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,12 +27,12 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 변동성 돌파 전략 + 손절, 익절 알고리즘
+ * 변동성 돌파 + 손절 + 트레일링 스탑 알고리즘
  */
-@Service("vbsStop")
+@Service("vbsTrailingStop")
 @Slf4j
 @RequiredArgsConstructor
-public class VbsStopService implements CoinTrading {
+public class VbsTrailingStopService implements CoinTrading {
     private final AccountService accountService;
     private final CandleService candleService;
     private final OrderService orderService;
@@ -38,29 +41,45 @@ public class VbsStopService implements CoinTrading {
     /**
      * 매수, 매도 대상 코인
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.market}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.market}")
     private String market;
 
     /**
      * 변동성 돌파 판단 비율
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.k}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.k}")
     private double k;
 
     /**
      * 총 현금을 기준으로 투자 비율
      * 1은 100%, 0.5은 50% 투자
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.investRatio}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.investRatio}")
     private double investRatio;
 
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.loseStopRate}")
+    /**
+     * 손절 매도
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.loseStopRate}")
     private double loseStopRate;
 
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.gainStopRate}")
+    /**
+     * 트레일링 스탑 진입점
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.gainStopRate}")
     private double gainStopRate;
 
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsStop.tradePeriod}")
+    /**
+     * gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 시장가 매도
+     * 예를 들어 trailingStopRate 값이 0.02일 때 고점 수익률이 12%인 상태에서 10%미만으로 떨어지면 시장가 매도
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.trailingStopRate}")
+    private double trailingStopRate;
+
+    /**
+     * 매매 주기
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.tradePeriod}")
     private TradePeriod tradePeriod;
 
     /**
@@ -81,7 +100,16 @@ public class VbsStopService implements CoinTrading {
      * 매수 목표 주가, 해당 가격 이상이면 매수
      */
     private Double targetPrice;
-
+    /**
+     * 트레일링 진입점 돌파 여부
+     */
+    @Getter
+    private boolean trailingTrigger = false;
+    /**
+     * 매수 이후 고점 수익률
+     */
+    @Getter
+    private double highYield = 0;
 
     @Override
     public void apply() {
@@ -114,34 +142,42 @@ public class VbsStopService implements CoinTrading {
             return;
         }
 
-        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, market, currentPrice));
+        log.debug(String.format("현재 시간: %s, 매수 시간: %s, 매도 시간: %s, %s: %,.0f", DateUtil.formatDateTime(LocalDateTime.now()), bidRange, askRange, market, currentPrice));
 
         double balance = coinBalance.doubleValue();
         // 코인을 매수 했다면 매도 조건 판단
         if (balance > 0.00001) {
             double rate = getYield(candle, coinAccount);
+            highYield = Math.max(highYield, rate);
+
             Account account = coinAccount.get();
-            log.debug(String.format("매입단가: %,.0f, 현재가격: %,.0f, 투자금: %,.0f, 수익율: %.2f%%",
+            log.debug(String.format("매입단가: %,.0f, 현재가격: %,.0f, 투자금: %,.0f, 수익율: %.2f%%, 트레일링 스탑: %s, 최고 수익률: %.2f%%,",
                     Double.valueOf(account.getAvgBuyPrice()),
                     candle.getTradePrice(),
                     getInvestCash(account),
-                    rate * 100));
+                    rate * 100,
+                    trailingTrigger,
+                    highYield * 100
+            ));
+
             // 매도 시간 파악
             AskReason reason = null;
-            if (askRange.isBetween(nowKst)) {
-                reason = AskReason.TIME;
-            }
-            // 이익인 경우
-            else if (rate > 0) {
-                if (this.gainStopRate <= rate) {
+            // 손절 판단
+            if (-this.loseStopRate >= rate) {
+                reason = AskReason.LOSS;
+            } else if (trailingTrigger) {
+                // 트레일링 스탑 하락 검증 판단
+                if (rate < highYield - trailingStopRate) {
                     reason = AskReason.GAIN;
                 }
             }
-            // 손실인 경우
-            else {
-                if (this.loseStopRate <= -rate) {
-                    reason = AskReason.LOSS;
-                }
+            // 트레링이 스탑 진입 판단
+            else if (this.gainStopRate <= rate) {
+                trailingTrigger = true;
+            }
+            //  매도 시간
+            else if (askRange.isBetween(nowKst)) {
+                reason = AskReason.TIME;
             }
 
             if (reason != null) {
@@ -149,10 +185,9 @@ public class VbsStopService implements CoinTrading {
             }
 
         } else if (bidRange.isBetween(nowKst) && !tradeCompleteOfPeriod) {
-            log.debug(String.format("%s 목표가: %,f\t현재가: %,f", market, targetPrice, currentPrice));
+            log.debug(String.format("%s 목표가: %,.0f\t현재가: %,.0f", market, targetPrice, currentPrice));
 
             if (targetPrice > currentPrice) {
-//                log.debug("목표가 도달하지 않음");
                 return;
             }
             doBid(currentPrice);
@@ -179,6 +214,8 @@ public class VbsStopService implements CoinTrading {
         orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
         tradeEvent.ask(market, balance, currentPrice, reason);
         tradeCompleteOfPeriod = true;
+        trailingTrigger = false;
+        highYield = 0;
     }
 
     private double getYield(CandleMinute candle, Optional<Account> account) {

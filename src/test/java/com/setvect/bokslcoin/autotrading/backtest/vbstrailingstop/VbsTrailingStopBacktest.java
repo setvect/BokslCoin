@@ -1,11 +1,11 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
 
 import com.google.gson.reflect.TypeToken;
-import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
-import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
-import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.AskReason;
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.BasicTradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
-import com.setvect.bokslcoin.autotrading.algorithm.VbsTrailingStopService;
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.VbsTrailingStopService;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
@@ -158,8 +158,8 @@ public class VbsTrailingStopBacktest {
                     .tradeMargin(1_000)// 매매시 채결 가격 차이
                     .feeBid(0.0005) //  매수 수수료
                     .feeAsk(0.0005)//  매도 수수료
-                    .loseStopRate(0.05) // 손절 라인
-                    .gainStopRate(0.02) //트레일링 스탑 진입점
+                    .loseStopRate(0.10) // 손절 라인
+                    .gainStopRate(0.05) //트레일링 스탑 진입점
                     .trailingStopRate(0.05) // 트레일링 스탑 하락 매도률
                     .tradePeriod(TradePeriod.P_1440) //매매 주기
                     .comment("-")

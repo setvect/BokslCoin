@@ -1,5 +1,7 @@
-package com.setvect.bokslcoin.autotrading.algorithm;
+package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.AskReason;
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;

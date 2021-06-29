@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.algorithm;
+package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 
