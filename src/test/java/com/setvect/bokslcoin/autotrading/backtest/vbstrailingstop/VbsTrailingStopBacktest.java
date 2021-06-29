@@ -2,7 +2,7 @@ package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.AskReason;
-import com.setvect.bokslcoin.autotrading.algorithm.vbs.BasicTradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.VbsTrailingStopService;

@@ -1,6 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
-import com.setvect.bokslcoin.autotrading.model.CandleMinute;
+import com.setvect.bokslcoin.autotrading.model.Candle;
 
 /**
  * 매매시 발생하는 이벤트
@@ -12,14 +12,14 @@ public interface TradeEvent {
      *
      * @param candle 분봉
      */
-    void newPeriod(CandleMinute candle);
+    void newPeriod(Candle candle);
 
     /**
      * 시세 체크
      *
      * @param candle 분봉
      */
-    void check(CandleMinute candle);
+    void check(Candle candle);
 
     /**
      * @param market     코인
@@ -27,6 +27,13 @@ public interface TradeEvent {
      * @param bidPrice   매수 금액
      */
     void bid(String market, double tradePrice, double bidPrice);
+
+    /**
+     * @param market     코인
+     * @param balance    매도 물량
+     * @param tradePrice 매도 당시 가격
+     */
+    void ask(String market, double balance, double tradePrice);
 
     /**
      * @param market     코인
@@ -40,4 +47,6 @@ public interface TradeEvent {
      * @param targetPrice 매수 목표가
      */
     void registerTargetPrice(String market, double targetPrice);
+
+
 }

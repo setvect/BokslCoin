@@ -1,8 +1,8 @@
-package com.setvect.bokslcoin.autotrading.algorithm.vbs;
+package com.setvect.bokslcoin.autotrading.algorithm;
 
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
-import com.setvect.bokslcoin.autotrading.model.CandleMinute;
+import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.RequiredArgsConstructor;
@@ -21,33 +21,40 @@ public class BasicTradeEvent implements TradeEvent {
     private final SlackMessageService slackMessageService;
 
     @Override
-    public void newPeriod(CandleMinute candle) {
+    public void newPeriod(Candle candle) {
         LocalDateTime localDateTime = candle.getCandleDateTimeUtc();
         log.info("새로운 매매주기: {}", DateUtil.formatDateTime(localDateTime));
     }
 
     @Override
-    public void check(CandleMinute candle) {
+    public void check(Candle candle) {
         //notting
     }
 
     @Override
     public void bid(String market, double tradePrice, double bidPrice) {
-        String message = String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,.0f, 매수 금액: %,.0f,", market, tradePrice, bidPrice);
+        String message = String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,.2f, 매수 금액: %,.0f,", market, tradePrice, bidPrice);
+        log.info(message);
+        slackMessageService.sendMessage(message);
+    }
+
+    @Override
+    public void ask(String market, double balance, double tradePrice) {
+        String message = String.format("★★★ 시장가 매도, 코인: %s, 보유량: %f, 현재가: %,.2f, 예상 금액: %,.0f", market, balance, tradePrice, balance * tradePrice);
         log.info(message);
         slackMessageService.sendMessage(message);
     }
 
     @Override
     public void ask(String market, double balance, double tradePrice, AskReason reason) {
-        String message = String.format("★★★ 시장가 매도, 코인: %s, 보유량: %f, 현재가: %,.0f, 예상 금액: %,.0f, 매도이유: %s", market, balance, tradePrice, balance * tradePrice, reason);
+        String message = String.format("★★★ 시장가 매도, 코인: %s, 보유량: %f, 현재가: %,.2f, 예상 금액: %,.0f, 매도이유: %s", market, balance, tradePrice, balance * tradePrice, reason);
         log.info(message);
         slackMessageService.sendMessage(message);
     }
 
     @Override
     public void registerTargetPrice(String market, double targetPrice) {
-        String message = String.format("코인: %s, 매수 목표가: %,.0f ", market, targetPrice);
+        String message = String.format("코인: %s, 매수 목표가: %,.2f ", market, targetPrice);
         log.info(message);
         slackMessageService.sendMessage(message);
     }

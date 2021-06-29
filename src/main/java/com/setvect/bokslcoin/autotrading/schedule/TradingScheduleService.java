@@ -24,7 +24,7 @@ public class TradingScheduleService {
         this.slackMessageService = context.getBean(SlackMessageService.class);
     }
 
-    @Scheduled(fixedRateString = "${com.setvect.bokslcoin.autotrading.schedule.fixedDelay}", initialDelay = 1000)
+    @Scheduled(fixedDelayString = "${com.setvect.bokslcoin.autotrading.schedule.fixedDelay}", initialDelay = 1000)
     public void scheduleCheck() {
         if (!enable) {
             log.debug("skip");

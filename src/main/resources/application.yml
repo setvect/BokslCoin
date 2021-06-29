@@ -20,7 +20,7 @@ com:
           fixedDelay: 10000
         algorithm:
           # 매매 알고리즘 지정
-          name: vbsTrailingStop # vbs, vbsStop, vbsTrailingStop
+          name: mabs # vbsTrailingStop, mabs
           # 변동성 돌파 + 손절 + 트레일링 스탑 알고리즘 관련 설정값
           vbsTrailingStop:
             # 매수, 매도 대상 코인
@@ -38,6 +38,22 @@ com:
             trailingStopRate: 0.02
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_1440
+          # 이동평균선 돌파 전략
+          mabs:
+            # 매수, 매도 대상 코인
+            market: KRW-BTC
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            investRatio: 0.5
+            # 매매 주기(P_60, P_240, P_1440)
+            tradePeriod: P_1440
+            # 상승 매수률
+            upBuyRate: 0.01
+            # 하락 매도률
+            downSellRate: 0.01
+            # 단기 이동평균 기간
+            shortDuration: 5
+            # 장기 이동평균 기간
+            longDuration: 20
 
         slack:
           # 이벤트 발생시 슬랙메시지 전달 여부

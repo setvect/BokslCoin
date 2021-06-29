@@ -1,18 +1,15 @@
 package com.setvect.bokslcoin.autotrading;
 
 import com.google.gson.FieldNamingPolicy;
-import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializer;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 public class TestCommonUtil {
 
