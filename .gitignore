@@ -45,3 +45,5 @@ out/
 .vscode/
 
 
+/db/
+/spy.log

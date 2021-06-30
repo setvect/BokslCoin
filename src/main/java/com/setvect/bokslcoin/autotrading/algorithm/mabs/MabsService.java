@@ -120,6 +120,11 @@ public class MabsService implements CoinTrading {
         }
         tradeEvent.check(candle);
 
+        if (maShort == 0 || maLong == 0) {
+            log.warn("이동평균계산을 위한 시세 데이터가 부족합니다.");
+            return;
+        }
+
         log.debug(String.format("KST:%s, UTC: %s, 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f, 장기-단기 차이: %,.2f(%.2f%%)",
                 DateUtil.formatDateTime(nowUtc),
                 DateUtil.formatDateTime(nowKst),
@@ -169,9 +174,13 @@ public class MabsService implements CoinTrading {
         return currentPeriod;
     }
 
-    private double getMa(List<Candle> moveListCandle, int durationCount) {
-        OptionalDouble val = moveListCandle.stream().limit(durationCount).mapToDouble(c -> c.getTradePrice()).average();
-        return val.getAsDouble();
+    private double getMa(List<Candle> moveListCandle, int periodCount) {
+        if (moveListCandle.size() < periodCount) {
+            return 0;
+        }
+        OptionalDouble val = moveListCandle.stream()
+                .limit(periodCount).mapToDouble(c -> c.getTradePrice()).average();
+        return val.isPresent() ? val.getAsDouble() : 0;
     }
 
     private List<Candle> getCandleList(int longPeriod) {

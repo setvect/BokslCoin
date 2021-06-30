@@ -1,6 +1,5 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs;
 
-import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
@@ -9,7 +8,6 @@ import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
-import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
@@ -18,8 +16,6 @@ import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
-import com.setvect.bokslcoin.autotrading.util.GsonUtil;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.io.FileUtils;
@@ -36,20 +32,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.Queue;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -92,7 +81,7 @@ public class MabsBacktest {
                 .downSellRate(0.01) // 하락 매도률
                 .shortPeriod(5) // 단기 이동평균 기간
                 .longPeriod(10) // 장기 이동평균 기간
-                .tradePeriod(TradePeriod.P_240) //매매 주기
+                .tradePeriod(TradePeriod.P_1440) //매매 주기
                 .build();
 
         // === 2. 백테스트 ===
@@ -109,6 +98,36 @@ public class MabsBacktest {
         System.out.println("끝");
     }
 
+    private TestAnalysis backtest(MabsCondition condition) {
+        injectionFieldValue(condition);
+        tradeHistory = new ArrayList<>();
+
+        // TODO
+
+        // 맨 마지막에 매도가 이루어 지지 않으면 종가로 매도
+        MabsBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
+        if (lastBacktestRow.getAskPrice() == 0) {
+            lastBacktestRow.setAskPrice(lastBacktestRow.getCandle().getTradePrice());
+            lastBacktestRow.setFeePrice(lastBacktestRow.getInvestmentAmount() * condition.getFeeAsk());
+            lastBacktestRow.setAskReason(AskReason.TIME);
+        }
+
+
+        Mockito.reset(candleService, orderService, accountService, tradeEvent);
+        return analysis(tradeHistory);
+    }
+
+
+    private void injectionFieldValue(MabsCondition condition) {
+        ReflectionTestUtils.setField(mabsService, "market", condition.getMarket());
+        ReflectionTestUtils.setField(mabsService, "investRatio", condition.getInvestRatio());
+        ReflectionTestUtils.setField(mabsService, "upBuyRate", condition.getUpBuyRate());
+        ReflectionTestUtils.setField(mabsService, "downSellRate", condition.getDownSellRate());
+        ReflectionTestUtils.setField(mabsService, "tradePeriod", condition.getTradePeriod());
+        ReflectionTestUtils.setField(mabsService, "shortPeriod", condition.getShortPeriod());
+        ReflectionTestUtils.setField(mabsService, "longPeriod", condition.getLongPeriod());
+        ReflectionTestUtils.setField(mabsService, "periodIdx", -1);
+    }
 
     private StringBuffer getReportRow(MabsCondition condition, TestAnalysis testAnalysis) {
         StringBuffer reportRow = new StringBuffer();
@@ -132,315 +151,6 @@ public class MabsBacktest {
         return reportRow;
     }
 
-    private TestAnalysis backtest(MabsCondition condition) {
-        injectionFieldValue(condition);
-        tradeHistory = new ArrayList<>();
-
-        CandleDataIterator candleDataIterator = initMock(condition);
-        while (candleDataIterator.hasNext()) {
-            mabsService.apply();
-        }
-        // 맨 마지막에 매도가 이루어 지지 않으면 종가로 매도
-        MabsBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
-        if (lastBacktestRow.getAskPrice() == 0) {
-            lastBacktestRow.setAskPrice(lastBacktestRow.getCandle().getTradePrice());
-            lastBacktestRow.setFeePrice(lastBacktestRow.getInvestmentAmount() * condition.getFeeAsk());
-            lastBacktestRow.setAskReason(AskReason.TIME);
-        }
-
-
-        Mockito.reset(candleService, orderService, accountService, tradeEvent);
-        return analysis(tradeHistory);
-    }
-
-
-    private CandleDataIterator initMock(MabsCondition condition) {
-        File dataDir = new File("./craw-data/minute");
-        CandleDataIterator candleDataIterator = new CandleDataIterator(dataDir, condition);
-        // CandleService
-        when(candleService.getMinute(anyInt(), anyString())).then((invocation) -> {
-            if (candleDataIterator.hasNext()) {
-                return candleDataIterator.next();
-            }
-            return null;
-        });
-
-        when(candleService.getDay(anyString(), anyInt())).then((invocation) -> {
-            Integer period = invocation.getArgument(1, Integer.class);
-            return candleDataIterator.beforeDayCandle(period);
-        });
-        when(candleService.getMinute(eq(60), anyString(), eq(2))).then((invocation) -> candleDataIterator.before60Minute());
-        when(candleService.getMinute(eq(240), anyString(), eq(2))).then((invocation) -> candleDataIterator.before240Minute());
-
-        // AccountService
-        Account krwAccount = new Account();
-        Account coinAccount = new Account();
-        krwAccount.setBalance(ApplicationUtil.toNumberString(condition.getCash()));
-        when(accountService.getBalance(anyString())).then((method) -> {
-            if (method.getArgument(0).equals("KRW")) {
-                return BigDecimal.valueOf(Double.parseDouble(krwAccount.getBalance()));
-            }
-            return BigDecimal.valueOf(Double.parseDouble(coinAccount.getBalance()));
-        });
-
-        when(accountService.getAccount(anyString())).then((method) -> {
-            if (method.getArgument(0).equals("KRW")) {
-                return Optional.of(krwAccount);
-            }
-            return Optional.of(coinAccount);
-        });
-        AtomicReference<MabsBacktestRow> backtestInfoAtom = new AtomicReference<>();
-
-        // 새로운 매매주기
-        doAnswer(invocation -> {
-            MabsBacktestRow beforeBacktestRow = backtestInfoAtom.get();
-            Candle currentCandle = invocation.getArgument(0);
-            candleDataIterator.accPeriodCandle(currentCandle);
-            MabsBacktestRow backtestRow = new MabsBacktestRow(currentCandle);
-
-            if (beforeBacktestRow != null) {
-                //  매수는 했는데 매도를 하지 않았을 경우
-                if (beforeBacktestRow.getBidPrice() != 0 && beforeBacktestRow.getAskPrice() == 0) {
-                    // 아직 매도하지 않았으므로 매도 채결가격은 매수 채결가격과 동일하게
-                    beforeBacktestRow.setAskPrice(beforeBacktestRow.getBidPrice());
-                    beforeBacktestRow.setAskReason(AskReason.SKIP);
-
-                    backtestRow.setTrade(beforeBacktestRow.isTrade());
-                    backtestRow.setBidPrice(beforeBacktestRow.getBidPrice());
-                    backtestRow.setInvestmentAmount(beforeBacktestRow.getInvestmentAmount());
-                }
-                double beforeTradePrice = beforeBacktestRow.getCandle().getTradePrice();
-                backtestRow.setBeforeTradePrice(beforeTradePrice);
-            }
-
-            backtestRow.setCash(Double.parseDouble(krwAccount.getBalance()));
-            backtestInfoAtom.set(backtestRow);
-            tradeHistory.add(backtestRow);
-
-            log.debug("새로운 매매주기: {}", DateUtil.formatDateTime(currentCandle.getCandleDateTimeKst()));
-
-            return null;
-        }).when(tradeEvent).newPeriod(notNull());
-
-
-        // 시세 체크
-        doAnswer(invocation -> {
-            Candle currentCandle = invocation.getArgument(0);
-            MabsBacktestRow backtestRow = backtestInfoAtom.get();
-            Candle candle = backtestRow.getCandle();
-            candle.setLowPrice(Math.min(candle.getLowPrice(), currentCandle.getLowPrice()));
-            candle.setHighPrice(Math.max(candle.getHighPrice(), currentCandle.getHighPrice()));
-            candle.setTradePrice(currentCandle.getTradePrice());
-            backtestRow.setHighYield(Math.max(backtestRow.getHighYield(), mabsService.getHighYield()));
-
-            return null;
-        }).when(tradeEvent).check(notNull());
-
-        // 매수
-        doAnswer(invocation -> {
-            MabsBacktestRow backtestRow = backtestInfoAtom.get();
-            double tradePrice = invocation.getArgument(1);
-            double bidPrice = tradePrice + condition.getTradeMargin();
-            // 매수가를 매수 목표가로 즉 호가창 이동 없이 바로 잡았다고 가정
-//            double bidPrice = backtestRow.getTargetPrice() + condition.getTradeMargin();
-            coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(bidPrice));
-            double investAmount = invocation.getArgument(2);
-
-            // 남은 현금 계산
-            double fee = investAmount * condition.getFeeBid();
-            double cash = Double.parseDouble(krwAccount.getBalance()) - investAmount;
-            double remainCash = cash - fee;
-            krwAccount.setBalance(ApplicationUtil.toNumberString(remainCash));
-
-            String balance = ApplicationUtil.toNumberString(investAmount / bidPrice);
-            coinAccount.setBalance(balance);
-
-
-            backtestRow.setTrade(true);
-            backtestRow.setBidPrice(bidPrice);
-            backtestRow.setInvestmentAmount(investAmount);
-            backtestRow.setCash(cash);
-            backtestRow.setFeePrice(fee);
-            return null;
-        }).when(tradeEvent).bid(anyString(), anyDouble(), anyDouble());
-
-        // 매도
-        doAnswer(invocation -> {
-            AskReason reason = invocation.getArgument(3);
-            double tradePrice = invocation.getArgument(2);
-            double balance = Double.parseDouble(coinAccount.getBalance());
-            double askPrice = tradePrice - condition.getTradeMargin();
-            double askAmount = askPrice * balance;
-            double fee = askAmount * condition.getFeeAsk();
-
-            double totalCash = Double.parseDouble(krwAccount.getBalance()) + askAmount - fee;
-            krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
-            coinAccount.setBalance("0");
-            coinAccount.setAvgBuyPrice(null);
-
-            MabsBacktestRow backtestRow = backtestInfoAtom.get();
-            backtestRow.setAskPrice(askPrice);
-            backtestRow.setAskReason(invocation.getArgument(3));
-            backtestRow.setFeePrice(backtestRow.getFeePrice() + fee);
-            return null;
-        }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
-        return candleDataIterator;
-    }
-
-    private void injectionFieldValue(MabsCondition condition) {
-        ReflectionTestUtils.setField(mabsService, "market", condition.getMarket());
-        ReflectionTestUtils.setField(mabsService, "investRatio", condition.getInvestRatio());
-        ReflectionTestUtils.setField(mabsService, "upBuyRate", condition.getUpBuyRate());
-        ReflectionTestUtils.setField(mabsService, "downSellRate", condition.getDownSellRate());
-        ReflectionTestUtils.setField(mabsService, "tradePeriod", condition.getTradePeriod());
-        ReflectionTestUtils.setField(mabsService, "shortPeriod", condition.getShortPeriod());
-        ReflectionTestUtils.setField(mabsService, "longPeriod", condition.getLongPeriod());
-        ReflectionTestUtils.setField(mabsService, "periodIdx", -1);
-    }
-
-    static class CandleDataIterator implements Iterator<CandleMinute> {
-        private final File dataDir;
-        private final MabsCondition condition;
-        private Iterator<CandleMinute> currentCandleIterator;
-        private LocalDateTime bundleDate;
-        private LocalDateTime currentUtc;
-
-        private final Queue<Candle> beforeData = new CircularFifoQueue<>(60 * 24 * 2);
-
-        // 60일 주기 데이터 기록
-        private final Queue<Candle> langMaCandle = new CircularFifoQueue<>(60);
-
-        /**
-         * 매매 주기 누적
-         *
-         * @param candle
-         */
-        public void accPeriodCandle(Candle candle) {
-            langMaCandle.add(candle);
-        }
-
-        public CandleDataIterator(File dataDir, MabsCondition condition) {
-            this.dataDir = dataDir;
-            this.condition = condition;
-            bundleDate = condition.getRange().getFrom();
-            this.currentCandleIterator = Collections.emptyIterator();
-        }
-
-        @Override
-        public boolean hasNext() {
-            // 현재
-            boolean exist = currentCandleIterator.hasNext();
-            if (!exist) {
-                List<CandleMinute> candleList = nextBundle();
-                this.currentCandleIterator = candleList.iterator();
-            }
-            return this.currentCandleIterator.hasNext();
-        }
-
-        @Override
-        public CandleMinute next() {
-            if (hasNext()) {
-                CandleMinute currentCandleMinute = currentCandleIterator.next();
-                beforeData.add(currentCandleMinute);
-                currentUtc = currentCandleMinute.getCandleDateTimeUtc();
-                return currentCandleMinute;
-            }
-            throw new NoSuchElementException();
-        }
-
-        @SneakyThrows
-        private List<CandleMinute> nextBundle() {
-            String dataFileName = String.format("%s-minute(%s).json", condition.getMarket(), DateUtil.format(bundleDate, "yyyy-MM"));
-            File dataFile = new File(dataDir, dataFileName);
-            if (!dataFile.exists()) {
-                log.warn("no exist file: {}", dataFile.getAbsolutePath());
-                return Collections.emptyList();
-            }
-            List<CandleMinute> candles = GsonUtil.GSON.fromJson(FileUtils.readFileToString(dataFile, "utf-8"), new TypeToken<List<CandleMinute>>() {
-            }.getType());
-            log.info(String.format("load data file: %s", dataFileName));
-
-            List<CandleMinute> candleFiltered = candles.stream().filter(p -> condition.getRange().isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            // 과거 데이터를 먼저(날짜 기준 오름 차순 정렬)
-            Collections.reverse(candleFiltered);
-
-            // 다음달 가르킴
-            bundleDate = bundleDate.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).plusMonths(1);
-            return candleFiltered;
-        }
-
-        /**
-         * @param period
-         * @return 현재 시간 포함해 과거 period 일봉 데이터
-         */
-        public List<CandleDay> beforeDayCandle(int period) {
-            List<CandleDay> result = langMaCandle.stream().limit(period)
-                    .map(c -> ApplicationUtil.getMapper().map(c, CandleDay.class))
-                    .collect(Collectors.toList());
-            return result;
-
-//            LocalDateTime from = currentUtc.minusDays(period).withHour(0).withMinute(0).withSecond(0).withNano(0);
-//            LocalDateTime to = from.plusDays(period).minusNanos(1);
-//            DateRange range = new DateRange(from, to);
-//            List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-//
-//            // 수집이 안된 시간도 있음(업비트 오류로 판단)
-//            // 그래서 분봉 데이터가 일정 갯수 이상 되면 계산
-//            if (filtered.size() < TradePeriod.P_1440.getTotal() / 2) {
-//                return Arrays.asList(null, null);
-//            }
-//            CandleDay candle = new CandleDay();
-//            Candle first = filtered.get(0);
-//            Candle last = filtered.get(filtered.size() - 1);
-//            candle.setOpeningPrice(first.getOpeningPrice());
-//            candle.setCandleDateTimeUtc(first.getCandleDateTimeUtc());
-//            candle.setCandleDateTimeKst(first.getCandleDateTimeKst());
-//            candle.setTradePrice(last.getTradePrice());
-//            double low = filtered.stream().mapToDouble(Candle::getLowPrice).min().getAsDouble();
-//            candle.setLowPrice(low);
-//            double high = filtered.stream().mapToDouble(Candle::getHighPrice).max().getAsDouble();
-//            candle.setHighPrice(high);
-//            return Arrays.asList(null, candle);
-        }
-
-        public List<CandleMinute> before60Minute() {
-            LocalDateTime from = currentUtc.minusHours(1).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime to = from.plusHours(1).minusNanos(1);
-            return getCandleMinutes(from, to);
-        }
-
-        public List<CandleMinute> before240Minute() {
-            int diffHour = currentUtc.getHour() % 4 + 4;
-            LocalDateTime from = currentUtc.minusHours(diffHour).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime to = from.plusHours(4).minusNanos(1);
-            return getCandleMinutes(from, to);
-        }
-
-        private List<CandleMinute> getCandleMinutes(LocalDateTime from, LocalDateTime to) {
-            Duration duration = Duration.between(from, to);
-            long diffMinute = duration.getSeconds() / 60 + 1;
-
-            DateRange range = new DateRange(from, to);
-            List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            // 수집이 안된 시간도 있음(업비트 오류로 판단)
-            // 그래서 분봉 데이터가 일정 갯수 이상 되면 계산
-            if (filtered.size() < diffMinute / 2) {
-                return Arrays.asList(null, null);
-            }
-            CandleMinute period = new CandleMinute();
-            Candle first = filtered.get(0);
-            Candle last = filtered.get(filtered.size() - 1);
-            period.setOpeningPrice(first.getOpeningPrice());
-            period.setCandleDateTimeUtc(first.getCandleDateTimeUtc());
-            period.setCandleDateTimeKst(first.getCandleDateTimeKst());
-            period.setTradePrice(last.getTradePrice());
-            double low = filtered.stream().mapToDouble(Candle::getLowPrice).min().getAsDouble();
-            period.setLowPrice(low);
-            double high = filtered.stream().mapToDouble(Candle::getHighPrice).max().getAsDouble();
-            period.setHighPrice(high);
-            return Arrays.asList(null, period);
-        }
-    }
 
     public static void makeReport(MabsCondition condition, List<MabsBacktestRow> tradeHistory, TestAnalysis testAnalysis) throws IOException {
         String header = "날짜(KST),날짜(UTC),시가,고가,저가,종가,직전 종가,단위 수익률,단기 이동평균, 장기 이동평균,매매여부,매수 체결 가격,최고수익률,매도 체결 가격,매도 이유,실현 수익률,투자금,현금,투자 수익,수수료,투자 결과,현금 + 투자결과 - 수수료";
@@ -520,4 +230,6 @@ public class MabsBacktest {
         testAnalysis.setRealYield(realYield);
         return testAnalysis;
     }
+
+
 }
