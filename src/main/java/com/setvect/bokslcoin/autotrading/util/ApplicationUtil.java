@@ -7,6 +7,9 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.config.Configuration;
+import org.modelmapper.convention.MatchingStrategies;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -25,6 +28,8 @@ import java.util.Map;
  * 어플리케이션의 의존적인 유틸성 메소드
  */
 public class ApplicationUtil {
+    private static ModelMapper modelMapper = new ModelMapper();
+
     public static final NumberFormat NUMBER_FORMAT = new DecimalFormat("#.############");
 
     /**
@@ -143,5 +148,13 @@ public class ApplicationUtil {
     @SneakyThrows
     private static String urlEncodeUTF8(String s) {
         return URLEncoder.encode(s, "UTF-8");
+    }
+
+    public static ModelMapper getMapper() {
+        modelMapper.getConfiguration()
+                .setFieldAccessLevel(Configuration.AccessLevel.PRIVATE)
+                .setMatchingStrategy(MatchingStrategies.STRICT);
+
+        return modelMapper;
     }
 }

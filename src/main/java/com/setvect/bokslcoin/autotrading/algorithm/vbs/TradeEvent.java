@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
+import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 
 /**
@@ -27,13 +28,6 @@ public interface TradeEvent {
      * @param bidPrice   매수 금액
      */
     void bid(String market, double tradePrice, double bidPrice);
-
-    /**
-     * @param market     코인
-     * @param balance    매도 물량
-     * @param tradePrice 매도 당시 가격
-     */
-    void ask(String market, double balance, double tradePrice);
 
     /**
      * @param market     코인

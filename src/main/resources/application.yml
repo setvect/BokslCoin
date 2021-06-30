@@ -51,9 +51,9 @@ com:
             # 하락 매도률
             downSellRate: 0.01
             # 단기 이동평균 기간
-            shortDuration: 5
+            shortPeriod: 5
             # 장기 이동평균 기간
-            longDuration: 20
+            longPeriod: 20
 
         slack:
           # 이벤트 발생시 슬랙메시지 전달 여부

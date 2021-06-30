@@ -1,6 +1,5 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
-import com.setvect.bokslcoin.autotrading.algorithm.vbs.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
@@ -34,13 +33,6 @@ public class BasicTradeEvent implements TradeEvent {
     @Override
     public void bid(String market, double tradePrice, double bidPrice) {
         String message = String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,.2f, 매수 금액: %,.0f,", market, tradePrice, bidPrice);
-        log.info(message);
-        slackMessageService.sendMessage(message);
-    }
-
-    @Override
-    public void ask(String market, double balance, double tradePrice) {
-        String message = String.format("★★★ 시장가 매도, 코인: %s, 보유량: %f, 현재가: %,.2f, 예상 금액: %,.0f", market, balance, tradePrice, balance * tradePrice);
         log.info(message);
         slackMessageService.sendMessage(message);
     }

@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.algorithm.vbs;
+package com.setvect.bokslcoin.autotrading.algorithm;
 
 /**
  * 매도 유형
@@ -19,5 +19,9 @@ public enum AskReason {
     /**
      * 매매 주기에 매도하지 않음
      */
-    SKIP;
+    SKIP,
+    /**
+     * 이평선 하락
+     */
+    MA_DOWN;
 }

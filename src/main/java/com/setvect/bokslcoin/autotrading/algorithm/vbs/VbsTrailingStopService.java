@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
+import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
