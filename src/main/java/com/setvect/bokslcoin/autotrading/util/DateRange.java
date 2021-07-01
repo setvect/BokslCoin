@@ -154,7 +154,7 @@ public class DateRange {
     }
 
 
-    // 두날 짜 사이에 있는지
+    // 두 날짜 사이에 있는지
     public boolean isBetween(LocalDateTime dateTime) {
         return from.isBefore(dateTime) && to.isAfter(dateTime) || from.equals(dateTime) || to.equals(dateTime);
     }

@@ -6,18 +6,15 @@ import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsService;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
+import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
-import com.setvect.bokslcoin.autotrading.model.Candle;
-import com.setvect.bokslcoin.autotrading.model.CandleDay;
-import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Test;
@@ -34,11 +31,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
@@ -47,6 +42,9 @@ import static org.mockito.Mockito.*;
 public class MabsBacktest {
     @Autowired
     private SlackMessageService slackMessageService;
+
+    @Autowired
+    private CandleRepository candleRepository;
 
     @Mock
     private AccountService accountService;
@@ -72,7 +70,6 @@ public class MabsBacktest {
                 .market("KRW-BTC")// 대상 코인
                 .range(new DateRange("2021-05-01T00:00:00", "2021-06-08T23:59:59"))
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                .market("KRW-BTC")// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
@@ -103,6 +100,11 @@ public class MabsBacktest {
         tradeHistory = new ArrayList<>();
 
         // TODO
+        CandleDataIterator candleDataIterator = new CandleDataIterator(condition, candleRepository);
+        initMock(condition, candleDataIterator);
+        while (candleDataIterator.hasNext()) {
+            mabsService.apply();
+        }
 
         // 맨 마지막에 매도가 이루어 지지 않으면 종가로 매도
         MabsBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
@@ -112,9 +114,17 @@ public class MabsBacktest {
             lastBacktestRow.setAskReason(AskReason.TIME);
         }
 
-
         Mockito.reset(candleService, orderService, accountService, tradeEvent);
         return analysis(tradeHistory);
+    }
+
+    private void initMock(MabsCondition condition, CandleDataIterator candleDataIterator) {
+        when(candleService.getMinute(anyInt(), anyString())).then((invocation) -> {
+            if (candleDataIterator.hasNext()) {
+                return candleDataIterator.next();
+            }
+            return null;
+        });
     }
 
 
