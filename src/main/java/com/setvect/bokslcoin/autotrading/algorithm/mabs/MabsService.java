@@ -118,7 +118,7 @@ public class MabsService implements CoinTrading {
             tradeCompleteOfPeriod = false;
             periodIdx = currentPeriod;
         }
-        tradeEvent.check(candle);
+        tradeEvent.check(candle, maShort, maLong);
 
         if (maShort == 0 || maLong == 0) {
             log.warn("이동평균계산을 위한 시세 데이터가 부족합니다.");

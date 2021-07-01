@@ -38,12 +38,12 @@ public class MabsBacktestRow {
     /**
      * 단기 이동평균
      */
-    private double shortMa;
+    private double maShort;
 
     /**
      * 장기 이동평균
      */
-    private double longMa;
+    private double maLong;
 
     public MabsBacktestRow(Candle candle) {
         this.candle = candle;
@@ -100,7 +100,7 @@ public class MabsBacktestRow {
                         "실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 수수료: %,.0f, " +
                         "투자 결과: %,.0f, 현금 + 투자결과 - 수수료: %,.0f",
                 dateKst, dateUtc, candle.getOpeningPrice(), candle.getHighPrice(), candle.getLowPrice(),
-                candle.getTradePrice(), beforeTradePrice, getCandleYield() * 100, shortMa, longMa, trade,
+                candle.getTradePrice(), beforeTradePrice, getCandleYield() * 100, maShort, maLong, trade,
                 bidPrice, highYield * 100, askPrice, askReason == null ? "" : askReason,
                 getRealYield() * 100, investmentAmount, cash, getGains(), feePrice,
                 getInvestResult(), getFinalResult());

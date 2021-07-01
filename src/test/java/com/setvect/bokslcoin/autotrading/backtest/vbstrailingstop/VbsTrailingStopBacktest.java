@@ -101,10 +101,10 @@ public class VbsTrailingStopBacktest {
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
-                .loseStopRate(0.5) // 손절 라인
-                .gainStopRate(0.5) //트레일링 스탑 진입점
+                .loseStopRate(0.05) // 손절 라인
+                .gainStopRate(0.02) //트레일링 스탑 진입점
                 .trailingStopRate(0.04) // 트레일링 스탑 하락 매도률
-                .tradePeriod(TradePeriod.P_240) //매매 주기
+                .tradePeriod(TradePeriod.P_1440) //매매 주기
                 .build();
 
         // === 2. 백테스트 ===

@@ -2,6 +2,7 @@ package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.model.Candle;
+import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 
 /**
  * 매매시 발생하는 이벤트
@@ -21,6 +22,15 @@ public interface TradeEvent {
      * @param candle 분봉
      */
     void check(Candle candle);
+
+    /**
+     * 시세 체크
+     *
+     * @param candle  분봉
+     * @param maShort 단기 이동평균
+     * @param maLong  장기 이동평균
+     */
+    void check(CandleMinute candle, double maShort, double maLong);
 
     /**
      * @param market     코인

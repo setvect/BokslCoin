@@ -120,6 +120,20 @@ public class ApplicationUtil {
         return mdd;
     }
 
+    /**
+     * 연 복리
+     * CAGR = (EV / BV) ^ (1 / n)   - 1
+     *
+     * @param bv 초기 값, BV (시작 값)
+     * @param ev 종료 값, EV (종료 값)
+     * @param dayCount 일수
+     * @return 연복리
+     */
+    public static double getCagr(double bv, double ev, int dayCount) {
+        double year = dayCount / 365.0;
+        return Math.pow(ev / bv, 1 / year) - 1;
+    }
+
     public static String request(String url, HttpRequestBase request) throws IOException {
         HttpClient client = HttpClientBuilder.create().build();
 

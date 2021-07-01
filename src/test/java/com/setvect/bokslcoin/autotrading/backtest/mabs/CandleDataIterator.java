@@ -83,7 +83,6 @@ public class CandleDataIterator implements Iterator<CandleMinute> {
             periodData = candleList.stream().map(v -> ApplicationUtil.getMapper().map(v, CandleDay.class)).collect(Collectors.toList());
             periodData.add(0, ApplicationUtil.getMapper().map(current, CandleDay.class));
             cachePeriod.put(key, periodData);
-        }else{
         }
         periodData.remove(0);
         periodData.add(0, ApplicationUtil.getMapper().map(current, CandleDay.class));
