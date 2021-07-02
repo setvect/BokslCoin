@@ -2,8 +2,8 @@ package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
-import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.VbsTrailingStopService;
 import com.setvect.bokslcoin.autotrading.backtest.CandleDataIterator;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
@@ -78,7 +78,7 @@ public class VbsTrailingStopBacktest {
         VbsTrailingStopCondition condition = VbsTrailingStopCondition.builder()
                 .market("KRW-BTC")// 대상 코인
 //                .range(new DateRange("2021-06-01T00:00:00", "2021-06-08T23:59:59"))
-//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -90,8 +90,9 @@ public class VbsTrailingStopBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59")) // 하락장3
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
 //                .range(new DateRange("02019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
-                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
                 .k(0.5) // 변동성 돌파 판단 비율
+                .ma(5) //  이평선 돌파
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                 .market("KRW-BTC")// 대상 코인
                 .cash(10_000_000) // 최초 투자 금액
@@ -124,7 +125,7 @@ public class VbsTrailingStopBacktest {
 
     @Test
     public void multiBacktest() throws IOException {
-        String header = "분석기간,분석주기,대상 코인,변동성 비율(K),투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,손절,트레일링스탑 진입률,트레일링스탑 매도률,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
+        String header = "분석기간,분석주기,대상 코인,변동성 비율(K),이동평균 기간,투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,손절,트레일링스탑 진입률,트레일링스탑 매도률,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
         StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
         VbsTrailingStopCondition condition;
@@ -149,6 +150,7 @@ public class VbsTrailingStopBacktest {
         for (DateRange range : rangeList) {
             condition = VbsTrailingStopCondition.builder()
                     .k(0.5) // 변동성 돌파 판단 비율
+                    .ma(0) //  이평선 돌파
                     .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                     .range(range)// 분석 대상 기간 (UTC)
                     .market("KRW-BTC")// 대상 코인
@@ -190,6 +192,7 @@ public class VbsTrailingStopBacktest {
         reportRow.append(String.format("%s\t", condition.getTradePeriod()));
         reportRow.append(String.format("%s\t", condition.getMarket()));
         reportRow.append(String.format("%,.2f\t", condition.getK()));
+        reportRow.append(String.format("%d\t", condition.getMa()));
         reportRow.append(String.format("%,.2f%%\t", condition.getInvestRatio() * 100));
         reportRow.append(String.format("%,.0f\t", condition.getCash()));
         reportRow.append(String.format("%,.0f\t", condition.getTradeMargin()));
@@ -347,9 +350,17 @@ public class VbsTrailingStopBacktest {
             if (vbsTrailingStopService.isTrailingTrigger()) {
                 backtestRow.setTrailingTrigger(true);
             }
-
             return null;
         }).when(tradeEvent).check(notNull());
+
+        // 이동 평균 입력
+        doAnswer(invocation -> {
+            double ma = invocation.getArgument(0);
+            VbsTrailingStopBacktestRow backtestRow = backtestInfoAtom.get();
+            backtestRow.setMaPrice(ma);
+            return null;
+        }).when(tradeEvent).setMaPrice(anyDouble());
+
 
         // 목표가 등록
         doAnswer(invocation -> {
@@ -411,6 +422,7 @@ public class VbsTrailingStopBacktest {
     private void injectionFieldValue(VbsTrailingStopCondition condition) {
         ReflectionTestUtils.setField(vbsTrailingStopService, "market", condition.getMarket());
         ReflectionTestUtils.setField(vbsTrailingStopService, "k", condition.getK());
+        ReflectionTestUtils.setField(vbsTrailingStopService, "ma", condition.getMa());
         ReflectionTestUtils.setField(vbsTrailingStopService, "investRatio", condition.getInvestRatio());
         ReflectionTestUtils.setField(vbsTrailingStopService, "loseStopRate", condition.getLoseStopRate());
         ReflectionTestUtils.setField(vbsTrailingStopService, "gainStopRate", condition.getGainStopRate());
@@ -420,7 +432,7 @@ public class VbsTrailingStopBacktest {
     }
 
     public static void makeReport(VbsTrailingStopCondition condition, List<VbsTrailingStopBacktestRow> tradeHistory, TestAnalysis testAnalysis) throws IOException {
-        String header = "날짜(KST),날짜(UTC),시가,고가,저가,종가,직전 종가,단위 수익률,매수 목표가,매매여부,매수 체결 가격,트레일링 스탑 진입,최고수익률,매도 체결 가격,매도 이유,실현 수익률,투자금,현금,투자 수익,수수료,투자 결과,현금 + 투자결과 - 수수료";
+        String header = "날짜(KST),날짜(UTC),시가,고가,저가,종가,이평선,직전 종가,단위 수익률,매수 목표가,매매여부,매수 체결 가격,트레일링 스탑 진입,최고수익률,매도 체결 가격,매도 이유,실현 수익률,투자금,현금,투자 수익,수수료,투자 결과,현금 + 투자결과 - 수수료";
         StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
         for (VbsTrailingStopBacktestRow row : tradeHistory) {
             String dateKst = DateUtil.formatDateTime(row.getCandle().getCandleDateTimeKst());
@@ -431,6 +443,7 @@ public class VbsTrailingStopBacktest {
             report.append(String.format("%,.0f\t", row.getCandle().getHighPrice()));
             report.append(String.format("%,.0f\t", row.getCandle().getLowPrice()));
             report.append(String.format("%,.0f\t", row.getCandle().getTradePrice()));
+            report.append(String.format("%,.0f\t", row.getMaPrice()));
             report.append(String.format("%,.0f\t", row.getBeforeTradePrice()));
             report.append(String.format("%,.2f%%\t", row.getCandleYield() * 100));
             report.append(String.format("%,.0f\t", row.getTargetPrice()));
@@ -467,6 +480,7 @@ public class VbsTrailingStopBacktest {
         report.append(String.format("분석주기\t %s", condition.getTradePeriod())).append("\n");
         report.append(String.format("대상 코인\t %s", condition.getMarket())).append("\n");
         report.append(String.format("변동성 비율(K)\t %,.2f", condition.getK())).append("\n");
+        report.append(String.format("이동평균 기간\t %d", condition.getMa())).append("\n");
         report.append(String.format("투자비율\t %,.2f%%", condition.getInvestRatio() * 100)).append("\n");
         report.append(String.format("최초 투자금액\t %,f", condition.getCash())).append("\n");
         report.append(String.format("매매 마진\t %,f", condition.getTradeMargin())).append("\n");

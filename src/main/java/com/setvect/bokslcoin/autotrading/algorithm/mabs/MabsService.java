@@ -2,13 +2,13 @@ package com.setvect.bokslcoin.autotrading.algorithm.mabs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
+import com.setvect.bokslcoin.autotrading.algorithm.CommonTradeHelper;
+import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
-import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
-import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
@@ -22,10 +22,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.OptionalDouble;
 
 /**
  * 이평선 돌파 전략
@@ -97,9 +95,9 @@ public class MabsService implements CoinTrading {
 
     @Override
     public void apply() {
-        List<Candle> candleList = getCandleList(longPeriod);
-        double maShort = getMa(candleList, shortPeriod);
-        double maLong = getMa(candleList, longPeriod);
+        List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, tradePeriod, longPeriod);
+        double maShort = CommonTradeHelper.getMa(candleList, shortPeriod);
+        double maLong = CommonTradeHelper.getMa(candleList, longPeriod);
 
         Optional<Account> coinAccount = accountService.getAccount(market);
         BigDecimal coinBalance = AccountService.getBalance(coinAccount);
@@ -168,36 +166,13 @@ public class MabsService implements CoinTrading {
         }
     }
 
+
     private int getCurrentPeriod(LocalDateTime nowUtc) {
         int dayHourMinuteSum = nowUtc.getDayOfMonth() * 1440 + nowUtc.getHour() * 60 + nowUtc.getMinute();
         int currentPeriod = dayHourMinuteSum / tradePeriod.getTotal();
         return currentPeriod;
     }
 
-    private double getMa(List<Candle> moveListCandle, int periodCount) {
-        if (moveListCandle.size() < periodCount) {
-            return 0;
-        }
-        OptionalDouble val = moveListCandle.stream()
-                .limit(periodCount).mapToDouble(c -> c.getTradePrice()).average();
-        return val.isPresent() ? val.getAsDouble() : 0;
-    }
-
-    private List<Candle> getCandleList(int longPeriod) {
-        List<Candle> moveListCandle = new ArrayList<>();
-        switch (tradePeriod) {
-            case P_60:
-                List<CandleMinute> t1 = candleService.getMinute(60, market, longPeriod);
-                moveListCandle.addAll(t1);
-            case P_240:
-                List<CandleMinute> t2 = candleService.getMinute(240, market, longPeriod);
-                moveListCandle.addAll(t2);
-            case P_1440:
-                List<CandleDay> t3 = candleService.getDay(market, longPeriod);
-                moveListCandle.addAll(t3);
-        }
-        return moveListCandle;
-    }
 
     /**
      * @param coinAccount

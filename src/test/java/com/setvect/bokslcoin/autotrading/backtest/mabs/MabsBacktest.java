@@ -4,7 +4,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsService;
-import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.CandleDataIterator;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;

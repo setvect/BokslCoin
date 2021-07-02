@@ -1,6 +1,5 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
-import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
@@ -32,8 +31,12 @@ public class BasicTradeEvent implements TradeEvent {
     }
 
     @Override
+    public void setMaPrice(double ma) {
+
+    }
+
+    @Override
     public void check(CandleMinute candle, double maShort, double maLong) {
-        // nothing
     }
 
     @Override

@@ -2,6 +2,8 @@ package com.setvect.bokslcoin.autotrading.algorithm.vbs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
+import com.setvect.bokslcoin.autotrading.algorithm.CommonTradeHelper;
+import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
@@ -50,6 +52,12 @@ public class VbsTrailingStopService implements CoinTrading {
      */
     @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.k}")
     private double k;
+
+    /**
+     * 평단가 주기, 해당 평단가 이상인 경우 매수함, 값이 0이면 변동성 돌파만 판단함
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.vbsTrailingStop.ma}")
+    private int ma;
 
     /**
      * 총 현금을 기준으로 투자 비율
@@ -187,13 +195,24 @@ public class VbsTrailingStopService implements CoinTrading {
 
         } else if (bidRange.isBetween(nowKst) && !tradeCompleteOfPeriod) {
             log.debug(String.format("%s 목표가: %,.0f\t현재가: %,.0f", market, targetPrice, currentPrice));
-
             if (targetPrice > currentPrice) {
                 return;
+            }
+
+            if (ma > 0) {
+                // 이평선 돌파 체크
+                List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, tradePeriod, ma);
+                double maValue = CommonTradeHelper.getMa(candleList, ma);
+                tradeEvent.setMaPrice(maValue);
+                if (maValue > currentPrice) {
+                    log.debug(String.format("이평선 목표가 미달, ma_%d: %,.0f", ma, maValue));
+                    return;
+                }
             }
             doBid(currentPrice);
         }
     }
+
 
     /**
      * @param coinAccount

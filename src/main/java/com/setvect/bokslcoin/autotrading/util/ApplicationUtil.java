@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.util;
 
+import com.setvect.bokslcoin.autotrading.model.Candle;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -23,6 +24,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalDouble;
 
 /**
  * 어플리케이션의 의존적인 유틸성 메소드
@@ -124,8 +126,8 @@ public class ApplicationUtil {
      * 연 복리
      * CAGR = (EV / BV) ^ (1 / n)   - 1
      *
-     * @param bv 초기 값, BV (시작 값)
-     * @param ev 종료 값, EV (종료 값)
+     * @param bv       초기 값, BV (시작 값)
+     * @param ev       종료 값, EV (종료 값)
      * @param dayCount 일수
      * @return 연복리
      */

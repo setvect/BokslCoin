@@ -10,25 +10,41 @@ import lombok.experimental.SuperBuilder;
 @ToString
 @SuperBuilder
 public class BaseCondition {
-    // 분석 대상 기간(UTC)
+    /**
+     * 분석 대상 기간(UTC)
+     */
     private final DateRange range;
-    // 대상 코인
+    /**
+     * 대상 코인
+     */
     private final String market;
-
-    // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+    /**
+     * 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+     */
     private final double investRatio;
-    // 최초 투자 금액
+    /**
+     * 최초 투자 금액
+     */
     private final double cash;
-    // 매매시 채결 가격 차이
-    // 시장가로 매매하기 때문에 한단계 낮거나 높은 호가로 매매가 되는 것을 고려함.
-    // 매수 채결 가격 = 목표가격 + tradeMargin
-    // 매도 채결 가격 = 종가 - tradeMargin
+    /**
+     * 매매시 채결 가격 차이
+     * 시장가로 매매하기 때문에 한단계 낮거나 높은 호가로 매매가 되는 것을 고려함.
+     * 매수 채결 가격 = 목표가격 + tradeMargin
+     * 매도 채결 가격 = 종가 - tradeMargin
+     */
     private final double tradeMargin;
-    //  매수 수수료
+    /**
+     * 매수 수수료
+     */
     private final double feeBid;
-    //  매도 수수료
+    /**
+     * 매도 수수료
+     */
     private final double feeAsk;
 
+    /**
+     * 매매 주기
+     */
     private final TradePeriod tradePeriod;
 
     /**

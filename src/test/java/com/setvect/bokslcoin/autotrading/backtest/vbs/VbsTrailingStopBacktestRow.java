@@ -38,9 +38,14 @@ public class VbsTrailingStopBacktestRow {
     private double highYield;
 
     /**
+     * 이동편균 값
+     */
+    private double maPrice;
+
+    /**
      * 직전 캔들 종가
      */
-    private Double beforeTradePrice = Double.valueOf(0);
+    private double beforeTradePrice = 0;
 
     public VbsTrailingStopBacktestRow(Candle candle) {
         this.candle = candle;
