@@ -110,6 +110,9 @@ public class MabsBacktest {
         System.out.printf("실제 MDD: %,.2f%%\n", testAnalysis.getCoinMdd() * 100);
         System.out.printf("실현 수익: %,.2f%%\n", testAnalysis.getRealYield() * 100);
         System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getRealMdd() * 100);
+        System.out.printf("매매 횟수: %d\n", testAnalysis.getTradeCount());
+        System.out.printf("승률: %,.2f%%\n", testAnalysis.getWinRate() * 100);
+        System.out.printf("CAGR: %,.2f%%\n", testAnalysis.getCagr() * 100);
 
         // === 3. 리포트 ===
         makeReport(condition, tradeHistory, testAnalysis);
@@ -193,7 +196,7 @@ public class MabsBacktest {
 
         // 맨 마지막에 매도가 이루어 지지 않으면 종가로 매도
         MabsBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
-        if (lastBacktestRow.getAskPrice() == 0) {
+        if (lastBacktestRow.getBidPrice() != 0) {
             lastBacktestRow.setAskPrice(lastBacktestRow.getCandle().getTradePrice());
             lastBacktestRow.setFeePrice(lastBacktestRow.getInvestmentAmount() * condition.getFeeAsk());
             lastBacktestRow.setAskReason(AskReason.TIME);
@@ -254,9 +257,9 @@ public class MabsBacktest {
                 .then((invocation) -> candleDataIterator.beforeDayCandle(invocation.getArgument(1, Integer.class)));
 
         when(candleService.getMinute(eq(60), anyString(), anyInt()))
-                .then((invocation) -> candleDataIterator.beforeMinute(PeriodType.PERIOD_60, invocation.getArgument(1, Integer.class)));
+                .then((invocation) -> candleDataIterator.beforeMinute(PeriodType.PERIOD_60, invocation.getArgument(2, Integer.class)));
         when(candleService.getMinute(eq(240), anyString(), anyInt()))
-                .then((invocation) -> candleDataIterator.beforeMinute(PeriodType.PERIOD_240, invocation.getArgument(1, Integer.class)));
+                .then((invocation) -> candleDataIterator.beforeMinute(PeriodType.PERIOD_240, invocation.getArgument(2, Integer.class)));
 
         // AccountService
         Account krwAccount = new Account();
