@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs;
+package com.setvect.bokslcoin.autotrading.backtest;
 
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;

@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs;
 
+import com.setvect.bokslcoin.autotrading.backtest.BaseCondition;
 import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;

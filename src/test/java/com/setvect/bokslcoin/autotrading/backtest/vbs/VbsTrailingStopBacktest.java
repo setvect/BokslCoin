@@ -1,28 +1,26 @@
 package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
-import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.VbsTrailingStopService;
+import com.setvect.bokslcoin.autotrading.backtest.CandleDataIterator;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
+import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
-import com.setvect.bokslcoin.autotrading.model.CandleDay;
-import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
-import com.setvect.bokslcoin.autotrading.util.GsonUtil;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -36,16 +34,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -58,6 +52,9 @@ public class VbsTrailingStopBacktest {
     @Autowired
     private SlackMessageService slackMessageService;
 
+    @Autowired
+    private CandleRepository candleRepository;
+
     @Mock
     private AccountService accountService;
 
@@ -68,7 +65,7 @@ public class VbsTrailingStopBacktest {
     private OrderService orderService;
 
     @Spy
-    private TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
+    private final TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
 
     @InjectMocks
     private VbsTrailingStopService vbsTrailingStopService;
@@ -120,7 +117,7 @@ public class VbsTrailingStopBacktest {
 
 
         // === 3. 리포트 ===
-        VbsTrailingStopUtil.makeReport(condition, tradeHistory, testAnalysis);
+        makeReport(condition, tradeHistory, testAnalysis);
 
         System.out.println("끝");
     }
@@ -129,7 +126,7 @@ public class VbsTrailingStopBacktest {
     public void multiBacktest() throws IOException {
         String header = "분석기간,분석주기,대상 코인,변동성 비율(K),투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,손절,트레일링스탑 진입률,트레일링스탑 매도률,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
-        StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
+        StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
         VbsTrailingStopCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
@@ -159,9 +156,9 @@ public class VbsTrailingStopBacktest {
                     .tradeMargin(1_000)// 매매시 채결 가격 차이
                     .feeBid(0.0005) //  매수 수수료
                     .feeAsk(0.0005)//  매도 수수료
-                    .loseStopRate(0.5) // 손절 라인
-                    .gainStopRate(0.2) //트레일링 스탑 진입점
-                    .trailingStopRate(0.5) // 트레일링 스탑 하락 매도률
+                    .loseStopRate(0.05) // 손절 라인
+                    .gainStopRate(0.02) //트레일링 스탑 진입점
+                    .trailingStopRate(0.05) // 트레일링 스탑 하락 매도률
                     .tradePeriod(TradePeriod.P_1440) //매매 주기
                     .comment("-")
                     .build();
@@ -169,8 +166,8 @@ public class VbsTrailingStopBacktest {
 
             TestAnalysis testAnalysis;
             testAnalysis = backtest(condition);
-            report.append(getReportRow(condition, testAnalysis) + "\n");
-            VbsTrailingStopUtil.makeReport(condition, tradeHistory, testAnalysis);
+            report.append(getReportRow(condition, testAnalysis)).append("\n");
+            makeReport(condition, tradeHistory, testAnalysis);
 
             // -- 결과 저장 --
             File reportFile = new File("./backtest-result", "변동성돌파,손절,익절_전략_백테스트_분석결과_" + (++count) + ".txt");
@@ -216,38 +213,77 @@ public class VbsTrailingStopBacktest {
         injectionFieldValue(condition);
         tradeHistory = new ArrayList<>();
 
-        CandleDataIterator candleDataIterator = initMock(condition);
+        CandleDataIterator candleDataIterator = new CandleDataIterator(condition, candleRepository);
+        initMock(condition, candleDataIterator);
         while (candleDataIterator.hasNext()) {
+            candleDataIterator.next();
             vbsTrailingStopService.apply();
         }
         // 맨 마지막에 매도가 이루어 지지 않으면 종가로 매도
         VbsTrailingStopBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
-        if (lastBacktestRow.getAskPrice() == 0) {
+        if (lastBacktestRow.getBidPrice() != 0) {
             lastBacktestRow.setAskPrice(lastBacktestRow.getCandle().getTradePrice());
             lastBacktestRow.setFeePrice(lastBacktestRow.getInvestmentAmount() * condition.getFeeAsk());
             lastBacktestRow.setAskReason(AskReason.TIME);
         }
 
-
         Mockito.reset(candleService, orderService, accountService, tradeEvent);
-        return VbsTrailingStopUtil.analysis(tradeHistory);
+        return analysis(tradeHistory);
     }
 
 
-    private CandleDataIterator initMock(VbsTrailingStopCondition condition) {
-        File dataDir = new File("./craw-data/minute");
-        CandleDataIterator candleDataIterator = new CandleDataIterator(dataDir, condition);
-        // CandleService
-        when(candleService.getMinute(anyInt(), anyString())).then((invocation) -> {
-            if (candleDataIterator.hasNext()) {
-                return candleDataIterator.next();
-            }
-            return null;
-        });
+    public static TestAnalysis analysis(List<VbsTrailingStopBacktestRow> tradeHistory) {
+        TestAnalysis testAnalysis = new TestAnalysis();
+        if (tradeHistory.isEmpty()) {
+            return testAnalysis;
+        }
 
-        when(candleService.getDay(anyString(), eq(2))).then((invocation) -> candleDataIterator.beforeDayCandle());
-        when(candleService.getMinute(eq(60), anyString(), eq(2))).then((invocation) -> candleDataIterator.before60Minute());
-        when(candleService.getMinute(eq(240), anyString(), eq(2))).then((invocation) -> candleDataIterator.before240Minute());
+        double coinYield = tradeHistory.get(tradeHistory.size() - 1).getCandle().getTradePrice() / tradeHistory.get(0).getCandle().getOpeningPrice() - 1;
+        testAnalysis.setCoinYield(coinYield);
+        List<Double> values = new ArrayList<>();
+        values.add(tradeHistory.get(0).getCandle().getOpeningPrice());
+        values.addAll(tradeHistory.stream().skip(1).map(p -> p.getCandle().getTradePrice()).collect(Collectors.toList()));
+        testAnalysis.setCoinMdd(ApplicationUtil.getMdd(values));
+
+        values = new ArrayList<>();
+        values.add(tradeHistory.get(0).getFinalResult());
+        values.addAll(tradeHistory.stream().skip(1).map(VbsTrailingStopBacktestRow::getFinalResult).collect(Collectors.toList()));
+        testAnalysis.setRealMdd(ApplicationUtil.getMdd(values));
+
+        double realYield = tradeHistory.get(tradeHistory.size() - 1).getFinalResult() / tradeHistory.get(0).getFinalResult() - 1;
+        testAnalysis.setRealYield(realYield);
+
+        // 승률
+        for (VbsTrailingStopBacktestRow row : tradeHistory) {
+            if (row.getAskReason() == null || row.getAskReason() == AskReason.SKIP) {
+                continue;
+            }
+            if (row.getRealYield() > 0) {
+                testAnalysis.setGainCount(testAnalysis.getGainCount() + 1);
+            } else {
+                testAnalysis.setLossCount(testAnalysis.getLossCount() + 1);
+            }
+        }
+
+        LocalDateTime from = tradeHistory.get(0).getCandle().getCandleDateTimeUtc();
+        LocalDateTime to = tradeHistory.get(tradeHistory.size() - 1).getCandle().getCandleDateTimeUtc();
+        long dayCount = ChronoUnit.DAYS.between(from, to);
+        testAnalysis.setDayCount((int) dayCount);
+
+        return testAnalysis;
+    }
+
+    private void initMock(VbsTrailingStopCondition condition, CandleDataIterator candleDataIterator) {
+        when(candleService.getMinute(anyInt(), anyString()))
+                .then((invocation) -> candleDataIterator.getCurrentCandle());
+
+        when(candleService.getDay(anyString(), anyInt()))
+                .then((invocation) -> candleDataIterator.beforeDayCandle(invocation.getArgument(1, Integer.class)));
+
+        when(candleService.getMinute(eq(60), anyString(), anyInt()))
+                .then((invocation) -> candleDataIterator.beforeMinute(PeriodType.PERIOD_60, invocation.getArgument(2, Integer.class)));
+        when(candleService.getMinute(eq(240), anyString(), anyInt()))
+                .then((invocation) -> candleDataIterator.beforeMinute(PeriodType.PERIOD_240, invocation.getArgument(2, Integer.class)));
 
         // AccountService
         Account krwAccount = new Account();
@@ -255,9 +291,9 @@ public class VbsTrailingStopBacktest {
         krwAccount.setBalance(ApplicationUtil.toNumberString(condition.getCash()));
         when(accountService.getBalance(anyString())).then((method) -> {
             if (method.getArgument(0).equals("KRW")) {
-                return BigDecimal.valueOf(Double.valueOf(krwAccount.getBalance()));
+                return BigDecimal.valueOf(Double.parseDouble(krwAccount.getBalance()));
             }
-            return BigDecimal.valueOf(Double.valueOf(coinAccount.getBalance()));
+            return BigDecimal.valueOf(Double.parseDouble(coinAccount.getBalance()));
         });
 
         when(accountService.getAccount(anyString())).then((method) -> {
@@ -294,7 +330,6 @@ public class VbsTrailingStopBacktest {
             tradeHistory.add(backtestRow);
 
             log.debug("새로운 매매주기: {}", DateUtil.formatDateTime(currentCandle.getCandleDateTimeKst()));
-
 
             return null;
         }).when(tradeEvent).newPeriod(notNull());
@@ -354,7 +389,6 @@ public class VbsTrailingStopBacktest {
 
         // 매도
         doAnswer(invocation -> {
-            AskReason reason = invocation.getArgument(3);
             double tradePrice = invocation.getArgument(2);
             double balance = Double.parseDouble(coinAccount.getBalance());
             double askPrice = tradePrice - condition.getTradeMargin();
@@ -372,7 +406,6 @@ public class VbsTrailingStopBacktest {
             backtestRow.setFeePrice(backtestRow.getFeePrice() + fee);
             return null;
         }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
-        return candleDataIterator;
     }
 
     private void injectionFieldValue(VbsTrailingStopCondition condition) {
@@ -386,125 +419,65 @@ public class VbsTrailingStopBacktest {
         ReflectionTestUtils.setField(vbsTrailingStopService, "periodIdx", -1);
     }
 
-    class CandleDataIterator implements Iterator<CandleMinute> {
-        private final File dataDir;
-        private final VbsTrailingStopCondition condition;
-        private Iterator<CandleMinute> currentCandleIterator;
-        private LocalDateTime bundleDate;
-        private LocalDateTime currentUtc;
+    public static void makeReport(VbsTrailingStopCondition condition, List<VbsTrailingStopBacktestRow> tradeHistory, TestAnalysis testAnalysis) throws IOException {
+        String header = "날짜(KST),날짜(UTC),시가,고가,저가,종가,직전 종가,단위 수익률,매수 목표가,매매여부,매수 체결 가격,트레일링 스탑 진입,최고수익률,매도 체결 가격,매도 이유,실현 수익률,투자금,현금,투자 수익,수수료,투자 결과,현금 + 투자결과 - 수수료";
+        StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
+        for (VbsTrailingStopBacktestRow row : tradeHistory) {
+            String dateKst = DateUtil.formatDateTime(row.getCandle().getCandleDateTimeKst());
+            String dateUtc = DateUtil.formatDateTime(row.getCandle().getCandleDateTimeUtc());
+            report.append(String.format("%s\t", dateKst));
+            report.append(String.format("%s\t", dateUtc));
+            report.append(String.format("%,.0f\t", row.getCandle().getOpeningPrice()));
+            report.append(String.format("%,.0f\t", row.getCandle().getHighPrice()));
+            report.append(String.format("%,.0f\t", row.getCandle().getLowPrice()));
+            report.append(String.format("%,.0f\t", row.getCandle().getTradePrice()));
+            report.append(String.format("%,.0f\t", row.getBeforeTradePrice()));
+            report.append(String.format("%,.2f%%\t", row.getCandleYield() * 100));
+            report.append(String.format("%,.0f\t", row.getTargetPrice()));
+            report.append(String.format("%s\t", row.isTrade()));
+            report.append(String.format("%,.0f\t", row.getBidPrice()));
 
-        private Queue<Candle> beforeData = new CircularFifoQueue<>(60 * 24 * 2);
+            report.append(String.format("%s\t", row.isTrailingTrigger()));
+            report.append(String.format("%,.2f%%\t", row.getHighYield() * 100));
 
-        public CandleDataIterator(File dataDir, VbsTrailingStopCondition condition) {
-            this.dataDir = dataDir;
-            this.condition = condition;
-            bundleDate = condition.getRange().getFrom();
-            this.currentCandleIterator = Collections.emptyIterator();
+            report.append(String.format("%,.0f\t", row.getAskPrice()));
+            report.append(String.format("%s\t", row.getAskReason() == null ? "" : row.getAskReason()));
+            report.append(String.format("%,.2f%%\t", row.getRealYield() * 100));
+            report.append(String.format("%,.0f\t", row.getInvestmentAmount()));
+            report.append(String.format("%,.0f\t", row.getCash()));
+            report.append(String.format("%,.0f\t", row.getGains()));
+            report.append(String.format("%,.0f\t", row.getFeePrice()));
+            report.append(String.format("%,.0f\t", row.getInvestResult()));
+            report.append(String.format("%,.0f\n", row.getFinalResult()));
         }
 
-        @Override
-        public boolean hasNext() {
-            // 현재
-            boolean exist = currentCandleIterator.hasNext();
-            if (!exist) {
-                List<CandleMinute> candleList = nextBundle();
-                this.currentCandleIterator = candleList.iterator();
-            }
-            return this.currentCandleIterator.hasNext();
-        }
+        String reportFileName = String.format("%s(%s ~ %s)_%s.txt",
+                FilenameUtils.getBaseName(condition.getMarket()), condition.getRange().getFromString(), condition.getRange().getToString(), condition.getTradePeriod());
+        report.append("\n\n-----------\n");
+        report.append(String.format("실제 수익\t %,.2f%%", testAnalysis.getCoinYield() * 100)).append("\n");
+        report.append(String.format("실제 MDD\t %,.2f%%", testAnalysis.getCoinMdd() * 100)).append("\n");
+        report.append(String.format("실현 수익\t %,.2f%%", testAnalysis.getRealYield() * 100)).append("\n");
+        report.append(String.format("실현 MDD\t %,.2f%%", testAnalysis.getRealMdd() * 100)).append("\n");
+        report.append(String.format("매매회수\t %d", testAnalysis.getTradeCount())).append("\n");
+        report.append(String.format("승률\t %,.2f%%", testAnalysis.getWinRate() * 100)).append("\n");
+        report.append(String.format("CAGR\t %,.2f%%", testAnalysis.getCagr() * 100)).append("\n");
 
-        @Override
-        public CandleMinute next() {
-            if (hasNext()) {
-                CandleMinute currentCandleMinute = currentCandleIterator.next();
-                beforeData.add(currentCandleMinute);
-                currentUtc = currentCandleMinute.getCandleDateTimeUtc();
-                return currentCandleMinute;
-            }
-            throw new NoSuchElementException();
-        }
+        report.append("\n\n-----------\n");
+        report.append(String.format("분석기간\t %s", condition.getRange())).append("\n");
+        report.append(String.format("분석주기\t %s", condition.getTradePeriod())).append("\n");
+        report.append(String.format("대상 코인\t %s", condition.getMarket())).append("\n");
+        report.append(String.format("변동성 비율(K)\t %,.2f", condition.getK())).append("\n");
+        report.append(String.format("투자비율\t %,.2f%%", condition.getInvestRatio() * 100)).append("\n");
+        report.append(String.format("최초 투자금액\t %,f", condition.getCash())).append("\n");
+        report.append(String.format("매매 마진\t %,f", condition.getTradeMargin())).append("\n");
+        report.append(String.format("매수 수수료\t %,.2f%%", condition.getFeeBid() * 100)).append("\n");
+        report.append(String.format("매도 수수료\t %,.2f%%", condition.getFeeAsk() * 100)).append("\n");
+        report.append(String.format("손절\t %,.2f%%", condition.getLoseStopRate() * 100)).append("\n");
+        report.append(String.format("트레일링스탑 진입\t %,.2f%%", condition.getGainStopRate() * 100)).append("\n");
+        report.append(String.format("트레일링스탑 매도률\t %,.2f%%", condition.getTrailingStopRate() * 100)).append("\n");
 
-        @SneakyThrows
-        private List<CandleMinute> nextBundle() {
-            String dataFileName = String.format("%s-minute(%s).json", condition.getMarket(), DateUtil.format(bundleDate, "yyyy-MM"));
-            File dataFile = new File(dataDir, dataFileName);
-            if (!dataFile.exists()) {
-                log.warn("no exist file: {}", dataFile.getAbsolutePath());
-                return Collections.emptyList();
-            }
-            List<CandleMinute> candles = GsonUtil.GSON.fromJson(FileUtils.readFileToString(dataFile, "utf-8"), new TypeToken<List<CandleMinute>>() {
-            }.getType());
-            log.info(String.format("load data file: %s", dataFileName));
-
-            List<CandleMinute> candleFiltered = candles.stream().filter(p -> condition.getRange().isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            // 과거 데이터를 먼저(날짜 기준 오름 차순 정렬)
-            Collections.reverse(candleFiltered);
-
-            // 다음달 가르킴
-            bundleDate = bundleDate.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).plusMonths(1);
-            return candleFiltered;
-        }
-
-        public List<CandleDay> beforeDayCandle() {
-            LocalDateTime from = currentUtc.minusDays(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime to = from.plusDays(1).minusNanos(1);
-            DateRange range = new DateRange(from, to);
-            List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            // 수집이 안된 시간도 있음(업비트 오류로 판단)
-            // 그래서 분봉 데이터가 일정 갯수 이상 되면 계산
-            if (filtered.size() < TradePeriod.P_1440.getTotal() / 2) {
-                return Arrays.asList(null, null);
-            }
-            CandleDay period = new CandleDay();
-            Candle first = filtered.get(0);
-            Candle last = filtered.get(filtered.size() - 1);
-            period.setOpeningPrice(first.getOpeningPrice());
-            period.setCandleDateTimeUtc(first.getCandleDateTimeUtc());
-            period.setCandleDateTimeKst(first.getCandleDateTimeKst());
-            period.setTradePrice(last.getTradePrice());
-            double low = filtered.stream().mapToDouble(p -> p.getLowPrice()).min().getAsDouble();
-            period.setLowPrice(low);
-            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).max().getAsDouble();
-            period.setHighPrice(high);
-            return Arrays.asList(null, period);
-        }
-
-        public List<CandleMinute> before60Minute() {
-            LocalDateTime from = currentUtc.minusHours(1).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime to = from.plusHours(1).minusNanos(1);
-            return getCandleMinutes(from, to);
-        }
-
-        public List<CandleMinute> before240Minute() {
-            int diffHour = currentUtc.getHour() % 4 + 4;
-            LocalDateTime from = currentUtc.minusHours(diffHour).withMinute(0).withSecond(0).withNano(0);
-            LocalDateTime to = from.plusHours(4).minusNanos(1);
-            return getCandleMinutes(from, to);
-        }
-
-        private List<CandleMinute> getCandleMinutes(LocalDateTime from, LocalDateTime to) {
-            Duration duration = Duration.between(from, to);
-            long diffMinute = duration.getSeconds() / 60 + 1;
-
-            DateRange range = new DateRange(from, to);
-            List<Candle> filtered = beforeData.stream().filter(p -> range.isBetween(p.getCandleDateTimeUtc())).collect(Collectors.toList());
-            // 수집이 안된 시간도 있음(업비트 오류로 판단)
-            // 그래서 분봉 데이터가 일정 갯수 이상 되면 계산
-            if (filtered.size() < diffMinute / 2) {
-                return Arrays.asList(null, null);
-            }
-            CandleMinute period = new CandleMinute();
-            Candle first = filtered.get(0);
-            Candle last = filtered.get(filtered.size() - 1);
-            period.setOpeningPrice(first.getOpeningPrice());
-            period.setCandleDateTimeUtc(first.getCandleDateTimeUtc());
-            period.setCandleDateTimeKst(first.getCandleDateTimeKst());
-            period.setTradePrice(last.getTradePrice());
-            double low = filtered.stream().mapToDouble(p -> p.getLowPrice()).min().getAsDouble();
-            period.setLowPrice(low);
-            double high = filtered.stream().mapToDouble(p -> p.getHighPrice()).max().getAsDouble();
-            period.setHighPrice(high);
-            return Arrays.asList(null, period);
-        }
+        File reportFile = new File("./backtest-result", reportFileName);
+        FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
+        System.out.println("결과 파일:" + reportFile.getName());
     }
 }
