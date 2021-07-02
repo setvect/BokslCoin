@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -143,8 +144,8 @@ public class MabsBacktest {
                 new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
                 new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59") // 전체 기간
         );
-
         int count = 0;
+        Date now = new Date();
         for (DateRange range : rangeList) {
             condition = MabsCondition.builder()
                     .market("KRW-BTC")// 대상 코인
@@ -154,11 +155,11 @@ public class MabsBacktest {
                     .tradeMargin(1_000)// 매매시 채결 가격 차이
                     .feeBid(0.0005) //  매수 수수료
                     .feeAsk(0.0005)//  매도 수수료
-                    .upBuyRate(0.01) //상승 매수율
-                    .downSellRate(0.01) // 하락 매도률
-                    .shortPeriod(5) // 단기 이동평균 기간
-                    .longPeriod(10) // 장기 이동평균 기간
-                    .tradePeriod(TradePeriod.P_1440) //매매 주기
+                    .upBuyRate(0.005) //상승 매수율
+                    .downSellRate(0.005) // 하락 매도률
+                    .shortPeriod(10) // 단기 이동평균 기간
+                    .longPeriod(20) // 장기 이동평균 기간
+                    .tradePeriod(TradePeriod.P_240) //매매 주기
                     .build();
             log.info(condition.toString());
 
@@ -167,15 +168,16 @@ public class MabsBacktest {
             report.append(getReportRow(condition, testAnalysis) + "\n");
             makeReport(condition, tradeHistory, testAnalysis);
 
+
             // -- 결과 저장 --
-            File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + ".txt");
+            File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
             FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
             System.out.println("결과 파일:" + reportFile.getName());
 
         }
 
         // -- 결과 저장 --
-        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과.txt");
+        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + now.getTime() + ".txt");
         FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
         System.out.println("결과 파일:" + reportFile.getName());
 

@@ -1,5 +1,6 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
+package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
+import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
@@ -8,6 +9,8 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,6 +55,10 @@ public class VbsTrailingStopUtil {
         report.append(String.format("실제 MDD\t %,.2f%%", testAnalysis.getCoinMdd() * 100) + "\n");
         report.append(String.format("실현 수익\t %,.2f%%", testAnalysis.getRealYield() * 100) + "\n");
         report.append(String.format("실현 MDD\t %,.2f%%", testAnalysis.getRealMdd() * 100) + "\n");
+        report.append(String.format("매매회수\t %d", testAnalysis.getTradeCount())).append("\n");
+        report.append(String.format("승률\t %,.2f%%", testAnalysis.getWinRate() * 100)).append("\n");
+        report.append(String.format("CAGR\t %,.2f%%", testAnalysis.getCagr() * 100)).append("\n");
+
         report.append("\n\n-----------\n");
         report.append(String.format("분석기간\t %s", condition.getRange()) + "\n");
         report.append(String.format("분석주기\t %s", condition.getTradePeriod()) + "\n");
@@ -91,6 +98,24 @@ public class VbsTrailingStopUtil {
 
         double realYield = tradeHistory.get(tradeHistory.size() - 1).getFinalResult() / tradeHistory.get(0).getFinalResult() - 1;
         testAnalysis.setRealYield(realYield);
+
+        // 승률
+        for (VbsTrailingStopBacktestRow row : tradeHistory) {
+            if (row.getAskReason() == null || row.getAskReason() == AskReason.SKIP) {
+                continue;
+            }
+            if (row.getRealYield() > 0) {
+                testAnalysis.setGainCount(testAnalysis.getGainCount() + 1);
+            } else {
+                testAnalysis.setLossCount(testAnalysis.getLossCount() + 1);
+            }
+        }
+
+        LocalDateTime from = tradeHistory.get(0).getCandle().getCandleDateTimeUtc();
+        LocalDateTime to = tradeHistory.get(tradeHistory.size() - 1).getCandle().getCandleDateTimeUtc();
+        long dayCount = ChronoUnit.DAYS.between(from, to);
+        testAnalysis.setDayCount((int) dayCount);
+
         return testAnalysis;
     }
 }

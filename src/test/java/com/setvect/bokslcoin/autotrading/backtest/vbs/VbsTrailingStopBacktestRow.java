@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
+package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.model.Candle;

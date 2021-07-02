@@ -1,10 +1,10 @@
-package com.setvect.bokslcoin.autotrading.backtest.vbstrailingstop;
+package com.setvect.bokslcoin.autotrading.backtest.vbs;
 
 import com.google.gson.reflect.TypeToken;
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
-import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
+import com.setvect.bokslcoin.autotrading.algorithm.vbs.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.vbs.VbsTrailingStopService;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
@@ -114,6 +114,10 @@ public class VbsTrailingStopBacktest {
         System.out.printf("실제 MDD: %,.2f%%\n", testAnalysis.getCoinMdd() * 100);
         System.out.printf("실현 수익: %,.2f%%\n", testAnalysis.getRealYield() * 100);
         System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getRealMdd() * 100);
+        System.out.printf("매매 횟수: %d\n", testAnalysis.getTradeCount());
+        System.out.printf("승률: %,.2f%%\n", testAnalysis.getWinRate() * 100);
+        System.out.printf("CAGR: %,.2f%%\n", testAnalysis.getCagr() * 100);
+
 
         // === 3. 리포트 ===
         VbsTrailingStopUtil.makeReport(condition, tradeHistory, testAnalysis);
@@ -123,7 +127,7 @@ public class VbsTrailingStopBacktest {
 
     @Test
     public void multiBacktest() throws IOException {
-        String header = "분석기간,분석주기,대상 코인,변동성 비율(K),투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,손절,트레일링스탑 진입률,트레일링스탑 매도률,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD";
+        String header = "분석기간,분석주기,대상 코인,변동성 비율(K),투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,손절,트레일링스탑 진입률,트레일링스탑 매도률,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
         StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
         VbsTrailingStopCondition condition;
@@ -146,9 +150,6 @@ public class VbsTrailingStopBacktest {
 
         int count = 0;
         for (DateRange range : rangeList) {
-//            for (double loseStopRate = 0.01; loseStopRate <= 0.1; loseStopRate = Math.round((loseStopRate + 0.01) * 100.0) / 100.0) {
-//            for (double trailingStopRate = 0.01; trailingStopRate <= 0.1; trailingStopRate = Math.round((trailingStopRate + 0.01) * 100.0) / 100.0) {
-//            for (double gainStopRate = 0.01; gainStopRate <= 0.10; gainStopRate = Math.round((gainStopRate + 0.01) * 100.0) / 100.0) {
             condition = VbsTrailingStopCondition.builder()
                     .k(0.5) // 변동성 돌파 판단 비율
                     .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -159,7 +160,7 @@ public class VbsTrailingStopBacktest {
                     .feeBid(0.0005) //  매수 수수료
                     .feeAsk(0.0005)//  매도 수수료
                     .loseStopRate(0.5) // 손절 라인
-                    .gainStopRate(0.5) //트레일링 스탑 진입점
+                    .gainStopRate(0.2) //트레일링 스탑 진입점
                     .trailingStopRate(0.5) // 트레일링 스탑 하락 매도률
                     .tradePeriod(TradePeriod.P_1440) //매매 주기
                     .comment("-")
@@ -177,10 +178,6 @@ public class VbsTrailingStopBacktest {
             System.out.println("결과 파일:" + reportFile.getName());
 
         }
-//        }
-//        }
-//        }
-
 
         // -- 결과 저장 --
         File reportFile = new File("./backtest-result", "변동성돌파,손절,익절_전략_백테스트_분석결과.txt");
@@ -209,6 +206,9 @@ public class VbsTrailingStopBacktest {
         reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCoinMdd() * 100));
         reportRow.append(String.format("%,.2f%%\t", testAnalysis.getRealYield() * 100));
         reportRow.append(String.format("%,.2f%%\t", testAnalysis.getRealMdd() * 100));
+        reportRow.append(String.format("%d\t", testAnalysis.getTradeCount()));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getWinRate() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCagr() * 100));
         return reportRow;
     }
 
