@@ -53,10 +53,10 @@ com:
             # 손절 매도
             loseStopRate: 0.05
             # 트레일링 스탑 진입점
-            gainStopRate: 0.03
+            gainStopRate: 0.02
             # gainStopRate 이상 상승 후 전고점 대비 trailingStopRate 비율 만큼 하락하면 시장가 매도
             # 예를 들어 trailingStopRate 값이 0.02일 때 고점 수익률이 12%인 상태에서 10%미만으로 떨어지면 시장가 매도
-            trailingStopRate: 0.02
+            trailingStopRate: 0.04
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_1440
 
@@ -67,15 +67,15 @@ com:
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
             investRatio: 0.5
             # 매매 주기(P_60, P_240, P_1440)
-            tradePeriod: P_1440
+            tradePeriod: P_240
             # 상승 매수률
             upBuyRate: 0.01
             # 하락 매도률
             downSellRate: 0.01
             # 단기 이동평균 기간
-            shortPeriod: 5
+            shortPeriod: 3
             # 장기 이동평균 기간
-            longPeriod: 20
+            longPeriod: 15
 
         slack:
           # 이벤트 발생시 슬랙메시지 전달 여부

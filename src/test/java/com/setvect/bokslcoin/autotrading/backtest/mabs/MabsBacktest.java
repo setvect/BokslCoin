@@ -2,9 +2,9 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsService;
-import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.CandleDataIterator;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
@@ -79,8 +79,8 @@ public class MabsBacktest {
         // === 1. 변수값 설정 ===
         MabsCondition condition = MabsCondition.builder()
                 .market("KRW-BTC")// 대상 코인
-//                .range(new DateRange("2021-06-01T00:00:00", "2021-06-08T23:59:59"))
-                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+                .range(new DateRange("2021-06-17T00:00:00", "2021-07-02T23:59:59"))
+//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -100,9 +100,9 @@ public class MabsBacktest {
                 .feeAsk(0.0005)//  매도 수수료
                 .upBuyRate(0.01) //상승 매수율
                 .downSellRate(0.01) // 하락 매도률
-                .shortPeriod(5) // 단기 이동평균 기간
-                .longPeriod(10) // 장기 이동평균 기간
-                .tradePeriod(TradePeriod.P_1440) //매매 주기
+                .shortPeriod(3) // 단기 이동평균 기간
+                .longPeriod(15) // 장기 이동평균 기간
+                .tradePeriod(TradePeriod.P_240) //매매 주기
                 .build();
 
         // === 2. 백테스트 ===
@@ -156,10 +156,10 @@ public class MabsBacktest {
                     .tradeMargin(1_000)// 매매시 채결 가격 차이
                     .feeBid(0.0005) //  매수 수수료
                     .feeAsk(0.0005)//  매도 수수료
-                    .upBuyRate(0.005) //상승 매수율
-                    .downSellRate(0.005) // 하락 매도률
-                    .shortPeriod(10) // 단기 이동평균 기간
-                    .longPeriod(20) // 장기 이동평균 기간
+                    .upBuyRate(0.015) //상승 매수율
+                    .downSellRate(0.015) // 하락 매도률
+                    .shortPeriod(3) // 단기 이동평균 기간
+                    .longPeriod(15) // 장기 이동평균 기간
                     .tradePeriod(TradePeriod.P_240) //매매 주기
                     .build();
             log.info(condition.toString());
@@ -169,12 +169,10 @@ public class MabsBacktest {
             report.append(getReportRow(condition, testAnalysis) + "\n");
             makeReport(condition, tradeHistory, testAnalysis);
 
-
             // -- 결과 저장 --
             File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
             FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
             System.out.println("결과 파일:" + reportFile.getName());
-
         }
 
         // -- 결과 저장 --

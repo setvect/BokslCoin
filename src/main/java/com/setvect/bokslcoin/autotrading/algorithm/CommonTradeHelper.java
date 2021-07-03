@@ -24,6 +24,28 @@ public class CommonTradeHelper {
         return val.isPresent() ? val.getAsDouble() : 0;
     }
 
+    /**
+     * @param moveListCandle 캔들 시세(최근 시세가 앞)
+     * @param periodCount    가져올 갯수
+     * @return 종가 기준 가중 이동평균 값
+     */
+    public static double getMaWeight(List<Candle> moveListCandle, int periodCount) {
+        if (moveListCandle.size() < periodCount) {
+            return 0;
+        }
+
+        int totalCount = 0;
+        double totalSum = 0;
+        for (int i = 0; i < periodCount; i++) {
+            Double tradePrice = moveListCandle.get(i).getTradePrice();
+            int weight = periodCount - i;
+            totalCount += weight;
+            totalSum += tradePrice * weight;
+        }
+        double v = totalSum / totalCount;
+        return v;
+    }
+
 
     public static List<Candle> getCandles(CandleService candleService, String market, TradePeriod tradePeriod, int longPeriod) {
         List<Candle> moveListCandle = new ArrayList<>();
