@@ -34,7 +34,7 @@ public class CandleService {
      * @return 분(Minute) 캔들(최근이 순서대로)
      */
     public CandleMinute getMinute(int unit, String market) {
-        return getMinute(1, market, 1, null).get(0);
+        return getMinute(unit, market, 1, null).get(0);
     }
 
     /**
@@ -46,7 +46,7 @@ public class CandleService {
      * @return 분(Minute) 캔들(최근 순서대로)
      */
     public List<CandleMinute> getMinute(int unit, String market, int count) {
-        return getMinute(1, market, count, null);
+        return getMinute(unit, market, count, null);
     }
 
     /**

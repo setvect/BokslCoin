@@ -27,7 +27,7 @@ com:
     bokslcoin:
       autotrading:
         # true 매매 진행, false면 매매를 포함한 시세 확인을 하지 않음
-        enable: false
+        enable: true
         api:
           # 엑세스 키: 환경 변수 또는 직접 입력
           accessKey: ${ACCESS_KEY}

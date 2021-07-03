@@ -134,13 +134,14 @@ public class MabsService implements CoinTrading {
             return;
         }
 
-        log.debug(String.format("KST:%s, UTC: %s, 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f, 장기-단기 차이: %,.2f(%.2f%%)",
-                DateUtil.formatDateTime(nowUtc),
+        log.debug(String.format("KST:%s, UTC: %s, 매매기준 주기: %s, 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f, 단기-장기 차이: %,.2f(%.2f%%)",
                 DateUtil.formatDateTime(nowKst),
+                DateUtil.formatDateTime(nowUtc),
+                tradePeriod,
                 candle.getTradePrice(),
                 shortPeriod, maShort,
                 longPeriod, maLong,
-                maLong - maShort, (maShort / maLong - 1) * 100));
+                maShort - maLong, (maShort / maLong - 1) * 100));
 
         double balance = coinBalance.doubleValue();
         // 코인을 매수 했다면 매도 조건 판단
@@ -169,7 +170,9 @@ public class MabsService implements CoinTrading {
             if (isSell) {
                 doAsk(candle.getTradePrice(), balance, AskReason.MA_DOWN);
             }
-        } else if (!tradeCompleteOfPeriod) {
+        }
+        // 매수 조건 판단
+        else if (!tradeCompleteOfPeriod) {
             double buyTargetPrice = maLong + maLong * upBuyRate;
 
             //(장기이평 + 장기이평 * 상승매수률) <= 단기이평

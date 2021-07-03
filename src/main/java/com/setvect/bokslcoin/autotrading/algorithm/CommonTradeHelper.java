@@ -53,12 +53,15 @@ public class CommonTradeHelper {
             case P_60:
                 List<CandleMinute> t1 = candleService.getMinute(60, market, longPeriod);
                 moveListCandle.addAll(t1);
+                break;
             case P_240:
                 List<CandleMinute> t2 = candleService.getMinute(240, market, longPeriod);
                 moveListCandle.addAll(t2);
+                break;
             case P_1440:
                 List<CandleDay> t3 = candleService.getDay(market, longPeriod);
                 moveListCandle.addAll(t3);
+                break;
         }
         return moveListCandle;
     }
