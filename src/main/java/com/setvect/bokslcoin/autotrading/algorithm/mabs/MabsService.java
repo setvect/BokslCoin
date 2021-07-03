@@ -6,11 +6,13 @@ import com.setvect.bokslcoin.autotrading.algorithm.CommonTradeHelper;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
+import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
+import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ public class MabsService implements CoinTrading {
     private final AccountService accountService;
     private final CandleService candleService;
     private final TradeEvent tradeEvent;
+    private final OrderService orderService;
     private final SlackMessageService slackMessageService;
 
     /**
@@ -220,12 +223,12 @@ public class MabsService implements CoinTrading {
         BigDecimal krw = accountService.getBalance("KRW");
         // 매수 금액
         double bidPrice = krw.doubleValue() * investRatio;
-//        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
+        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
         tradeEvent.bid(market, currentPrice, bidPrice);
     }
 
     private void doAsk(double currentPrice, double balance, AskReason maDown) {
-//        orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
+        orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
         tradeEvent.ask(market, balance, currentPrice, maDown);
         tradeCompleteOfPeriod = true;
         highYield = 0;

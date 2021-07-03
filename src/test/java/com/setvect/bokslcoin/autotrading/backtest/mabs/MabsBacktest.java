@@ -156,8 +156,8 @@ public class MabsBacktest {
                     .tradeMargin(1_000)// 매매시 채결 가격 차이
                     .feeBid(0.0005) //  매수 수수료
                     .feeAsk(0.0005)//  매도 수수료
-                    .upBuyRate(0.015) //상승 매수율
-                    .downSellRate(0.015) // 하락 매도률
+                    .upBuyRate(0.01) //상승 매수율
+                    .downSellRate(0.01) // 하락 매도률
                     .shortPeriod(3) // 단기 이동평균 기간
                     .longPeriod(15) // 장기 이동평균 기간
                     .tradePeriod(TradePeriod.P_240) //매매 주기
