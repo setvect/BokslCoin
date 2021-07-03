@@ -76,6 +76,8 @@ com:
             shortPeriod: 3
             # 장기 이동평균 기간
             longPeriod: 15
+            # 하루에 한번씩 정해진 시간에 매수 또는 매도 목표가를 Slack 메시지 발송
+            slackTime: 08:00
 
         slack:
           # 이벤트 발생시 슬랙메시지 전달 여부

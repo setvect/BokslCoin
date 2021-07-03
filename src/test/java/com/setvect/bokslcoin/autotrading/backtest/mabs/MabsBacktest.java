@@ -51,11 +51,11 @@ import static org.mockito.Mockito.*;
 @ActiveProfiles("local")
 @Slf4j
 public class MabsBacktest {
-    @Autowired
-    private SlackMessageService slackMessageService;
 
     @Autowired
     private CandleRepository candleRepository;
+    @Mock
+    private SlackMessageService slackMessageService;
 
     @Mock
     private AccountService accountService;
@@ -384,6 +384,7 @@ public class MabsBacktest {
         ReflectionTestUtils.setField(mabsService, "shortPeriod", condition.getShortPeriod());
         ReflectionTestUtils.setField(mabsService, "longPeriod", condition.getLongPeriod());
         ReflectionTestUtils.setField(mabsService, "periodIdx", -1);
+        ReflectionTestUtils.setField(mabsService, "slackTime", "08:00");
     }
 
     private StringBuffer getReportRow(MabsCondition condition, TestAnalysis testAnalysis) {
