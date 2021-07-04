@@ -79,6 +79,23 @@ com:
             # 하루에 한번씩 정해진 시간에 매수 또는 매도 목표가를 Slack 메시지 발송
             slackTime: 08:00
 
+          # 이동평균선 반전 전략
+          mais:
+            # 매수, 매도 대상 코인
+            market: KRW-BTC
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            investRatio: 0.5
+            # 매매 주기(P_60, P_240, P_1440)
+            tradePeriod: P_240
+            # 상승 매수률
+            upBuyRate: 0.005
+            # 하락 매도률
+            downSellRate: 0.005
+            # 기준 이동평균 기간
+            basePeriod: 3
+            # 하루에 한번씩 정해진 시간에 매수 또는 매도 목표가를 Slack 메시지 발송
+            slackTime: 08:00
+
         slack:
           # 이벤트 발생시 슬랙메시지 전달 여부
           # 만약 슬렉 메시지를 받고 싶지 않으면 false로 셋팅 후 항목 token, channelId 값을 비워둠

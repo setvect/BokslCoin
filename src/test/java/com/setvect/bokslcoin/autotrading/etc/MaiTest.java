@@ -14,11 +14,11 @@ public class MaiTest {
 
         List<Double> priceList = Arrays.stream(t).boxed().collect(Collectors.toList());
         int maWindowSize = 3;
-        double current = MathUtil.getMa(priceList, 0, maWindowSize);
+        double current = MathUtil.getAverage(priceList, 0, maWindowSize);
         System.out.printf("current: %f\n", current);
         System.out.println("---------------------");
         int iterSize = 5;
-        List<Double> beforeMa = MathUtil.getAvgValues(priceList, 1, maWindowSize, iterSize);
+        List<Double> beforeMa = MathUtil.getAverageValues(priceList, 1, maWindowSize, iterSize);
 
         for (Double maValue : beforeMa) {
             System.out.printf("maValue: %f\n", maValue);

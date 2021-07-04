@@ -24,19 +24,27 @@ public interface TradeEvent {
 
     /**
      * 시세 체크
-     *  @param ma     이동평균
      *
+     * @param ma 이동평균
      */
     void setMaPrice(double ma);
 
     /**
-     * 시세 체크
+     * 이동평균 체크
      *
      * @param candle  분봉
      * @param maShort 단기 이동평균
      * @param maLong  장기 이동평균
      */
     void check(CandleMinute candle, double maShort, double maLong);
+
+    /**
+     * 이동평균 체크
+     *
+     * @param candle    분봉
+     * @param currentMa 단기 이동평균
+     */
+    void check(CandleMinute candle, double currentMa);
 
     /**
      * @param market     코인

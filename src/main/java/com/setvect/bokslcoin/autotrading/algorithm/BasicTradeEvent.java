@@ -40,6 +40,10 @@ public class BasicTradeEvent implements TradeEvent {
     }
 
     @Override
+    public void check(CandleMinute candle, double currentMa) {
+    }
+
+    @Override
     public void bid(String market, double tradePrice, double bidPrice) {
         String message = String.format("★★★ 시장가 매수, 코인: %s, 현재가: %,.2f, 매수 금액: %,.0f,", market, tradePrice, bidPrice);
         log.info(message);

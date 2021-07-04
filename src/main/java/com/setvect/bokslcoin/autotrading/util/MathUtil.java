@@ -17,7 +17,7 @@ public class MathUtil {
      * @param limit  시작 지점 기준
      * @return 평균값
      */
-    public static double getMa(List<Double> values, int start, int limit) {
+    public static double getAverage(List<Double> values, int start, int limit) {
         if (values.size() < start + limit) {
             String message = String.format("값을 계산하기 위한 리스트 사이즈가 작습니다. 리스트 사이즈: %d, start: %d, limit: %d", values.size(), start, limit);
             throw new RuntimeException(message);
@@ -31,6 +31,32 @@ public class MathUtil {
     }
 
     /**
+     * 배열에 일부 영역을 선택하여 가중치 평균 값을 구함
+     *
+     * @param values 대상 값
+     * @param start  시작 지점(0부터)
+     * @param limit  시작 지점 기준
+     * @return 평균값
+     */
+    public static double getAverageWeight(List<Double> values, int start, int limit) {
+        if (values.size() < start + limit) {
+            String message = String.format("값을 계산하기 위한 리스트 사이즈가 작습니다. 리스트 사이즈: %d, start: %d, limit: %d", values.size(), start, limit);
+            throw new RuntimeException(message);
+        }
+
+        int totalCount = 0;
+        double totalSum = 0;
+        for (int i = 0; i < limit; i++) {
+            Double tradePrice = values.get(i);
+            int weight = limit - i;
+            totalCount += weight;
+            totalSum += tradePrice * weight;
+        }
+        double v = totalSum / totalCount;
+        return v;
+    }
+
+    /**
      * Window 사이즈만 큼 offset를 하나씩 증가 시켜 iterSize 만큼 평균값을 구함
      *
      * @param priceList    값이 들어 있는 배열
@@ -39,10 +65,10 @@ public class MathUtil {
      * @param iterSize     총
      * @return 평균값
      */
-    public static List<Double> getAvgValues(List<Double> priceList, int offset, int maWindowSize, int iterSize) {
+    public static List<Double> getAverageValues(List<Double> priceList, int offset, int maWindowSize, int iterSize) {
         List<Double> beforeMaWindow = new ArrayList<>();
         for (int i = 0; i < iterSize; i++) {
-            double ma = getMa(priceList, i + offset, maWindowSize);
+            double ma = getAverage(priceList, i + offset, maWindowSize);
             beforeMaWindow.add(ma);
         }
         return beforeMaWindow;
