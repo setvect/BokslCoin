@@ -78,9 +78,9 @@ public class MabsBacktest {
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
         MabsCondition condition = MabsCondition.builder()
-                .market("KRW-BTC")// 대상 코인
-                .range(new DateRange("2021-06-17T00:00:00", "2021-07-02T23:59:59"))
-//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+                .market("KRW-XRP")// 대상 코인
+//                .range(new DateRange("2021-06-17T00:00:00", "2021-07-02T23:59:59"))
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -95,7 +95,7 @@ public class MabsBacktest {
 //                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
                 .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                 .cash(10_000_000) // 최초 투자 금액
-                .tradeMargin(1_000)// 매매시 채결 가격 차이
+                .tradeMargin(5)// 매매시 채결 가격 차이
                 .feeBid(0.0005) //  매수 수수료
                 .feeAsk(0.0005)//  매도 수수료
                 .upBuyRate(0.01) //상승 매수율
@@ -147,34 +147,39 @@ public class MabsBacktest {
         );
         int count = 0;
         Date now = new Date();
-        for (DateRange range : rangeList) {
-            condition = MabsCondition.builder()
-                    .market("KRW-BTC")// 대상 코인
-                    .range(range)
-                    .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                    .cash(10_000_000) // 최초 투자 금액
-                    .tradeMargin(1_000)// 매매시 채결 가격 차이
-                    .feeBid(0.0005) //  매수 수수료
-                    .feeAsk(0.0005)//  매도 수수료
-                    .upBuyRate(0.01) //상승 매수율
-                    .downSellRate(0.01) // 하락 매도률
-                    .shortPeriod(3) // 단기 이동평균 기간
-                    .longPeriod(15) // 장기 이동평균 기간
-                    .tradePeriod(TradePeriod.P_240) //매매 주기
-                    .build();
-            log.info(condition.toString());
+        int[] shortPeriod = {3, 5};
+        int[] longPeriod = {15, 25, 35};
+        for (int sp : shortPeriod) {
+            for (int lp : longPeriod) {
+                for (DateRange range : rangeList) {
+                    condition = MabsCondition.builder()
+                            .market("KRW-XRP")// 대상 코인
+                            .range(range)
+                            .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                            .cash(10_000_000) // 최초 투자 금액
+                            .tradeMargin(1)// 매매시 채결 가격 차이
+                            .feeBid(0.0006) //  매수 수수료
+                            .feeAsk(0.0006)//  매도 수수료
+                            .upBuyRate(0.01) //상승 매수율
+                            .downSellRate(0.01) // 하락 매도률
+                            .shortPeriod(sp) // 단기 이동평균 기간
+                            .longPeriod(lp) // 장기 이동평균 기간
+                            .tradePeriod(TradePeriod.P_240) //매매 주기
+                            .build();
+                    log.info(condition.toString());
 
-            TestAnalysis testAnalysis;
-            testAnalysis = backtest(condition);
-            report.append(getReportRow(condition, testAnalysis) + "\n");
-            makeReport(condition, tradeHistory, testAnalysis);
+                    TestAnalysis testAnalysis;
+                    testAnalysis = backtest(condition);
+                    report.append(getReportRow(condition, testAnalysis) + "\n");
+                    makeReport(condition, tradeHistory, testAnalysis);
 
-            // -- 결과 저장 --
-            File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
-            FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
-            System.out.println("결과 파일:" + reportFile.getName());
+                    // -- 결과 저장 --
+                    File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
+                    FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
+                    System.out.println("결과 파일:" + reportFile.getName());
+                }
+            }
         }
-
         // -- 결과 저장 --
         File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + now.getTime() + ".txt");
         FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");

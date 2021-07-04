@@ -1,6 +1,5 @@
 package com.setvect.bokslcoin.autotrading.util;
 
-import com.setvect.bokslcoin.autotrading.model.Candle;
 import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -24,7 +23,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalDouble;
 
 /**
  * 어플리케이션의 의존적인 유틸성 메소드
