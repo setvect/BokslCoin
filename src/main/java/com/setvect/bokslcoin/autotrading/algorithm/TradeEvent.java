@@ -43,8 +43,10 @@ public interface TradeEvent {
      *
      * @param candle    분봉
      * @param currentMa 단기 이동평균
+     * @param maxMa  직전 이동 평균에서 연속된 최대값
+     * @param minMa  직전 이동 평균에서 연속된 최소값
      */
-    void check(CandleMinute candle, double currentMa);
+    void check(CandleMinute candle, double currentMa, double maxMa, double minMa);
 
     /**
      * @param market     코인

@@ -39,7 +39,7 @@ com:
           fixedDelay: 10000
         algorithm:
           # 매매 알고리즘 지정
-          name: mabs # vbsTrailingStop, mabs
+          name: mais # vbsTrailingStop, mabs, mais
           # 변동성 돌파 + 손절 + 트레일링 스탑 알고리즘 관련 설정값
           vbsTrailingStop:
             # 매수, 매도 대상 코인
@@ -92,7 +92,7 @@ com:
             # 하락 매도률
             downSellRate: 0.005
             # 기준 이동평균 기간
-            basePeriod: 3
+            maPeriod: 5
             # 하루에 한번씩 정해진 시간에 매수 또는 매도 목표가를 Slack 메시지 발송
             slackTime: 08:00
 

@@ -80,7 +80,7 @@ public class MabsBacktest {
         MabsCondition condition = MabsCondition.builder()
                 .market("KRW-XRP")// 대상 코인
 //                .range(new DateRange("2021-06-17T00:00:00", "2021-07-02T23:59:59"))
-                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -92,15 +92,15 @@ public class MabsBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59")) // 하락장3
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
 //                .range(new DateRange("02019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
-//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
-                .investRatio(0.5) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+                .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                 .cash(10_000_000) // 최초 투자 금액
-                .tradeMargin(5)// 매매시 채결 가격 차이
-                .feeBid(0.0005) //  매수 수수료
-                .feeAsk(0.0005)//  매도 수수료
+                .tradeMargin(1)// 매매시 채결 가격 차이
+                .feeBid(0.0006) //  매수 수수료
+                .feeAsk(0.0006)//  매도 수수료
                 .upBuyRate(0.01) //상승 매수율
                 .downSellRate(0.01) // 하락 매도률
-                .shortPeriod(3) // 단기 이동평균 기간
+                .shortPeriod(5) // 단기 이동평균 기간
                 .longPeriod(15) // 장기 이동평균 기간
                 .tradePeriod(TradePeriod.P_240) //매매 주기
                 .build();

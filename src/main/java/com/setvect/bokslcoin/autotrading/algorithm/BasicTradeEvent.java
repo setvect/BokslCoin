@@ -40,7 +40,7 @@ public class BasicTradeEvent implements TradeEvent {
     }
 
     @Override
-    public void check(CandleMinute candle, double currentMa) {
+    public void check(CandleMinute candle, double currentMa, double maxMa, double minMa) {
     }
 
     @Override
