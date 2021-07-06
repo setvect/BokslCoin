@@ -46,7 +46,7 @@ public class MaisService implements CoinTrading {
     /**
      * 과거 이평선 비교 범위
      */
-    private static final int COMPARISON_RANGE = 5;
+    private static final int COMPARISON_RANGE = 10;
 
     /**
      * 매수, 매도 대상 코인
@@ -188,7 +188,7 @@ public class MaisService implements CoinTrading {
 
             //매수 조건: 현재 이평이 직전 이평가격 보다 클 경우
             boolean isBuy = currentMa >= buyTargetPrice;
-            String message = String.format("매수 조건: MA_%d >= MA_MIN + MA_MIN * 상승매수률(%.2f%%) ==> %,.2f <= %,.2f ==> %s\"", maPeriod, upBuyRate * 100, currentMa, buyTargetPrice, isBuy);
+            String message = String.format("매수 조건: MA_%d >= MA_MIN + MA_MIN * 상승매수률(%.2f%%) ==> %,.2f <= %,.2f ==> %s", maPeriod, upBuyRate * 100, currentMa, buyTargetPrice, isBuy);
             sendSlack(message, candle.getCandleDateTimeKst());
             log.debug(message);
             if (isBuy) {
@@ -229,13 +229,13 @@ public class MaisService implements CoinTrading {
         BigDecimal krw = accountService.getBalance("KRW");
         // 매수 금액
         double bidPrice = krw.doubleValue() * investRatio;
-        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
-//        tradeEvent.bid(market, currentPrice, bidPrice);
+//        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
+        tradeEvent.bid(market, currentPrice, bidPrice);
     }
 
     private void doAsk(double currentPrice, double balance, AskReason maDown) {
-        orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
-//        tradeEvent.ask(market, balance, currentPrice, maDown);
+//        orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
+        tradeEvent.ask(market, balance, currentPrice, maDown);
         tradeCompleteOfPeriod = true;
         highYield = 0;
     }

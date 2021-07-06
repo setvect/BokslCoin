@@ -46,7 +46,7 @@ public class MathUtil {
 
         int totalCount = 0;
         double totalSum = 0;
-        for (int i = 0; i < limit; i++) {
+        for (int i = start; i < start + limit; i++) {
             Double tradePrice = values.get(i);
             int weight = limit - i;
             totalCount += weight;

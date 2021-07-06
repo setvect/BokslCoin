@@ -32,7 +32,7 @@ public class SaveJsonToDb {
 
     @Test
     public void test() throws IOException {
-        String market = "KRW-XRP";
+        String market = "KRW-BTC";
 
         File dir = new File("./craw-data/minute");
         File[] files = dir.listFiles(n -> n.getName().contains(market));
