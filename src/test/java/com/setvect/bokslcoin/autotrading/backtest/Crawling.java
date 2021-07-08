@@ -66,7 +66,7 @@ public class Crawling {
     @Test
     public void 분봉수집() throws IOException, InterruptedException {
         makeSaveDir(SAVE_DIR_MINUTE);
-        List<String> marketList = Arrays.asList("KRW-ETH", "KRW-XRP", "KRW-DOGE");
+        List<String> marketList = Arrays.asList("KRW-BTC");
 
         for (String market : marketList) {
             List<CandleMinute> acc = new ArrayList<>();

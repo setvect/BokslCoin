@@ -149,7 +149,7 @@ public class MaisBacktest {
         );
         int count = 0;
         Date now = new Date();
-        int[] maPeriod = {35, 38, 42};
+        int[] maPeriod = {16, 17, 18, 19};
         for (int ma : maPeriod) {
             for (DateRange range : rangeList) {
                 condition = MaisCondition.builder()

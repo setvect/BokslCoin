@@ -1,10 +1,10 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs;
+package com.setvect.bokslcoin.autotrading.backtest.mabsss;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
-import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsService;
+import com.setvect.bokslcoin.autotrading.algorithm.mabsss.MabsSplitSellService;
 import com.setvect.bokslcoin.autotrading.backtest.CandleDataIterator;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
@@ -50,7 +50,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
-public class MabsBacktest {
+public class MabsSplitSellBacktest {
 
     @Autowired
     private CandleRepository candleRepository;
@@ -70,17 +70,17 @@ public class MabsBacktest {
     private final TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
 
     @InjectMocks
-    private MabsService mabsService;
+    private MabsSplitSellService mabsSplitSellService;
 
-    private List<MabsBacktestRow> tradeHistory;
+    private List<MabsSplitSellBacktestRow> tradeHistory;
 
     @Test
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
-        MabsCondition condition = MabsCondition.builder()
+        MabsSplitSellCondition condition = MabsSplitSellCondition.builder()
                 .market("KRW-BTC")// 대상 코인
-                .range(new DateRange("2021-06-17T00:00:00", "2021-07-07T23:59:59"))
-//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+//                .range(new DateRange("2021-06-17T00:00:00", "2021-07-07T23:59:59"))
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -129,7 +129,7 @@ public class MabsBacktest {
         String header = "분석기간,분석주기,대상 코인,투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,단기 이동평균 기간,장기 이동평균 기간,조건 설명,실제 수익,실제 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
         StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
-        MabsCondition condition;
+        MabsSplitSellCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
                 new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
@@ -154,7 +154,7 @@ public class MabsBacktest {
         for (int sp : shortPeriod) {
             for (int lp : longPeriod) {
                 for (DateRange range : rangeList) {
-                    condition = MabsCondition.builder()
+                    condition = MabsSplitSellCondition.builder()
                             .market("KRW-BTC")// 대상 코인
                             .range(range)
                             .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -191,7 +191,7 @@ public class MabsBacktest {
         System.out.println("끝");
     }
 
-    private TestAnalysis backtest(MabsCondition condition) {
+    private TestAnalysis backtest(MabsSplitSellCondition condition) {
         injectionFieldValue(condition);
         tradeHistory = new ArrayList<>();
 
@@ -200,22 +200,24 @@ public class MabsBacktest {
         initMock(condition, candleDataIterator);
         while (candleDataIterator.hasNext()) {
             candleDataIterator.next();
-            mabsService.apply();
+            mabsSplitSellService.apply();
         }
 
         // 맨 마지막에 매도가 이루어 지지 않으면 종가로 매도
-        MabsBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
+        MabsSplitSellBacktestRow lastBacktestRow = tradeHistory.get(tradeHistory.size() - 1);
         if (lastBacktestRow.getBidPrice() != 0) {
-            lastBacktestRow.setAskPrice(lastBacktestRow.getCandle().getTradePrice());
+            lastBacktestRow.setAskPrice(lastBacktestRow.getCandle().getTradePrice() - condition.getTradeMargin());
             lastBacktestRow.setFeePrice(lastBacktestRow.getInvestmentAmount() * condition.getFeeAsk());
             lastBacktestRow.setAskReason(AskReason.TIME);
+            lastBacktestRow.setAskBalance(lastBacktestRow.getBalance());
+            lastBacktestRow.addGainHistory(lastBacktestRow.getGains());
         }
 
         Mockito.reset(candleService, orderService, accountService, tradeEvent);
         return analysis(tradeHistory);
     }
 
-    public static TestAnalysis analysis(List<MabsBacktestRow> tradeHistory) {
+    public static TestAnalysis analysis(List<MabsSplitSellBacktestRow> tradeHistory) {
         TestAnalysis testAnalysis = new TestAnalysis();
         if (tradeHistory.isEmpty()) {
             return testAnalysis;
@@ -237,7 +239,7 @@ public class MabsBacktest {
         testAnalysis.setRealYield(realYield);
 
         // 승률
-        for (MabsBacktestRow row : tradeHistory) {
+        for (MabsSplitSellBacktestRow row : tradeHistory) {
             if (row.getAskReason() == null || row.getAskReason() == AskReason.SKIP) {
                 continue;
             }
@@ -258,7 +260,7 @@ public class MabsBacktest {
         return testAnalysis;
     }
 
-    private void initMock(MabsCondition condition, CandleDataIterator candleDataIterator) {
+    private void initMock(MabsSplitSellCondition condition, CandleDataIterator candleDataIterator) {
         when(candleService.getMinute(anyInt(), anyString()))
                 .then((invocation) -> candleDataIterator.getCurrentCandle());
 
@@ -287,29 +289,30 @@ public class MabsBacktest {
             }
             return Optional.of(coinAccount);
         });
-        AtomicReference<MabsBacktestRow> backtestInfoAtom = new AtomicReference<>();
+        AtomicReference<MabsSplitSellBacktestRow> backtestInfoAtom = new AtomicReference<>();
 
         // 새로운 매매주기
         doAnswer(invocation -> {
-            MabsBacktestRow beforeBacktestRow = backtestInfoAtom.get();
+            MabsSplitSellBacktestRow beforeBacktestRow = backtestInfoAtom.get();
             Candle currentCandle = invocation.getArgument(0);
-            MabsBacktestRow backtestRow = new MabsBacktestRow(currentCandle);
+            MabsSplitSellBacktestRow backtestRow = new MabsSplitSellBacktestRow(currentCandle);
 
             if (beforeBacktestRow != null) {
-                //  매수는 했는데 매도를 하지 않았을 경우
-                if (beforeBacktestRow.getBidPrice() != 0 && beforeBacktestRow.getAskPrice() == 0) {
-                    // 아직 매도하지 않았으므로 매도 채결가격은 매수 채결가격과 동일하게
-                    beforeBacktestRow.setAskPrice(beforeBacktestRow.getBidPrice());
-                    beforeBacktestRow.setAskReason(AskReason.SKIP);
+                // 매수 상태 체크
+                if (beforeBacktestRow.getBalance() != 0) {
+                    //  매수는 했는데 매도를 하지 않았을 경우
+                    if (beforeBacktestRow.getAskReason() == null) {
+                        beforeBacktestRow.setAskReason(AskReason.SKIP);
+                    }
 
                     backtestRow.setTrade(beforeBacktestRow.isTrade());
                     backtestRow.setBidPrice(beforeBacktestRow.getBidPrice());
-                    backtestRow.setInvestmentAmount(beforeBacktestRow.getInvestmentAmount());
+                    backtestRow.setBalance(beforeBacktestRow.getBalance());
+                    backtestRow.setGainsHistory(beforeBacktestRow.getGainsHistory());
                 }
                 double beforeTradePrice = beforeBacktestRow.getCandle().getTradePrice();
                 backtestRow.setBeforeTradePrice(beforeTradePrice);
             }
-
             backtestRow.setCash(Double.parseDouble(krwAccount.getBalance()));
             backtestInfoAtom.set(backtestRow);
             tradeHistory.add(backtestRow);
@@ -323,12 +326,12 @@ public class MabsBacktest {
         // 시세 체크
         doAnswer(invocation -> {
             Candle currentCandle = invocation.getArgument(0);
-            MabsBacktestRow backtestRow = backtestInfoAtom.get();
+            MabsSplitSellBacktestRow backtestRow = backtestInfoAtom.get();
             Candle candle = backtestRow.getCandle();
             candle.setLowPrice(Math.min(candle.getLowPrice(), currentCandle.getLowPrice()));
             candle.setHighPrice(Math.max(candle.getHighPrice(), currentCandle.getHighPrice()));
             candle.setTradePrice(currentCandle.getTradePrice());
-            backtestRow.setHighYield(Math.max(backtestRow.getHighYield(), mabsService.getHighYield()));
+            backtestRow.setHighYield(Math.max(backtestRow.getHighYield(), mabsSplitSellService.getHighYield()));
             backtestRow.setMaShort(invocation.getArgument(1));
             backtestRow.setMaLong(invocation.getArgument(2));
             return null;
@@ -336,7 +339,7 @@ public class MabsBacktest {
 
         // 매수
         doAnswer(invocation -> {
-            MabsBacktestRow backtestRow = backtestInfoAtom.get();
+            MabsSplitSellBacktestRow backtestRow = backtestInfoAtom.get();
             double tradePrice = invocation.getArgument(1);
             double bidPrice = tradePrice + condition.getTradeMargin();
             // 매수가를 매수 목표가로 즉 호가창 이동 없이 바로 잡았다고 가정
@@ -350,52 +353,67 @@ public class MabsBacktest {
             double remainCash = cash - fee;
             krwAccount.setBalance(ApplicationUtil.toNumberString(remainCash));
 
-            String balance = ApplicationUtil.toNumberString(investAmount / bidPrice);
-            coinAccount.setBalance(balance);
+            double balance = investAmount / bidPrice;
+            String balanceStr = ApplicationUtil.toNumberString(balance);
+            coinAccount.setBalance(balanceStr);
 
             backtestRow.setTrade(true);
             backtestRow.setBidPrice(bidPrice);
-            backtestRow.setInvestmentAmount(investAmount);
             backtestRow.setCash(cash);
             backtestRow.setFeePrice(fee);
+            backtestRow.setBalance(balance);
+
             return null;
         }).when(tradeEvent).bid(anyString(), anyDouble(), anyDouble());
 
         // 매도
         doAnswer(invocation -> {
             double tradePrice = invocation.getArgument(2);
-            double balance = Double.parseDouble(coinAccount.getBalance());
+            double askBalance = invocation.getArgument(1);
             double askPrice = tradePrice - condition.getTradeMargin();
-            double askAmount = askPrice * balance;
+            double askAmount = askPrice * askBalance;
             double fee = askAmount * condition.getFeeAsk();
+            AskReason askReason = invocation.getArgument(3);
 
+            MabsSplitSellBacktestRow backtestRow = backtestInfoAtom.get();
             double totalCash = Double.parseDouble(krwAccount.getBalance()) + askAmount - fee;
             krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
-            coinAccount.setBalance("0");
-            coinAccount.setAvgBuyPrice(null);
+            backtestRow.setCash(totalCash);
 
-            MabsBacktestRow backtestRow = backtestInfoAtom.get();
+            if (askReason == AskReason.SPLIT) {
+                double restBalance = Double.parseDouble(coinAccount.getBalance()) - askBalance;
+                coinAccount.setBalance(ApplicationUtil.toNumberString(restBalance));
+                backtestRow.setBalance(restBalance);
+            } else {
+                coinAccount.setBalance("0");
+                coinAccount.setAvgBuyPrice(null);
+                backtestRow.setBalance(0);
+            }
+            backtestRow.setAskBalance(askBalance);
+
             backtestRow.setAskPrice(askPrice);
             backtestRow.setAskReason(invocation.getArgument(3));
             backtestRow.setFeePrice(backtestRow.getFeePrice() + fee);
+            backtestRow.addGainHistory(backtestRow.getGains());
+
             return null;
         }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
     }
 
 
-    private void injectionFieldValue(MabsCondition condition) {
-        ReflectionTestUtils.setField(mabsService, "market", condition.getMarket());
-        ReflectionTestUtils.setField(mabsService, "investRatio", condition.getInvestRatio());
-        ReflectionTestUtils.setField(mabsService, "upBuyRate", condition.getUpBuyRate());
-        ReflectionTestUtils.setField(mabsService, "downSellRate", condition.getDownSellRate());
-        ReflectionTestUtils.setField(mabsService, "tradePeriod", condition.getTradePeriod());
-        ReflectionTestUtils.setField(mabsService, "shortPeriod", condition.getShortPeriod());
-        ReflectionTestUtils.setField(mabsService, "longPeriod", condition.getLongPeriod());
-        ReflectionTestUtils.setField(mabsService, "periodIdx", -1);
-        ReflectionTestUtils.setField(mabsService, "slackTime", "08:00");
+    private void injectionFieldValue(MabsSplitSellCondition condition) {
+        ReflectionTestUtils.setField(mabsSplitSellService, "market", condition.getMarket());
+        ReflectionTestUtils.setField(mabsSplitSellService, "investRatio", condition.getInvestRatio());
+        ReflectionTestUtils.setField(mabsSplitSellService, "upBuyRate", condition.getUpBuyRate());
+        ReflectionTestUtils.setField(mabsSplitSellService, "downSellRate", condition.getDownSellRate());
+        ReflectionTestUtils.setField(mabsSplitSellService, "tradePeriod", condition.getTradePeriod());
+        ReflectionTestUtils.setField(mabsSplitSellService, "shortPeriod", condition.getShortPeriod());
+        ReflectionTestUtils.setField(mabsSplitSellService, "longPeriod", condition.getLongPeriod());
+        ReflectionTestUtils.setField(mabsSplitSellService, "periodIdx", -1);
+        ReflectionTestUtils.setField(mabsSplitSellService, "slackTime", "08:00");
     }
 
-    private StringBuffer getReportRow(MabsCondition condition, TestAnalysis testAnalysis) {
+    private StringBuffer getReportRow(MabsSplitSellCondition condition, TestAnalysis testAnalysis) {
         StringBuffer reportRow = new StringBuffer();
         reportRow.append(String.format("%s\t", condition.getRange()));
         reportRow.append(String.format("%s\t", condition.getTradePeriod()));
@@ -421,10 +439,12 @@ public class MabsBacktest {
     }
 
 
-    public static void makeReport(MabsCondition condition, List<MabsBacktestRow> tradeHistory, TestAnalysis testAnalysis) throws IOException {
-        String header = "날짜(KST),날짜(UTC),시가,고가,저가,종가,직전 종가,단위 수익률,단기 이동평균, 장기 이동평균,매매여부,매수 체결 가격,최고수익률,매도 체결 가격,매도 이유,실현 수익률,투자금,현금,투자 수익,수수료,투자 결과,현금 + 투자결과 - 수수료";
+    public static void makeReport(MabsSplitSellCondition condition, List<MabsSplitSellBacktestRow> tradeHistory, TestAnalysis testAnalysis) throws IOException {
+        String header = "날짜(KST),날짜(UTC),시가,고가,저가,종가,직전 종가,단위 수익률,단기 이동평균, 장기 이동평균,매매여부,매수 체결 가격,보유물량,최고수익률,매도 체결 가격,매도 물량,매도 이유,실현 수익률,투자금,현금,투자 수익,투자 수익 합,수수료,투자 결과,현금 + 투자결과 - 수수료";
         StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
-        for (MabsBacktestRow row : tradeHistory) {
+
+        for (MabsSplitSellBacktestRow row : tradeHistory) {
+
             String dateKst = DateUtil.formatDateTime(row.getCandle().getCandleDateTimeKst());
             String dateUtc = DateUtil.formatDateTime(row.getCandle().getCandleDateTimeUtc());
             report.append(String.format("%s\t", dateKst));
@@ -439,13 +459,16 @@ public class MabsBacktest {
             report.append(String.format("%,.0f\t", row.getMaLong()));
             report.append(String.format("%s\t", row.isTrade()));
             report.append(String.format("%,.0f\t", row.getBidPrice()));
+            report.append(String.format("%,f\t", row.getBalance()));
             report.append(String.format("%,.2f%%\t", row.getHighYield() * 100));
             report.append(String.format("%,.0f\t", row.getAskPrice()));
+            report.append(String.format("%,f\t", row.getAskBalance()));
             report.append(String.format("%s\t", row.getAskReason() == null ? "" : row.getAskReason()));
             report.append(String.format("%,.2f%%\t", row.getRealYield() * 100));
             report.append(String.format("%,.0f\t", row.getInvestmentAmount()));
             report.append(String.format("%,.0f\t", row.getCash()));
             report.append(String.format("%,.0f\t", row.getGains()));
+            report.append(String.format("%,.0f\t", row.getGainsTradeSum()));
             report.append(String.format("%,.0f\t", row.getFeePrice()));
             report.append(String.format("%,.0f\t", row.getInvestResult()));
             report.append(String.format("%,.0f\n", row.getFinalResult()));

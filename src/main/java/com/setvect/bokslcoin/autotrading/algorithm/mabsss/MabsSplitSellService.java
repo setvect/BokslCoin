@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.algorithm.mabs;
+package com.setvect.bokslcoin.autotrading.algorithm.mabsss;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
@@ -30,12 +30,12 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 이평선 돌파 전략
+ * 이평선 돌파 전략 + 분할 매도
  */
-@Service("mabs")
+@Service("mabsss")
 @Slf4j
 @RequiredArgsConstructor
-public class MabsService implements CoinTrading {
+public class MabsSplitSellService implements CoinTrading {
     private final AccountService accountService;
     private final CandleService candleService;
     private final TradeEvent tradeEvent;
@@ -45,51 +45,68 @@ public class MabsService implements CoinTrading {
     /**
      * 매수, 매도 대상 코인
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.market}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.market}")
     private String market;
 
     /**
      * 총 현금을 기준으로 투자 비율
      * 1은 100%, 0.5은 50% 투자
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.investRatio}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.investRatio}")
     private double investRatio;
 
     /**
      * 매매 주기
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.tradePeriod}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.tradePeriod}")
     private TradePeriod tradePeriod;
 
     /**
      * 상승 매수률
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.upBuyRate}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.upBuyRate}")
     private double upBuyRate;
 
     /**
      * 하락 매도률
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.downSellRate}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.downSellRate}")
     private double downSellRate;
 
     /**
      * 단기 이동평균 기간
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.shortPeriod}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.shortPeriod}")
     private int shortPeriod;
 
     /**
      * 장기 이동평균 기간
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.longPeriod}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.longPeriod}")
     private int longPeriod;
 
     /**
      * 슬랙 메시지 발송 시간
      */
-    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.slackTime}")
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsss.slackTime}")
     private String slackTime;
+
+    /**
+     * 분할 매도 카운트
+     * TODO 설정으로 이동
+     */
+    private int splitCount = 0;
+
+    /**
+     * 한번에 매도할 비율
+     * TODO 설정으로 이동
+     */
+    private double SPLIT_RATE = 0.1;
+    /**
+     * 최소 분할 매도율. 수익률이 해당 값을 초과 올라가야 분할 매도함
+     * TODO 설정으로 이동
+     */
+    private double minimumYield = 0.01;
 
     /**
      * 해당 기간에 매매 여부 완료 여부
@@ -105,6 +122,16 @@ public class MabsService implements CoinTrading {
     private double highYield = 0;
 
     private boolean messageSend = false;
+
+    /**
+     * 현제 매매 주기에서 분할 매도를 했는가?
+     */
+    private boolean periodSell = false;
+    /**
+     * 한번에 분할 매도할 값.
+     */
+    private double splitBalance = 0;
+
 
     @Override
     public void apply() {
@@ -129,6 +156,7 @@ public class MabsService implements CoinTrading {
             tradeCompleteOfPeriod = false;
             periodIdx = currentPeriod;
             messageSend = false;
+            periodSell = false;
         }
 
         tradeEvent.check(candle, maShort, maLong);
@@ -150,8 +178,22 @@ public class MabsService implements CoinTrading {
         double balance = coinBalance.doubleValue();
         // 코인을 매수 했다면 매도 조건 판단
         if (balance > 0.00001) {
+            // 프로그램이 다시 시작되어 분할 매도 값이 없어진 경우 현재 가지고 있는 값을 기준으로 계산
+            if (splitBalance == 0) {
+                splitBalance = balance * SPLIT_RATE;
+            }
+
             double rate = getYield(candle, coinAccount);
-            highYield = Math.max(highYield, rate);
+            if (highYield < rate) {
+                highYield = rate;
+
+                if (!periodSell && highYield > minimumYield && splitCount < 9) {
+                    doAsk(candle.getTradePrice(), splitBalance, AskReason.SPLIT);
+                    periodSell = true;
+                    splitCount++;
+                    return;
+                }
+            }
             double sellTargetPrice = maShort + maShort * downSellRate;
 
             Account account = coinAccount.get();
@@ -162,6 +204,10 @@ public class MabsService implements CoinTrading {
                     highYield * 100
             );
             log.debug(message1);
+            // 분할 매도가 이루어 졌다면 해당 주기에는 매도하지 않음
+            if (periodSell) {
+                return;
+            }
 
             // 장기이평 >= (단기이평 + 단기이평 * 하락매도률)
             boolean isSell = maLong >= sellTargetPrice;
@@ -170,8 +216,12 @@ public class MabsService implements CoinTrading {
 
             sendSlack(message1 + "\n" + message2, candle.getCandleDateTimeKst());
 
+            // 보유 물량 전체 매도
             if (isSell) {
                 doAsk(candle.getTradePrice(), balance, AskReason.MA_DOWN);
+                splitCount = 0;
+                tradeCompleteOfPeriod = true;
+                highYield = 0;
             }
         }
         // 매수 조건 판단
@@ -227,11 +277,9 @@ public class MabsService implements CoinTrading {
         tradeEvent.bid(market, currentPrice, bidPrice);
     }
 
-    private void doAsk(double currentPrice, double balance, AskReason maDown) {
+    private void doAsk(double currentPrice, double balance, AskReason askReason) {
         orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
-        tradeEvent.ask(market, balance, currentPrice, maDown);
-        tradeCompleteOfPeriod = true;
-        highYield = 0;
+        tradeEvent.ask(market, balance, currentPrice, askReason);
     }
 
     private double getYield(Candle candle, Optional<Account> account) {

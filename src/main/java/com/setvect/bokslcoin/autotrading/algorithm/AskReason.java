@@ -23,5 +23,9 @@ public enum AskReason {
     /**
      * 이평선 하락
      */
-    MA_DOWN;
+    MA_DOWN,
+    /**
+     * 분할 매도
+     */
+    SPLIT;
 }
