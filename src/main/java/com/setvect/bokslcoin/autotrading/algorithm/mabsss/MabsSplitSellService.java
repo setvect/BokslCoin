@@ -187,7 +187,7 @@ public class MabsSplitSellService implements CoinTrading {
             if (highYield < rate) {
                 highYield = rate;
 
-                if (!periodSell && highYield > minimumYield && splitCount < 9) {
+                if (!periodSell && highYield > minimumYield && splitCount < 8) {
                     doAsk(candle.getTradePrice(), splitBalance, AskReason.SPLIT);
                     periodSell = true;
                     splitCount++;
