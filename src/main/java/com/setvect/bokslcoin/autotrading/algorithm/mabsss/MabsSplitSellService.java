@@ -26,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,11 +103,6 @@ public class MabsSplitSellService implements CoinTrading {
      * TODO 설정으로 이동
      */
     private double SPLIT_RATE = 0.1;
-    /**
-     * 최소 분할 매도율. 수익률이 해당 값을 초과 올라가야 분할 매도함
-     * TODO 설정으로 이동
-     */
-    private double minimumYield = 0.01;
 
     /**
      * 해당 기간에 매매 여부 완료 여부
@@ -124,13 +120,11 @@ public class MabsSplitSellService implements CoinTrading {
     private boolean messageSend = false;
 
     /**
-     * 현제 매매 주기에서 분할 매도를 했는가?
-     */
-    private boolean periodSell = false;
-    /**
      * 한번에 분할 매도할 값.
      */
     private double splitBalance = 0;
+
+    private List<Double> priceHistory = new ArrayList<>();
 
 
     @Override
@@ -149,6 +143,9 @@ public class MabsSplitSellService implements CoinTrading {
         LocalDateTime nowKst = candle.getCandleDateTimeKst();
 
         int currentPeriod = getCurrentPeriod(nowUtc);
+        double balance = coinBalance.doubleValue();
+        // 코인을 매수 했다면 매도 조건 판단
+        boolean isBid = balance > 0.00001;
 
         // 새로운 날짜면 매매 다시 초기화
         if (periodIdx != currentPeriod) {
@@ -156,7 +153,16 @@ public class MabsSplitSellService implements CoinTrading {
             tradeCompleteOfPeriod = false;
             periodIdx = currentPeriod;
             messageSend = false;
-            periodSell = false;
+            if (isBid) {
+                priceHistory.add(currentPrice);
+                double avg = priceHistory.stream().mapToDouble(p -> p).average().getAsDouble();
+                if (avg > currentPrice && splitCount < 8) {
+//                    doAsk(candle.getTradePrice(), splitBalance, AskReason.SPLIT);
+                    splitCount++;
+                    return;
+                }
+            }
+
         }
 
         tradeEvent.check(candle, maShort, maLong);
@@ -175,9 +181,7 @@ public class MabsSplitSellService implements CoinTrading {
                 longPeriod, maLong,
                 maShort - maLong, MathUtil.getYield(maShort, maLong) * 100));
 
-        double balance = coinBalance.doubleValue();
-        // 코인을 매수 했다면 매도 조건 판단
-        if (balance > 0.00001) {
+        if (isBid) {
             // 프로그램이 다시 시작되어 분할 매도 값이 없어진 경우 현재 가지고 있는 값을 기준으로 계산
             if (splitBalance == 0) {
                 splitBalance = balance * SPLIT_RATE;
@@ -186,13 +190,6 @@ public class MabsSplitSellService implements CoinTrading {
             double rate = getYield(candle, coinAccount);
             if (highYield < rate) {
                 highYield = rate;
-
-                if (!periodSell && highYield > minimumYield && splitCount < 8) {
-                    doAsk(candle.getTradePrice(), splitBalance, AskReason.SPLIT);
-                    periodSell = true;
-                    splitCount++;
-                    return;
-                }
             }
             double sellTargetPrice = maShort + maShort * downSellRate;
 
@@ -204,10 +201,6 @@ public class MabsSplitSellService implements CoinTrading {
                     highYield * 100
             );
             log.debug(message1);
-            // 분할 매도가 이루어 졌다면 해당 주기에는 매도하지 않음
-            if (periodSell) {
-                return;
-            }
 
             // 장기이평 >= (단기이평 + 단기이평 * 하락매도률)
             boolean isSell = maLong >= sellTargetPrice;
@@ -222,6 +215,7 @@ public class MabsSplitSellService implements CoinTrading {
                 splitCount = 0;
                 tradeCompleteOfPeriod = true;
                 highYield = 0;
+                priceHistory.clear();
             }
         }
         // 매수 조건 판단

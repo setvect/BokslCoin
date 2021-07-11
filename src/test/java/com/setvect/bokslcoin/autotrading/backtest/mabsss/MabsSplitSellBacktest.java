@@ -79,8 +79,8 @@ public class MabsSplitSellBacktest {
         // === 1. 변수값 설정 ===
         MabsSplitSellCondition condition = MabsSplitSellCondition.builder()
                 .market("KRW-BTC")// 대상 코인
-//                .range(new DateRange("2021-06-17T00:00:00", "2021-07-07T23:59:59"))
-                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+//                .range(new DateRange("2021-06-26T00:00:00", "2021-07-07T23:59:59"))
+//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -93,7 +93,7 @@ public class MabsSplitSellBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
 //                .range(new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
 //                .range(new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59")) // 하락장 이후 약간의 상승장
-//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(1_000)// 매매시 채결 가격 차이
@@ -240,15 +240,14 @@ public class MabsSplitSellBacktest {
 
         // 승률
         for (MabsSplitSellBacktestRow row : tradeHistory) {
-            if (row.getAskReason() == null || row.getAskReason() == AskReason.SKIP) {
+            if (row.getAskReason() == null || row.getAskReason() == AskReason.SKIP || row.getAskReason() == AskReason.SPLIT) {
                 continue;
             }
-            if (row.getRealYield() > 0) {
+            if (row.getGainsTradeSum() > 0) {
                 testAnalysis.setGainCount(testAnalysis.getGainCount() + 1);
             } else {
                 testAnalysis.setLossCount(testAnalysis.getLossCount() + 1);
             }
-
         }
 
         //

@@ -86,6 +86,9 @@ public class MabsSplitSellBacktestRow {
     }
 
 
+    /**
+     * @return 분할 매도까지 합한 수익금액
+     */
     public double getGainsTradeSum() {
         if (askReason == AskReason.TIME || askReason == AskReason.MA_DOWN) {
             if(askReason == AskReason.TIME){
@@ -101,7 +104,7 @@ public class MabsSplitSellBacktestRow {
      * 투자금 + 투자 수익
      */
     public double getInvestResult() {
-        return getInvestmentAmount() + getGains();
+        return getInvestmentAmount();
     }
 
     /**
@@ -142,12 +145,12 @@ public class MabsSplitSellBacktestRow {
         return String.format("날짜(KST): %s, 날짜(UTC): %s, 시가: %,.0f, 고가:%,.0f, 저가:%,.0f, " +
                         "종가:%,.0f, 직전 종가:%,.0f, 단위 수익률: %,.2f%%, 단기 이동평균: %,.0f, 장기 이동평균: %,.0f, 매매여부: %s, " +
                         "매수 체결 가격: %,.0f, 보유 물량: %,f, 최고수익률: %,.2f%%, 매도 체결 가격: %,.0f, 매도 물량: %,f, 매도 이유: %s, " +
-                        "실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 수수료: %,.0f, " +
+                        "실현 수익률: %,.2f%%, 투자금: %,.0f, 현금: %,.0f, 투자 수익: %,.0f, 투자 수익 합: %,.0f, 수수료: %,.0f, " +
                         "투자 결과: %,.0f, 현금 + 투자결과 - 수수료: %,.0f",
                 dateKst, dateUtc, candle.getOpeningPrice(), candle.getHighPrice(), candle.getLowPrice(),
                 candle.getTradePrice(), beforeTradePrice, getCandleYield() * 100, maShort, maLong, trade,
                 bidPrice, balance, highYield * 100, askPrice, askBalance, askReason == null ? "" : askReason,
-                getRealYield() * 100, getInvestmentAmount(), cash, getGains(), feePrice,
+                getRealYield() * 100, getInvestmentAmount(), cash, getGains(), getGainsTradeSum(), feePrice,
                 getInvestResult(), getFinalResult());
     }
 }
