@@ -92,6 +92,12 @@ public class MabsService implements CoinTrading {
     private String slackTime;
 
     /**
+     * 슬랙 메시지 발송 시간
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabs.newMasBuy}")
+    private boolean newMasBuy;
+
+    /**
      * 해당 기간에 매매 여부 완료 여부
      */
     private boolean tradeCompleteOfPeriod;
@@ -108,7 +114,7 @@ public class MabsService implements CoinTrading {
 
     @Override
     public void apply() {
-        List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, tradePeriod, longPeriod);
+        List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, tradePeriod, longPeriod + 1);
         double maShort = CommonTradeHelper.getMa(candleList, shortPeriod);
         double maLong = CommonTradeHelper.getMa(candleList, longPeriod);
 
@@ -177,20 +183,41 @@ public class MabsService implements CoinTrading {
         // 매수 조건 판단
         else if (!tradeCompleteOfPeriod) {
             double buyTargetPrice = maLong + maLong * upBuyRate;
-
             //(장기이평 + 장기이평 * 상승매수률) <= 단기이평
             boolean isBuy = buyTargetPrice <= maShort;
             String message = String.format("매수 조건: 장기이평(%d) + 장기이평(%d) * 상승매수률(%.2f%%) <= 단기이평(%d), %,.2f <= %,.2f ---> %s", longPeriod, longPeriod, upBuyRate * 100, shortPeriod, buyTargetPrice, maShort, isBuy);
             sendSlack(message, candle.getCandleDateTimeKst());
             log.debug(message);
             if (isBuy) {
+                // 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
+                boolean isBeforeBuy = isBeforeBuy(candleList);
+                if (isBeforeBuy && newMasBuy) {
+                    log.info("매수 안함. 새롭게 이동평균을 돌파 할때만 매수합니다.");
+                    return;
+                }
                 doBid(currentPrice);
             }
         }
     }
 
+    /**
+     * @param candleList
+     * @return 이동 평균에서 직전 매수 조건 이면 true, 아니면 false
+     */
+    private boolean isBeforeBuy(List<Candle> candleList) {
+        // 한단계전에 매수 조건이였는지 확인
+        List<Candle> beforeCandleList = candleList.subList(1, candleList.size());
+        double maShortBefore = CommonTradeHelper.getMa(beforeCandleList, shortPeriod);
+        double maLongBefore = CommonTradeHelper.getMa(beforeCandleList, longPeriod);
+        double buyTargetPrice = maLongBefore + maLongBefore * upBuyRate;
+        //(장기이평 + 장기이평 * 상승매수률) <= 단기이평
+        boolean isBuy = buyTargetPrice <= maShortBefore;
+        return isBuy;
+    }
+
     private void sendSlack(String message, LocalDateTime kst) {
         LocalTime time = DateUtil.getLocalTime(slackTime, "HH:mm");
+
         // 하루에 한번씩만 보냄
         if (messageSend) {
             return;

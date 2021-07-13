@@ -79,7 +79,8 @@ public class MabsBacktest {
         // === 1. 변수값 설정 ===
         MabsCondition condition = MabsCondition.builder()
                 .market("KRW-BTC")// 대상 코인
-                .range(new DateRange("2021-06-17T00:00:00", "2021-07-07T23:59:59"))
+//                .range(new DateRange("2021-06-13T00:00:00", "2021-07-07T23:59:59"))
+                .range(new DateRange("2021-06-14T00:00:00", "2021-07-07T23:59:59"))
 //                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
@@ -393,6 +394,7 @@ public class MabsBacktest {
         ReflectionTestUtils.setField(mabsService, "longPeriod", condition.getLongPeriod());
         ReflectionTestUtils.setField(mabsService, "periodIdx", -1);
         ReflectionTestUtils.setField(mabsService, "slackTime", "08:00");
+        ReflectionTestUtils.setField(mabsService, "newMasBuy", true);
     }
 
     private StringBuffer getReportRow(MabsCondition condition, TestAnalysis testAnalysis) {
