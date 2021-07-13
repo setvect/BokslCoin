@@ -37,20 +37,26 @@ public class CommonTradeHelper {
         return MathUtil.getAverageWeight(values, 0, range);
     }
 
-
-    public static List<Candle> getCandles(CandleService candleService, String market, TradePeriod tradePeriod, int longPeriod) {
+    /**
+     * @param candleService
+     * @param market        코인(KRW-BTC, KRW-ETH, ...)
+     * @param tradePeriod   매매 주기
+     * @param periodCount   주기
+     * @return 캔들(최근 순서대로)
+     */
+    public static List<Candle> getCandles(CandleService candleService, String market, TradePeriod tradePeriod, int periodCount) {
         List<Candle> moveListCandle = new ArrayList<>();
         switch (tradePeriod) {
             case P_60:
-                List<CandleMinute> t1 = candleService.getMinute(60, market, longPeriod);
+                List<CandleMinute> t1 = candleService.getMinute(60, market, periodCount);
                 moveListCandle.addAll(t1);
                 break;
             case P_240:
-                List<CandleMinute> t2 = candleService.getMinute(240, market, longPeriod);
+                List<CandleMinute> t2 = candleService.getMinute(240, market, periodCount);
                 moveListCandle.addAll(t2);
                 break;
             case P_1440:
-                List<CandleDay> t3 = candleService.getDay(market, longPeriod);
+                List<CandleDay> t3 = candleService.getDay(market, periodCount);
                 moveListCandle.addAll(t3);
                 break;
         }

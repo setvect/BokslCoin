@@ -33,5 +33,16 @@ public class Account {
      * 평단가 기준 화폐
      */
     private String unitCurrency;
+
+    public String getMarket() {
+        if (getCurrency().equals("KRW")) {
+            return getCurrency();
+        }
+        return getUnitCurrency() + "-" + getCurrency();
+    }
+
+    public double getInvestCash() {
+        return Double.valueOf(getAvgBuyPrice()) * Double.valueOf(getBalance());
+    }
 }
 

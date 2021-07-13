@@ -13,7 +13,10 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +37,16 @@ public class AccountService {
         }.getType());
 
         return accounts;
+    }
+
+    /**
+     * @return Key: 코인(KRW, KRW-BTC, ...), Value: 가격정보
+     */
+    public Map<String, Account> getMyAccountBalance() {
+        List<Account> accounts = getMyAccount();
+        Map<String, Account> account = accounts.stream()
+                .collect(Collectors.toMap(p -> p.getMarket(), Function.identity()));
+        return account;
     }
 
 
@@ -93,4 +106,6 @@ public class AccountService {
     public static BigDecimal getBalance(Optional<Account> account) {
         return account.isPresent() ? BigDecimal.valueOf(Double.valueOf(account.get().getBalance())) : new BigDecimal(0.0);
     }
+
+
 }

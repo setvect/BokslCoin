@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,11 +33,16 @@ public class SaveJsonToDb {
 
     @Test
     public void test() throws IOException {
-        String market = "KRW-BTC";
+        candleRepository.deleteAll();
+        List<String> markets = Arrays.asList("KRW-BTC", "KRW-XRP", "KRW-ETH", "KRW-EOS");
+        for (String market : markets) {
+            restore(market);
+        }
+    }
 
+    private void restore(String market) throws IOException {
         File dir = new File("./craw-data/minute");
         File[] files = dir.listFiles(n -> n.getName().contains(market));
-//        candleRepository.deleteAll();
 
         List<CandleMinute> p60 = new ArrayList<>();
         List<CandleMinute> p240 = new ArrayList<>();
