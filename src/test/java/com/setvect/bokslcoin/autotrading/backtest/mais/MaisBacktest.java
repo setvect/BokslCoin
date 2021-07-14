@@ -79,9 +79,9 @@ public class MaisBacktest {
         // === 1. 변수값 설정 ===
         MaisCondition condition = MaisCondition.builder()
                 .market("KRW-BTC")// 대상 코인
-                .range(new DateRange("2021-06-17T00:00:00", "2021-07-07T23:59:59"))
+//                .range(new DateRange("2021-06-17T00:00:00", "2021-07-07T23:59:59"))
 //                .range(new DateRange("2021-06-17T00:00:00", "2021-07-02T23:59:59"))
-//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -192,7 +192,7 @@ public class MaisBacktest {
         tradeHistory = new ArrayList<>();
 
         // TODO
-        CandleDataIterator candleDataIterator = new CandleDataIterator(condition, candleRepository);
+        CandleDataIterator candleDataIterator = new CandleDataIterator(condition.getMarket(), condition.getRange(), candleRepository);
         initMock(condition, candleDataIterator);
         while (candleDataIterator.hasNext()) {
             candleDataIterator.next();

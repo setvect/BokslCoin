@@ -36,7 +36,8 @@ public class BasicTradeEvent implements TradeEvent {
     }
 
     @Override
-    public void check(CandleMinute candle, double maShort, double maLong) {
+    public void check(Candle candle, double maShort, double maLong) {
+
     }
 
     @Override
@@ -55,6 +56,11 @@ public class BasicTradeEvent implements TradeEvent {
         String message = String.format("★★★ 시장가 매도, 코인: %s, 보유량: %f, 현재가: %,.2f, 예상 금액: %,.0f, 매도이유: %s", market, balance, tradePrice, balance * tradePrice, reason);
         log.info(message);
         slackMessageService.sendMessage(message);
+    }
+
+    @Override
+    public void highYield(String market, double highYield) {
+
     }
 
     @Override

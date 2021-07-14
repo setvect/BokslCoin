@@ -139,7 +139,8 @@ public class MabsMultiService implements CoinTrading {
 
 
         Map<String, Account> coinAccount = accountService.getMyAccountBalance();
-        BigDecimal cash = BigDecimal.valueOf(Double.valueOf(coinAccount.get("KRW").getBalance()));
+        Account krw = coinAccount.get("KRW");
+        BigDecimal cash = BigDecimal.valueOf(krw.getBalanceValue());
 
         // 이미 매수한 코인 갯수
         int buyCount = (int) markets.stream().filter(p -> coinAccount.get(p) != null).count();
@@ -151,28 +152,41 @@ public class MabsMultiService implements CoinTrading {
         }
 
         for (String market : markets) {
+            candleCheck = candleService.getMinute(1, market);
+            if (candleCheck == null) {
+                log.debug("[{}] 현재 시세 데이터가 없습니다.", market);
+                continue;
+            }
+            log.debug(String.format("[%s] 현재 가격:%,.2f", candleCheck.getMarket(), candleCheck.getTradePrice()));
+
             Account account = coinAccount.get(market);
             List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, tradePeriod, longPeriod + 1);
 
-            coinLog(candleList);
-
             if (candleList.size() < longPeriod + 1) {
-                log.warn("[{}] 이동평균계산을 위한 시세 데이터가 부족합니다.", market);
+                log.debug("[{}] 이동평균계산을 위한 시세 데이터가 부족합니다.", market);
                 continue;
             }
 
+            checkMa(candleList);
+
             if (account == null && !tradeCompleteOfPeriod.contains(market)) {
                 buyCheck(buyCash, candleList);
-            } else {
+            } else if (account != null) {
                 sellCheck(account, candleList);
             }
         }
     }
 
-    private void coinLog(List<Candle> candleList) {
+    /**
+     * 시세 체크
+     *
+     * @param candleList
+     */
+    private void checkMa(List<Candle> candleList) {
         double maShort = CommonTradeHelper.getMa(candleList, shortPeriod);
         double maLong = CommonTradeHelper.getMa(candleList, longPeriod);
         Candle candle = candleList.get(0);
+        tradeEvent.check(candle, maShort, maLong);
         log.debug(String.format("[%s] KST:%s, UTC: %s, 매매기준 주기: %s, 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f, 단기-장기 차이: %,.2f(%.2f%%)",
                 candle.getMarket(),
                 DateUtil.formatDateTime(candle.getCandleDateTimeKst()),
@@ -200,9 +214,8 @@ public class MabsMultiService implements CoinTrading {
 
         //(장기이평 + 장기이평 * 상승매수률) <= 단기이평
         boolean isBuy = buyTargetPrice <= maShort;
-        String message = String.format("[%s] 현재 가격:%,.2f\t매수 조건: 장기이평(%d) + 장기이평(%d) * 상승매수률(%.2f%%) <= 단기이평(%d), %,.2f <= %,.2f ---> %s",
+        String message = String.format("[%s] 매수 조건: 장기이평(%d) + 장기이평(%d) * 상승매수률(%.2f%%) <= 단기이평(%d), %,.2f <= %,.2f ---> %s",
                 market,
-                candle.getTradePrice(),
                 longPeriod,
                 longPeriod,
                 upBuyRate * 100,
@@ -220,7 +233,7 @@ public class MabsMultiService implements CoinTrading {
             // 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
             boolean isBeforeBuy = isBeforeBuy(candleList);
             if (isBeforeBuy && newMasBuy) {
-                log.info("[{}] 매수 안함. 새롭게 이동평균을 돌파 할때만 매수합니다.", candle.getMarket());
+                log.debug("[{}] 매수 안함. 새롭게 이동평균을 돌파할 때만 매수합니다.", candle.getMarket());
                 return;
             }
             doBid(market, candle.getTradePrice(), cash);
@@ -237,16 +250,18 @@ public class MabsMultiService implements CoinTrading {
 
         Candle candle = candleList.get(0);
         double rate = getYield(candle, account);
-        highYield.put(market, Math.max(highYield.getOrDefault(market, 0.0), rate));
+        double maxHighYield = Math.max(highYield.getOrDefault(market, 0.0), rate);
+        highYield.put(market, maxHighYield);
+        tradeEvent.highYield(candle.getMarket(), maxHighYield);
 
         double maShort = CommonTradeHelper.getMa(candleList, shortPeriod);
         double maLong = CommonTradeHelper.getMa(candleList, longPeriod);
         double sellTargetPrice = maShort + maShort * downSellRate;
 
-        String message1 = String.format("[%s] 현재 가격:%,.2f\t매입단가: %,.2f, 투자금: %,.0f, 수익율: %.2f%%, 최고 수익률: %.2f%%",
+        String message1 = String.format("[%s] 매입단가: %,.2f, 투자금: %,.0f, 수익율: %.2f%%, 최고 수익률: %.2f%%",
                 candle.getMarket(),
                 candle.getTradePrice(),
-                Double.valueOf(account.getAvgBuyPrice()),
+                account.getAvgBuyPriceValue(),
                 account.getInvestCash(),
                 rate * 100,
                 highYield.get(market) * 100
@@ -269,7 +284,7 @@ public class MabsMultiService implements CoinTrading {
         sendSlack(market, message1 + "\n" + message2, candle.getCandleDateTimeKst());
 
         if (isSell) {
-            doAsk(market, candle.getTradePrice(), Double.valueOf(account.getBalance()), AskReason.MA_DOWN);
+            doAsk(market, candle.getTradePrice(), account.getBalanceValue(), AskReason.MA_DOWN);
         }
     }
 
@@ -325,7 +340,7 @@ public class MabsMultiService implements CoinTrading {
 
 
     private double getYield(Candle candle, Account account) {
-        double avgPrice = Double.valueOf(account.getAvgBuyPrice());
+        double avgPrice = account.getAvgBuyPriceValue();
         double diff = candle.getTradePrice() - avgPrice;
         return diff / avgPrice;
     }

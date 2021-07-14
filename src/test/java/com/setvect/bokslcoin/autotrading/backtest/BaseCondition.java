@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
+import java.util.List;
+
 @Getter
 @ToString
 @SuperBuilder

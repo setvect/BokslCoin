@@ -2,6 +2,7 @@ package com.setvect.bokslcoin.autotrading.util;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 
 /**
@@ -167,5 +168,12 @@ public class DateRange {
     public long getDiffMinute() {
         Duration dur = Duration.between(from, to);
         return (dur.getSeconds() / 60);
+    }
+
+    /**
+     * @return 날짜 차이
+     */
+    public long getDiffDays() {
+        return ChronoUnit.DAYS.between(from, to);
     }
 }

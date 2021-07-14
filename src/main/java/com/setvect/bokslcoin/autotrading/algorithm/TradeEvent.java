@@ -32,19 +32,19 @@ public interface TradeEvent {
     /**
      * 이동평균 체크
      *
-     * @param candle  분봉
+     * @param candle  현재 시세
      * @param maShort 단기 이동평균
      * @param maLong  장기 이동평균
      */
-    void check(CandleMinute candle, double maShort, double maLong);
+    void check(Candle candle, double maShort, double maLong);
 
     /**
      * 이동평균 체크
      *
      * @param candle    분봉
      * @param currentMa 단기 이동평균
-     * @param maxMa  직전 이동 평균에서 연속된 최대값
-     * @param minMa  직전 이동 평균에서 연속된 최소값
+     * @param maxMa     직전 이동 평균에서 연속된 최대값
+     * @param minMa     직전 이동 평균에서 연속된 최소값
      */
     void check(CandleMinute candle, double currentMa, double maxMa, double minMa);
 
@@ -62,6 +62,12 @@ public interface TradeEvent {
      * @param reason     매도 이유
      */
     void ask(String market, double balance, double tradePrice, AskReason reason);
+
+    /**
+     * @param market     코인
+     * @param highYield    최고 수익률
+     */
+    void highYield(String market, double highYield);
 
     /**
      * @param targetPrice 매수 목표가

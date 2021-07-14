@@ -7,6 +7,7 @@ import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
+import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.LapTimeChecker;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -25,31 +26,33 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CandleDataIterator implements Iterator<CandleMinute> {
 
-    private final BaseCondition condition;
     private final CandleRepository candleRepository;
     private LocalDateTime nextDate;
     private Iterator<CandleEntity> currentCandleIterator;
     private CandleMinute current;
     private LapTimeChecker ck = new LapTimeChecker("backtest");
     private Map<CacheKey, List<Candle>> cachePeriod = new HashMap();
+    private DateRange range;
+    private String market;
 
-    public CandleDataIterator(BaseCondition condition, CandleRepository candleRepository) {
-        this.condition = condition;
-        nextDate = condition.getRange().getFrom();
+    public CandleDataIterator(String market, DateRange range, CandleRepository candleRepository) {
+        this.market = market;
+        this.range = range;
+        nextDate = range.getFrom();
         this.candleRepository = candleRepository;
         currentCandleIterator = Collections.emptyIterator();
     }
 
     @Override
     public boolean hasNext() {
-        if (current != null && !condition.getRange().isBetween(current.getCandleDateTimeUtc())) {
+        if (current != null && !range.isBetween(current.getCandleDateTimeUtc())) {
             return false;
         }
         // 한달씩 로딩
         if (!currentCandleIterator.hasNext()) {
             log.info(String.format("load Year: %d, Month: %d", nextDate.getYear(), nextDate.getMonthValue()));
             LocalDateTime end = nextDate.plusMonths(1).minusSeconds(1);
-            List<CandleEntity> minuteOfDay = candleRepository.findMarketPrice(condition.getMarket(), PeriodType.PERIOD_1, nextDate, end);
+            List<CandleEntity> minuteOfDay = candleRepository.findMarketPrice(market, PeriodType.PERIOD_1, nextDate, end);
             currentCandleIterator = minuteOfDay.listIterator();
             nextDate = nextDate.plusMonths(1);
             cachePeriod.clear();

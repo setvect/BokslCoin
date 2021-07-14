@@ -218,7 +218,7 @@ public class VbsTrailingStopBacktest {
         injectionFieldValue(condition);
         tradeHistory = new ArrayList<>();
 
-        CandleDataIterator candleDataIterator = new CandleDataIterator(condition, candleRepository);
+        CandleDataIterator candleDataIterator = new CandleDataIterator(condition.getMarket(), condition.getRange(), candleRepository);
         initMock(condition, candleDataIterator);
         while (candleDataIterator.hasNext()) {
             candleDataIterator.next();

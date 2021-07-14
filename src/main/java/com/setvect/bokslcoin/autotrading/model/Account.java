@@ -41,8 +41,25 @@ public class Account {
         return getUnitCurrency() + "-" + getCurrency();
     }
 
+    public double getAvgBuyPriceValue(){
+        if(avgBuyPrice == null){
+            return 0;
+        }
+        return Double.parseDouble(avgBuyPrice);
+    }
+
+    public double getBalanceValue() {
+        if(balance == null){
+            return 0;
+        }
+        return Double.parseDouble(balance);
+    }
+
+    /**
+     * @return 금액
+     */
     public double getInvestCash() {
-        return Double.valueOf(getAvgBuyPrice()) * Double.valueOf(getBalance());
+        return getAvgBuyPriceValue() * getBalanceValue();
     }
 }
 
