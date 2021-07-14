@@ -78,12 +78,15 @@ public class MabsMultiBacktest {
      * Key: market, value: 시세 정보
      */
     private Map<String, List<Double>> amountByCoin;
+    private Map<String, Double> highYieldMap;
+    private Map<String, CurrentPrice> priceMap;
+    private Map<String, Account> accountMap;
 
     @Test
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
         MabsMultiCondition condition = MabsMultiCondition.builder()
-                .range(new DateRange("2021-06-13T00:00:00", "2021-07-14T23:59:59"))
+//                .range(new DateRange("2020-11-01T00:00:00", "2021-07-14T23:59:59"))
 //                .range(new DateRange("2021-06-14T00:00:00", "2021-07-07T23:59:59"))
 //                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
@@ -98,7 +101,7 @@ public class MabsMultiBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
 //                .range(new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
 //                .range(new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59")) // 하락장 이후 약간의 상승장
-//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
 
                 .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS"))// 대상 코인
                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -145,6 +148,33 @@ public class MabsMultiBacktest {
     }
 
     private TestAnalysisMulti backtest(MabsMultiCondition condition) {
+        // key: market, value: 자산
+        accountMap = new HashMap<>();
+
+        Account cashAccount = new Account();
+        cashAccount.setCurrency("KRW");
+        cashAccount.setBalance(ApplicationUtil.toNumberString(condition.getCash()));
+        accountMap.put("KRW", cashAccount);
+
+        for (String market : condition.getMarkets()) {
+            Account acc = new Account();
+            String[] tokens = market.split("-");
+            acc.setUnitCurrency(tokens[0]);
+            acc.setCurrency(tokens[1]);
+            acc.setBalance("0");
+            accountMap.put(market, acc);
+        }
+
+        // Key: market, value: 시세 정보
+        priceMap = new HashMap<>();
+
+        // 코인별 가격
+        amountByCoin = condition.getMarkets().stream().collect(Collectors.toMap(p -> p, p -> new ArrayList<>()));
+
+        // key: market, value: 최대 수익률
+        highYieldMap = new HashMap<>();
+
+
         injectionFieldValue(condition);
         tradeHistory = new ArrayList<>();
 
@@ -154,7 +184,15 @@ public class MabsMultiBacktest {
 
         initMock(condition, candleDataProvider);
 
+        int count = 0;
         while (current.isBefore(to) || current.equals(to)) {
+            if (count == 1440 * 50) {
+                log.info("clear...");
+                Mockito.reset(candleService, orderService, accountService, tradeEvent);
+                initMock(condition, candleDataProvider);
+                count = 0;
+            }
+
             candleDataProvider.setCurrentTime(current);
             CandleMinute candle = candleDataProvider.getCurrentCandle(condition.getMarkets().get(0));
             if (candle == null) {
@@ -164,9 +202,9 @@ public class MabsMultiBacktest {
 
             mabsMultiService.apply();
             current = current.plusMinutes(1);
+            count++;
         }
 
-        Mockito.reset(candleService, orderService, accountService, tradeEvent);
         return analysis(tradeHistory, condition, amountByCoin);
     }
 
@@ -267,22 +305,6 @@ public class MabsMultiBacktest {
                 .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_240, invocation.getArgument(2, Integer.class)));
 
 
-        // key: market, value: 자산
-        Map<String, Account> accountMap = new HashMap<>();
-
-        Account cashAccount = new Account();
-        cashAccount.setCurrency("KRW");
-        cashAccount.setBalance(ApplicationUtil.toNumberString(condition.getCash()));
-        accountMap.put("KRW", cashAccount);
-
-        for (String market : condition.getMarkets()) {
-            Account acc = new Account();
-            String[] tokens = market.split("-");
-            acc.setUnitCurrency(tokens[0]);
-            acc.setCurrency(tokens[1]);
-            acc.setBalance("0");
-            accountMap.put(market, acc);
-        }
 
         // 현재 가지고있는 자산 조회
         when(accountService.getMyAccountBalance()).then((method) -> {
@@ -292,11 +314,6 @@ public class MabsMultiBacktest {
             return map;
         });
 
-        // Key: market, value: 시세 정보
-        Map<String, CurrentPrice> priceMap = new HashMap<>();
-
-        // 코인별 가격
-        amountByCoin = condition.getMarkets().stream().collect(Collectors.toMap(p -> p, p -> new ArrayList<>()));
 
         // 시세 체크
         doAnswer(invocation -> {
@@ -347,8 +364,6 @@ public class MabsMultiBacktest {
             return null;
         }).when(tradeEvent).bid(anyString(), anyDouble(), anyDouble());
 
-        // key: market, value: 최대 수익률
-        Map<String, Double> highYieldMap = new HashMap<>();
         // 시세 체크
         doAnswer(invocation -> {
             String market = invocation.getArgument(0, String.class);
