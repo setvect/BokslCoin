@@ -12,6 +12,7 @@ import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
+import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import lombok.Getter;
@@ -281,7 +282,9 @@ public class MabsMultiService implements CoinTrading {
                 isSell);
         log.debug(message2);
 
-        sendSlack(market, message1 + "\n" + message2, candle.getCandleDateTimeKst());
+        if (!messageSend.contains(market)) {
+            sendSlack(market, message1 + "\n" + message2, candle.getCandleDateTimeKst());
+        }
 
         if (isSell) {
             doAsk(market, candle.getTradePrice(), account.getBalanceValue(), AskReason.MA_DOWN);
@@ -311,12 +314,12 @@ public class MabsMultiService implements CoinTrading {
     }
 
     private void doBid(String market, double tradePrice, double bidPrice) {
-//        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
+        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
         tradeEvent.bid(market, tradePrice, bidPrice);
     }
 
     private void doAsk(String market, double currentPrice, double balance, AskReason maDown) {
-//        orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
+        orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
         tradeEvent.ask(market, balance, currentPrice, maDown);
         highYield.put(market, 0.0);
         tradeCompleteOfPeriod.add(market);

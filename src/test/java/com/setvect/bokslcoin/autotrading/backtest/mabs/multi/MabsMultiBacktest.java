@@ -83,7 +83,7 @@ public class MabsMultiBacktest {
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
         MabsMultiCondition condition = MabsMultiCondition.builder()
-                //                .range(new DateRange("2021-06-13T00:00:00", "2021-07-07T23:59:59"))
+                .range(new DateRange("2021-06-13T00:00:00", "2021-07-14T23:59:59"))
 //                .range(new DateRange("2021-06-14T00:00:00", "2021-07-07T23:59:59"))
 //                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
@@ -98,7 +98,7 @@ public class MabsMultiBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
 //                .range(new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
 //                .range(new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59")) // 하락장 이후 약간의 상승장
-                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
 
                 .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS"))// 대상 코인
                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -215,7 +215,7 @@ public class MabsMultiBacktest {
                 .filter(p -> p.getTradeEvent() == MabsMultiBacktestRow.TradeEvent.SELL)
                 .collect(Collectors.toList());
         double totalInvest = filter.stream().mapToDouble(p -> p.getGains()).sum();
-        int gainCount = (int) filter.stream().filter(p -> p.getInvestResult() > 0).count();
+        int gainCount = (int) filter.stream().filter(p -> p.getGains() > 0).count();
         TestAnalysisMulti.CoinInvestment coinInvestment = new TestAnalysisMulti.CoinInvestment();
         coinInvestment.setInvest(totalInvest);
         coinInvestment.setGainCount(gainCount);

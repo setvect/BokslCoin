@@ -65,6 +65,10 @@ public class CandleDataProvider {
     }
 
     public List<Candle> beforeData(String market, PeriodType periodType, Integer count) {
+        if (cachePeriod.size() > 1000) {
+            log.info("cache clear");
+            cachePeriod.clear();;
+        }
         LocalDateTime base = null;
         if (periodType == PeriodType.PERIOD_1440) {
             base = currentDateTime.withHour(0).withMinute(0).withSecond(0).withNano(0);

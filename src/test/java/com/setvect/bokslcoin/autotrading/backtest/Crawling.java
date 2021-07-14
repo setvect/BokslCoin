@@ -66,7 +66,7 @@ public class Crawling {
     @Test
     public void 분봉수집() throws IOException, InterruptedException {
         makeSaveDir(SAVE_DIR_MINUTE);
-        List<String> marketList = Arrays.asList("KRW-BTC");
+        List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS");
 
         for (String market : marketList) {
             List<CandleMinute> acc = new ArrayList<>();
@@ -90,8 +90,11 @@ public class Crawling {
                 System.out.println(i + " 번째");
                 // API 횟수 제한 때문에 딜레이 적용
                 TimeUnit.MILLISECONDS.sleep(180);
+                if (data.get(0).getCandleDateTimeKst().getMonth().getValue() == 5) {
+                    break;
+                }
             }
-            saveFileMinute(market, acc);
+//            saveFileMinute(market, acc);
         }
     }
 
