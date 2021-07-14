@@ -34,7 +34,7 @@ test {
 
 bootJar {
     enabled = true
-    archiveFileName = 'BokslCoin-0.2.0.jar'
+    archiveFileName = 'BokslCoin-0.3.0.jar'
 }
 
 dependencies {
@@ -86,7 +86,7 @@ task makeInstallFile() {
     doLast {
         delete("$buildDir/dist")
         copy {
-            from "$buildDir/libs/BokslCoin-0.2.0.jar"
+            from "$buildDir/libs/BokslCoin-0.3.0.jar"
             into "$buildDir/dist/lib"
         }
         copy {
@@ -131,7 +131,7 @@ task deployRemort(dependsOn: makeInstallFile) {
 
         ssh.run {
             session(remotes.publicServer) {
-                final jarName = "$buildDir/dist/lib/BokslCoin-0.2.0.jar"
+                final jarName = "$buildDir/dist/lib/BokslCoin-0.3.0.jar"
                 println "Deploy file : ${jarName}"
 
                 println "send start"
