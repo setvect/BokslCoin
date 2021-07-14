@@ -6,6 +6,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
 import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.MabsCondition;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,6 +149,74 @@ public class MabsMultiBacktest {
         System.out.println("끝");
     }
 
+
+    @Test
+    public void multiBacktest() throws IOException {
+        String header = "분석기간,분석주기,대상 코인,투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,단기 이동평균 기간,장기 이동평균 기간,조건 설명,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
+
+        StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
+        MabsMultiCondition condition;
+
+        List<DateRange> rangeList = Arrays.asList(
+                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
+                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
+                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
+                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
+                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
+                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
+                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
+                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
+                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
+                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
+                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
+                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
+                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
+                new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59") // 전체 기간
+        );
+        int count = 0;
+        Date now = new Date();
+        int[] shortPeriod = {5};
+        int[] longPeriod = {16};
+        for (int sp : shortPeriod) {
+            for (int lp : longPeriod) {
+                for (DateRange range : rangeList) {
+                    condition = MabsMultiCondition.builder()
+                            .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS"))// 대상 코인
+                            .range(range)
+                            .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                            .cash(10_000_000) // 최초 투자 금액
+                            .tradeMargin(0)// 매매시 채결 가격 차이
+                            // 슬리피지를 고려해 수수료 올림
+                            .feeBid(0.0007) //  매수 수수료
+                            .feeAsk(0.0007)//  매도 수수료
+                            .upBuyRate(0.01) //상승 매수율
+                            .downSellRate(0.01) // 하락 매도률
+                            .shortPeriod(sp) // 단기 이동평균 기간
+                            .longPeriod(lp) // 장기 이동평균 기간
+                            .tradePeriod(TradePeriod.P_240) //매매 주기
+                            .build();
+                    log.info(condition.toString());
+
+                    TestAnalysisMulti testAnalysis = backtest(condition);
+                    report.append(getReportRow(condition, testAnalysis) + "\n");
+                    makeReport(condition, tradeHistory, testAnalysis);
+
+                    // -- 결과 저장 --
+                    File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
+                    FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
+                    System.out.println("결과 파일:" + reportFile.getName());
+                }
+                report.append("\n");
+            }
+        }
+        // -- 결과 저장 --
+        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + now.getTime() + ".txt");
+        FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
+        System.out.println("결과 파일:" + reportFile.getName());
+
+        System.out.println("끝");
+    }
+
     private TestAnalysisMulti backtest(MabsMultiCondition condition) {
         // key: market, value: 자산
         accountMap = new HashMap<>();
@@ -205,6 +275,7 @@ public class MabsMultiBacktest {
             count++;
         }
 
+        Mockito.reset(candleService, orderService, accountService, tradeEvent);
         return analysis(tradeHistory, condition, amountByCoin);
     }
 
@@ -435,7 +506,7 @@ public class MabsMultiBacktest {
         ReflectionTestUtils.setField(mabsMultiService, "newMasBuy", true);
     }
 
-    private StringBuffer getReportRow(MabsMultiCondition condition, TestAnalysis testAnalysis) {
+    private StringBuffer getReportRow(MabsMultiCondition condition, TestAnalysisMulti testAnalysis) {
         StringBuffer reportRow = new StringBuffer();
         reportRow.append(String.format("%s\t", condition.getRange()));
         reportRow.append(String.format("%s\t", condition.getTradePeriod()));
@@ -450,13 +521,11 @@ public class MabsMultiBacktest {
         reportRow.append(String.format("%d\t", condition.getShortPeriod()));
         reportRow.append(String.format("%d\t", condition.getLongPeriod()));
         reportRow.append(String.format("%s\t", condition.getComment()));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCoinYield() * 100));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCoinMdd() * 100));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getRealYield() * 100));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getRealMdd() * 100));
-        reportRow.append(String.format("%d\t", testAnalysis.getTradeCount()));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getWinRate() * 100));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCagr() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getYield() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getMdd() * 100));
+        reportRow.append(String.format("%d\t", testAnalysis.getTotal().getTradeCount()));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getWinRate() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getCagr() * 100));
         return reportRow;
     }
 
