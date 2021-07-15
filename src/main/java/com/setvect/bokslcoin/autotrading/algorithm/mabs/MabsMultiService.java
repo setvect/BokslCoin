@@ -225,9 +225,8 @@ public class MabsMultiService implements CoinTrading {
                 maShort,
                 isBuy);
 
-        if (!messageSend.contains(market)) {
-            sendSlack(market, message, candle.getCandleDateTimeKst());
-        }
+
+        sendSlackDaily(market, message, candle.getCandleDateTimeKst());
         log.debug(message);
 
         if (isBuy) {
@@ -282,9 +281,7 @@ public class MabsMultiService implements CoinTrading {
                 isSell);
         log.debug(message2);
 
-        if (!messageSend.contains(market)) {
-            sendSlack(market, message1 + "\n" + message2, candle.getCandleDateTimeKst());
-        }
+        sendSlackDaily(market, message1 + "\n" + message2, candle.getCandleDateTimeKst());
 
         if (isSell) {
             doAsk(market, candle.getTradePrice(), account.getBalanceValue(), AskReason.MA_DOWN);
@@ -303,9 +300,13 @@ public class MabsMultiService implements CoinTrading {
     }
 
 
-    private void sendSlack(String market, String message, LocalDateTime kst) {
-        LocalTime time = DateUtil.getLocalTime(slackTime, "HH:mm");
+    private void sendSlackDaily(String market, String message, LocalDateTime kst) {
+        // 하루에 한번씩만 보냄
+        if (messageSend.contains(market)) {
+            return;
+        }
 
+        LocalTime time = DateUtil.getLocalTime(slackTime, "HH:mm");
         // 정해진 시간에 메시지 보냄
         if (time.getHour() == kst.getHour() && time.getMinute() == kst.getMinute()) {
             slackMessageService.sendMessage(message);
