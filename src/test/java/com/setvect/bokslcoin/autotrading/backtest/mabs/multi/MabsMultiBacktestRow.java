@@ -37,6 +37,10 @@ public class MabsMultiBacktestRow {
      */
     private double highYield;
     /**
+     * 최저 수익률
+     */
+    private double lowYield;
+    /**
      * 단기 이동평균
      */
     private double maShort;
@@ -87,12 +91,12 @@ public class MabsMultiBacktestRow {
         String dateUtc = DateUtil.formatDateTime(candle.getCandleDateTimeUtc());
         return String.format("날짜(KST): %s, 날짜(UTC): %s, 코인: %s, 이벤트 유형: %s, 시가: %,.0f, 고가:%,.0f, 저가:%,.0f, " +
                         "종가:%,.0f, 단기 이동평균: %,.0f, 장기 이동평균: %,.0f, " +
-                        "매수 체결 가격: %,.0f, 최고수익률: %,.2f%%, 매도 체결 가격: %,.0f, 매도 이유: %s, " +
+                        "매수 체결 가격: %,.0f, 최고수익률: %,.2f%%, 최저수익률: %,.2f%%, 매도 체결 가격: %,.0f, 매도 이유: %s, " +
                         "실현 수익률: %,.2f%%, 매수금액: %,.0f, 전체코인 매수금액: %,.0f, 현금: %,.0f, 수수료: %,.0f, 투자 수익(수수료포함): %,.0f, " +
                         "투자 결과(수수료포함): %,.0f, 현금 + 전체코인 매수금액: %,.0f",
                 dateKst, dateUtc, candle.getMarket(), tradeEvent, candle.getOpeningPrice(), candle.getHighPrice(), candle.getLowPrice(),
                 candle.getTradePrice(), maShort, maLong,
-                bidPrice, highYield * 100, askPrice, askReason == null ? "" : askReason,
+                bidPrice, highYield * 100, lowYield * 100, askPrice, askReason == null ? "" : askReason,
                 getRealYield() * 100, buyAmount, buyTotalAmount, cash, feePrice, getGains(),
                 getInvestResult(), getFinalResult());
     }

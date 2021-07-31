@@ -122,7 +122,7 @@ public class ApplicationUtil {
 
     /**
      * 연 복리
-     * CAGR = (EV / BV) ^ (1 / n)   - 1
+     * CAGR = (EV / BV) ^ (1 / dayCount) - 1
      *
      * @param bv       초기 값, BV (시작 값)
      * @param ev       종료 값, EV (종료 값)

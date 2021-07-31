@@ -64,6 +64,11 @@ public class BasicTradeEvent implements TradeEvent {
     }
 
     @Override
+    public void lowYield(String market, double lowYield) {
+
+    }
+
+    @Override
     public void registerTargetPrice(String market, double targetPrice) {
         String message = String.format("코인: %s, 매수 목표가: %,.2f ", market, targetPrice);
         log.info(message);

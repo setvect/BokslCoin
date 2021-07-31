@@ -50,7 +50,14 @@ public class BaseCondition {
     private final TradePeriod tradePeriod;
 
     /**
+     * 손절 손실율<br>
+     * 예를 들어 0.05이면 수익율이 -5%가 되면 손절 매도
+     */
+    private final double loseStopRate;
+
+    /**
      * 조건에 대한 설명. 리포트에서 사용하기 위함
      */
     private final String comment;
+
 }

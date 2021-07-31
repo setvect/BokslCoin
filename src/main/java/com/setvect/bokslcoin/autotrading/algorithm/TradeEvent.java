@@ -70,6 +70,12 @@ public interface TradeEvent {
     void highYield(String market, double highYield);
 
     /**
+     * @param market     코인
+     * @param lowYield    최저 수익률
+     */
+    void lowYield(String market, double lowYield);
+
+    /**
      * @param targetPrice 매수 목표가
      */
     void registerTargetPrice(String market, double targetPrice);

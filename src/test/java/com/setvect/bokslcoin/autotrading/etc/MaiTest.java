@@ -4,12 +4,17 @@ import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MaiTest {
     @Test
     public void test() {
+        Date now = new Date();
+
+        System.out.println(now.getClass().getName());
+
         double[] t = {1002, 1000, 1001, 1000, 999, 980, 1100, 700};
 
         List<Double> priceList = Arrays.stream(t).boxed().collect(Collectors.toList());

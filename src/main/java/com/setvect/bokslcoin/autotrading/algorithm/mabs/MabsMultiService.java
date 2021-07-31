@@ -60,6 +60,12 @@ public class MabsMultiService implements CoinTrading {
     private double investRatio;
 
     /**
+     * 손절 매도
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsMulti.loseStopRate}")
+    private double loseStopRate;
+
+    /**
      * 매매 주기
      */
     @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsMulti.tradePeriod}")
@@ -117,10 +123,15 @@ public class MabsMultiService implements CoinTrading {
     private int periodIdx = -1;
 
     /**
-     * 매수 이후 고점 수익률
+     * 매수 이후 최고 수익률
      */
     @Getter
     private Map<String, Double> highYield = new HashMap<>();
+    /**
+     * 매수 이후 최저 수익률
+     */
+    @Getter
+    private Map<String, Double> lowYield = new HashMap<>();
 
     @Override
     public void apply() {
@@ -231,7 +242,7 @@ public class MabsMultiService implements CoinTrading {
 
 
         sendSlackDaily(market, message);
-        log.info(message);
+        log.debug(message);
 
         if (isBuy) {
             // 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
@@ -254,21 +265,27 @@ public class MabsMultiService implements CoinTrading {
 
         Candle candle = candleList.get(0);
         double rate = getYield(candle, account);
+
         double maxHighYield = Math.max(highYield.getOrDefault(market, 0.0), rate);
         highYield.put(market, maxHighYield);
         tradeEvent.highYield(candle.getMarket(), maxHighYield);
+
+        double minLowYield = Math.min(lowYield.getOrDefault(market, 0.0), rate);
+        lowYield.put(market, minLowYield);
+        tradeEvent.lowYield(candle.getMarket(), minLowYield);
 
         double maShort = CommonTradeHelper.getMa(candleList, shortPeriod);
         double maLong = CommonTradeHelper.getMa(candleList, longPeriod);
         double sellTargetPrice = maShort + maShort * downSellRate;
 
-        String message1 = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익율: %.2f%%, 최고 수익률: %.2f%%",
+        String message1 = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익율: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
                 candle.getMarket(),
                 candle.getTradePrice(),
                 account.getAvgBuyPriceValue(),
                 account.getInvestCash(),
                 rate * 100,
-                highYield.get(market) * 100
+                highYield.get(market) * 100,
+                lowYield.get(market) * 100
         );
         log.debug(message1);
 
@@ -284,11 +301,12 @@ public class MabsMultiService implements CoinTrading {
                 maLong,
                 sellTargetPrice,
                 isSell);
-        log.info(message2);
+        log.debug(message2);
 
         sendSlackDaily(market, message1 + "\n" + message2);
 
-        if (isSell) {
+        if (isSell || loseStopRate < -rate ) {
+            slackMessageService.sendMessage(message1);
             doAsk(market, candle.getTradePrice(), account.getBalanceValue(), AskReason.MA_DOWN);
         }
     }

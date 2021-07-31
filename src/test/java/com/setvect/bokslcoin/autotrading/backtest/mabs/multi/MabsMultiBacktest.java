@@ -4,9 +4,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
-import com.setvect.bokslcoin.autotrading.backtest.TestAnalysis;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.MabsCondition;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
@@ -81,6 +79,7 @@ public class MabsMultiBacktest {
      */
     private Map<String, List<Double>> amountByCoin;
     private Map<String, Double> highYieldMap;
+    private Map<String, Double> lowYieldMap;
     private Map<String, CurrentPrice> priceMap;
     private Map<String, Account> accountMap;
 
@@ -90,7 +89,7 @@ public class MabsMultiBacktest {
         MabsMultiCondition condition = MabsMultiCondition.builder()
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-07-14T23:59:59"))
 //                .range(new DateRange("2021-06-14T00:00:00", "2021-07-07T23:59:59"))
-//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -103,7 +102,7 @@ public class MabsMultiBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59")) // 하락장4(찐하락장)
 //                .range(new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59")) // 하락장5
 //                .range(new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59")) // 하락장 이후 약간의 상승장
-                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
+//                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
 
                 .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS"))// 대상 코인
                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -112,11 +111,12 @@ public class MabsMultiBacktest {
                 // 슬리피지를 고려해 수수료 올림
                 .feeBid(0.0007) //  매수 수수료
                 .feeAsk(0.0007)//  매도 수수료
+                .loseStopRate(0.5) // 손절 라인
                 .upBuyRate(0.01) //상승 매수율
                 .downSellRate(0.01) // 하락 매도률
-                .shortPeriod(5) // 단기 이동평균 기간
-                .longPeriod(16) // 장기 이동평균 기간
-                .tradePeriod(TradePeriod.P_240) //매매 주기
+                .shortPeriod(5 * 6) // 단기 이동평균 기간
+                .longPeriod(16 * 6) // 장기 이동평균 기간
+                .tradePeriod(TradePeriod.P_60) //매매 주기
                 .build();
 
         // === 2. 백테스트 ===
@@ -158,7 +158,7 @@ public class MabsMultiBacktest {
         MabsMultiCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
-                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
+//                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
                 new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
                 new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
                 new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
@@ -175,8 +175,8 @@ public class MabsMultiBacktest {
         );
         int count = 0;
         Date now = new Date();
-        int[] shortPeriod = {5};
-        int[] longPeriod = {16};
+        int[] shortPeriod = {30};
+        int[] longPeriod = {96};
         for (int sp : shortPeriod) {
             for (int lp : longPeriod) {
                 for (DateRange range : rangeList) {
@@ -189,11 +189,12 @@ public class MabsMultiBacktest {
                             // 슬리피지를 고려해 수수료 올림
                             .feeBid(0.0007) //  매수 수수료
                             .feeAsk(0.0007)//  매도 수수료
+                            .loseStopRate(0.5) // 손절 라인
                             .upBuyRate(0.01) //상승 매수율
                             .downSellRate(0.01) // 하락 매도률
                             .shortPeriod(sp) // 단기 이동평균 기간
                             .longPeriod(lp) // 장기 이동평균 기간
-                            .tradePeriod(TradePeriod.P_240) //매매 주기
+                            .tradePeriod(TradePeriod.P_60) //매매 주기
                             .build();
                     log.info(condition.toString());
 
@@ -241,8 +242,10 @@ public class MabsMultiBacktest {
         // 코인별 가격
         amountByCoin = condition.getMarkets().stream().collect(Collectors.toMap(p -> p, p -> new ArrayList<>()));
 
-        // key: market, value: 최대 수익률
+        // key: market, value: 최고 수익률
         highYieldMap = new HashMap<>();
+        // key: market, value: 최저 수익률
+        lowYieldMap = new HashMap<>();
 
 
         injectionFieldValue(condition);
@@ -307,6 +310,9 @@ public class MabsMultiBacktest {
      */
     private static TestAnalysisMulti.YieldMdd getCoinYieldMdd(Map<String, List<Double>> amountByCoin, String market) {
         List<Double> amounts = amountByCoin.get(market);
+        if (amounts.isEmpty()) {
+            return new TestAnalysisMulti.YieldMdd();
+        }
         TestAnalysisMulti.YieldMdd yield = new TestAnalysisMulti.TotalYield();
         yield.setYield(MathUtil.getYield(amounts.get(amounts.size() - 1), amounts.get(0)));
         yield.setMdd(ApplicationUtil.getMdd(amounts));
@@ -376,7 +382,6 @@ public class MabsMultiBacktest {
                 .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_240, invocation.getArgument(2, Integer.class)));
 
 
-
         // 현재 가지고있는 자산 조회
         when(accountService.getMyAccountBalance()).then((method) -> {
             Map<String, Account> map = accountMap.entrySet().stream()
@@ -435,7 +440,7 @@ public class MabsMultiBacktest {
             return null;
         }).when(tradeEvent).bid(anyString(), anyDouble(), anyDouble());
 
-        // 시세 체크
+        // 최고수익률
         doAnswer(invocation -> {
             String market = invocation.getArgument(0, String.class);
             double highYield = invocation.getArgument(1, Double.class);
@@ -443,6 +448,14 @@ public class MabsMultiBacktest {
 
             return null;
         }).when(tradeEvent).highYield(anyString(), anyDouble());
+
+        // 최저 수익률
+        doAnswer(invocation -> {
+            String market = invocation.getArgument(0, String.class);
+            double lowYield = invocation.getArgument(1, Double.class);
+            lowYieldMap.put(market, lowYield);
+            return null;
+        }).when(tradeEvent).lowYield(anyString(), anyDouble());
 
         // 매도
         doAnswer(invocation -> {
@@ -477,6 +490,7 @@ public class MabsMultiBacktest {
             backtestRow.setMaShort(currentPrice.getMaShort());
             backtestRow.setMaLong(currentPrice.getMaLong());
             backtestRow.setHighYield(highYieldMap.getOrDefault(market, 0.0));
+            backtestRow.setLowYield(lowYieldMap.getOrDefault(market, 0.0));
 
             tradeHistory.add(backtestRow);
             return null;
@@ -497,6 +511,7 @@ public class MabsMultiBacktest {
         ReflectionTestUtils.setField(mabsMultiService, "markets", condition.getMarkets());
         ReflectionTestUtils.setField(mabsMultiService, "investRatio", condition.getInvestRatio());
         ReflectionTestUtils.setField(mabsMultiService, "upBuyRate", condition.getUpBuyRate());
+        ReflectionTestUtils.setField(mabsMultiService, "loseStopRate", condition.getLoseStopRate());
         ReflectionTestUtils.setField(mabsMultiService, "downSellRate", condition.getDownSellRate());
         ReflectionTestUtils.setField(mabsMultiService, "tradePeriod", condition.getTradePeriod());
         ReflectionTestUtils.setField(mabsMultiService, "shortPeriod", condition.getShortPeriod());
@@ -531,7 +546,7 @@ public class MabsMultiBacktest {
 
 
     public static void makeReport(MabsMultiCondition condition, List<MabsMultiBacktestRow> tradeHistory, TestAnalysisMulti testAnalysis) throws IOException {
-        String header = "날짜(KST),날짜(UTC),코인,이벤트 유형,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료";
+        String header = "날짜(KST),날짜(UTC),코인,이벤트 유형,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료";
         StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
         for (MabsMultiBacktestRow row : tradeHistory) {
             String dateKst = DateUtil.formatDateTime(row.getCandle().getCandleDateTimeKst());
@@ -544,6 +559,7 @@ public class MabsMultiBacktest {
             report.append(String.format("%,.0f\t", row.getMaLong()));
             report.append(String.format("%,.0f\t", row.getBidPrice()));
             report.append(String.format("%,.2f%%\t", row.getHighYield() * 100));
+            report.append(String.format("%,.2f%%\t", row.getLowYield() * 100));
             report.append(String.format("%,.0f\t", row.getAskPrice()));
             report.append(String.format("%s\t", row.getAskReason() == null ? "" : row.getAskReason()));
             report.append(String.format("%,.2f%%\t", row.getRealYield() * 100));
