@@ -96,7 +96,14 @@ public class CandleDataIterator implements Iterator<CandleMinute> {
             base = current.getCandleDateTimeUtc().withHour(hour).withMinute(0).withSecond(0).withNano(0);
         } else if (periodType == PeriodType.PERIOD_60) {
             base = current.getCandleDateTimeUtc().withMinute(0).withSecond(0).withNano(0);
+        } else if (periodType == PeriodType.PERIOD_30) {
+            int minute = (current.getCandleDateTimeUtc().getMinute() / 30) * 30;
+            base = current.getCandleDateTimeUtc().withMinute(minute).withSecond(0).withNano(0);
+        } else if (periodType == PeriodType.PERIOD_15) {
+            int minute = (current.getCandleDateTimeUtc().getMinute() / 15) * 15;
+            base = current.getCandleDateTimeUtc().withMinute(minute).withSecond(0).withNano(0);
         }
+
         CacheKey key = CacheKey.builder().market(current.getMarket()).count(count).base(base).period(periodType).build();
         List<Candle> periodData = cachePeriod.get(key);
         if (periodData == null) {

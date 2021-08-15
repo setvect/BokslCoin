@@ -47,17 +47,25 @@ public class CommonTradeHelper {
     public static List<Candle> getCandles(CandleService candleService, String market, TradePeriod tradePeriod, int periodCount) {
         List<Candle> moveListCandle = new ArrayList<>();
         switch (tradePeriod) {
-            case P_60:
-                List<CandleMinute> t1 = candleService.getMinute(60, market, periodCount);
+            case P_15:
+                List<CandleMinute> t1 = candleService.getMinute(15, market, periodCount);
                 moveListCandle.addAll(t1);
                 break;
-            case P_240:
-                List<CandleMinute> t2 = candleService.getMinute(240, market, periodCount);
+            case P_30:
+                List<CandleMinute> t2 = candleService.getMinute(30, market, periodCount);
                 moveListCandle.addAll(t2);
                 break;
-            case P_1440:
-                List<CandleDay> t3 = candleService.getDay(market, periodCount);
+            case P_60:
+                List<CandleMinute> t3 = candleService.getMinute(60, market, periodCount);
                 moveListCandle.addAll(t3);
+                break;
+            case P_240:
+                List<CandleMinute> t4 = candleService.getMinute(240, market, periodCount);
+                moveListCandle.addAll(t4);
+                break;
+            case P_1440:
+                List<CandleDay> t5 = candleService.getDay(market, periodCount);
+                moveListCandle.addAll(t5);
                 break;
         }
         return moveListCandle;

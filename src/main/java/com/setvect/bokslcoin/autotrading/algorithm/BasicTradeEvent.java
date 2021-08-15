@@ -1,7 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
 import com.setvect.bokslcoin.autotrading.model.Candle;
-import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +40,7 @@ public class BasicTradeEvent implements TradeEvent {
     }
 
     @Override
-    public void check(CandleMinute candle, double currentMa, double maxMa, double minMa) {
+    public void check(Candle candle, double currentMa, double maxMa, double minMa) {
     }
 
     @Override

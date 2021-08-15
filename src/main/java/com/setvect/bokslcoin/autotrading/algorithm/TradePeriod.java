@@ -6,6 +6,8 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public enum TradePeriod {
+    P_15(13, 1, 1),
+    P_30(27, 2, 1),
     P_60(55, 4, 1),
     P_240(230, 9, 1),
     P_1440(1410, 29, 1);

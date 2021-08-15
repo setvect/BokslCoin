@@ -34,7 +34,7 @@ public class SaveJsonToDb {
     @Test
     public void test() throws IOException {
         candleRepository.deleteAll();
-        List<String> markets = Arrays.asList("KRW-BTC", "KRW-XRP", "KRW-ETH", "KRW-EOS");
+        List<String> markets = Arrays.asList("KRW-BTC", "KRW-XRP", "KRW-ETH", "KRW-EOS", "KRW-ETC");
         for (String market : markets) {
             restore(market);
         }
@@ -44,10 +44,14 @@ public class SaveJsonToDb {
         File dir = new File("./craw-data/minute");
         File[] files = dir.listFiles(n -> n.getName().contains(market));
 
+        List<CandleMinute> p15 = new ArrayList<>();
+        List<CandleMinute> p30 = new ArrayList<>();
         List<CandleMinute> p60 = new ArrayList<>();
         List<CandleMinute> p240 = new ArrayList<>();
         List<CandleMinute> p1440 = new ArrayList<>();
 
+        int minute15 = -1;
+        int minute30 = -1;
         int hour = -1;
         int hour4 = -1;
         int day = -1;
@@ -59,6 +63,28 @@ public class SaveJsonToDb {
 
             for (CandleMinute candle : candles) {
                 LocalDateTime candleDateTimeUtc = candle.getCandleDateTimeUtc();
+
+                // 15분 합계
+                if (candleDateTimeUtc.getMinute() / 15 != minute15) {
+                    if (!p15.isEmpty()) {
+                        Candle mergeCandle = getCandle(p15);
+                        CandleEntity entity = getCandleEntity(market, mergeCandle, PeriodType.PERIOD_15);
+                        candleRepository.save(entity);
+                        p15.clear();
+                    }
+                    minute15 = candleDateTimeUtc.getMinute() / 15;
+                }
+
+                // 30분 합계
+                if (candleDateTimeUtc.getMinute() / 30 != minute30) {
+                    if (!p30.isEmpty()) {
+                        Candle mergeCandle = getCandle(p30);
+                        CandleEntity entity = getCandleEntity(market, mergeCandle, PeriodType.PERIOD_30);
+                        candleRepository.save(entity);
+                        p30.clear();
+                    }
+                    minute30 = candleDateTimeUtc.getMinute() / 30;
+                }
 
                 // 1시간 합계
                 if (candleDateTimeUtc.getHour() != hour) {
@@ -96,6 +122,8 @@ public class SaveJsonToDb {
                 p1440.add(candle);
                 p240.add(candle);
                 p60.add(candle);
+                p30.add(candle);
+                p15.add(candle);
 
                 CandleEntity entity = getCandleEntity(market, candle, PeriodType.PERIOD_1);
                 candleRepository.save(entity);
