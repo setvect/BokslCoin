@@ -151,35 +151,35 @@ public class MaisMultiBacktest {
 
     @Test
     public void multiBacktest() throws IOException {
-        String header = "분석기간,분석주기,대상 코인,투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,손절,단기 이동평균 기간,장기 이동평균 기간,조건 설명,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
+        String header = "분석기간,분석주기,대상 코인,투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,손절,이동평균 기간,조건 설명,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
         StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
         MaisMultiCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
-//                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
-//                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59") // 상승장 후 하락장
-//                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
-//                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
-//                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
-//                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
-//                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
-//                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
-//                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
-//                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
-//                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
-//                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
-//                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
+                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
+                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
+                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
+                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
+                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
+                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
+                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
+                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
+                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
+                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
+                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
+                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
+                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
                 new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59") // 전체 기간
         );
         List<List<String>> marketsList = new ArrayList<>();
 //        markets.add(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC"));
-        marketsList.add(Arrays.asList("KRW-XRP", "KRW-EOS"));
-        marketsList.add(Arrays.asList("KRW-ETH", "KRW-ETC"));
+        marketsList.add(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC"));
+//        marketsList.add(Arrays.asList("KRW-ETH", "KRW-ETC"));
 
         int count = 0;
         Date now = new Date();
-        int[] maPeriod = {13};
+        int[] maPeriod = {36, 38, 40, 42, 44};
         for (int sp : maPeriod) {
             for (List<String> markets : marketsList) {
                 for (DateRange range : rangeList) {
@@ -188,7 +188,7 @@ public class MaisMultiBacktest {
                             .range(range)
                             .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                             .cash(10_000_000) // 최초 투자 금액
-                            .tradeMargin(0)// 매매시 채결 가격 차이
+                            .tradeMargin(0)// 매매시 채결 가격 차이>>
                             // 슬리피지를 고려해 수수료 올림
                             .feeBid(0.0007) //  매수 수수료
                             .feeAsk(0.0007)//  매도 수수료
@@ -196,7 +196,7 @@ public class MaisMultiBacktest {
                             .upBuyRate(0.01) //상승 매수율
                             .downSellRate(0.01) // 하락 매도률
                             .maPeriod(sp) // 이동평균 기간
-                            .tradePeriod(TradePeriod.P_60) //매매 주기
+                            .tradePeriod(TradePeriod.P_30) //매매 주기
                             .build();
                     log.info(condition.toString());
 
@@ -205,7 +205,7 @@ public class MaisMultiBacktest {
                     makeReport(condition, tradeHistory, testAnalysis);
 
                     // -- 결과 저장 --
-                    File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
+                    File reportFile = new File("./backtest-result", "이평선반전_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
                     FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
                     System.out.println("결과 파일:" + reportFile.getName());
                 }
@@ -213,7 +213,7 @@ public class MaisMultiBacktest {
             }
         }
         // -- 결과 저장 --
-        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + now.getTime() + ".txt");
+        File reportFile = new File("./backtest-result", "이평선반전_전략_백테스트_분석결과_" + now.getTime() + ".txt");
         FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
         System.out.println("결과 파일:" + reportFile.getName());
 
