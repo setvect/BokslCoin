@@ -154,25 +154,25 @@ public class MabsMultiBacktest {
 
     @Test
     public void multiBacktest() throws IOException {
-        String header = "분석기간,분석주기,대상 코인,투자비율,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,손절,단기 이동평균 기간,장기 이동평균 기간,조건 설명,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
+        String header = "분석기간,분석주기,대상 코인,투자비율,최대 코인 매매 갯수,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,손절,단기 이동평균 기간,장기 이동평균 기간,조건 설명,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
         StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
         MabsMultiCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
-//                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
-//                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
-//                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
-//                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
-//                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
-//                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
-//                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
-//                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
-//                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
-//                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
-//                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
-//                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
-//                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
+                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
+                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
+                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
+                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
+                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
+                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
+                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
+                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
+                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
+                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
+                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
+                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
+                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
                 new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59") // 전체 기간
         );
         List<List<String>> marketsList = new ArrayList<>();
@@ -541,6 +541,7 @@ public class MabsMultiBacktest {
         reportRow.append(String.format("%s\t", condition.getTradePeriod()));
         reportRow.append(String.format("%s\t", condition.getMarkets()));
         reportRow.append(String.format("%,.2f%%\t", condition.getInvestRatio() * 100));
+        reportRow.append(String.format("%d\t", condition.getMaxBuyCount()));
         reportRow.append(String.format("%,.0f\t", condition.getCash()));
         reportRow.append(String.format("%,.0f\t", condition.getTradeMargin()));
         reportRow.append(String.format("%,.2f%%\t", condition.getFeeBid() * 100));
@@ -617,6 +618,7 @@ public class MabsMultiBacktest {
         report.append(String.format("분석주기\t %s", condition.getTradePeriod())).append("\n");
         report.append(String.format("대상 코인\t %s", condition.getMarkets())).append("\n");
         report.append(String.format("투자비율\t %,.2f%%", condition.getInvestRatio() * 100)).append("\n");
+        report.append(String.format("최대 코인 매매 갯수\t %d", condition.getMaxBuyCount())).append("\n");
         report.append(String.format("최초 투자금액\t %,f", condition.getCash())).append("\n");
         report.append(String.format("매매 마진\t %,f", condition.getTradeMargin())).append("\n");
         report.append(String.format("매수 수수료\t %,.2f%%", condition.getFeeBid() * 100)).append("\n");

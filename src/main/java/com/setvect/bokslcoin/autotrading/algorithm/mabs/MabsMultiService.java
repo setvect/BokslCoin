@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.mabs;
 
+import com.setvect.bokslcoin.autotrading.algorithm.AskPriceRange;
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
 import com.setvect.bokslcoin.autotrading.algorithm.CommonTradeHelper;
@@ -40,6 +41,10 @@ import java.util.Set;
 @Slf4j
 @RequiredArgsConstructor
 public class MabsMultiService implements CoinTrading {
+    /**
+     * 매수/매도 시 즉각적인 매매를 위해 호가보다 상단 또는 하단에 주문을 넣는 퍼센트
+     */
+    public static final double DIFF_RATE = 0.02;
     private final AccountService accountService;
     private final CandleService candleService;
     private final TradeEvent tradeEvent;
@@ -346,14 +351,36 @@ public class MabsMultiService implements CoinTrading {
         }
     }
 
+    /**
+     * 매수
+     *
+     * @param market     코인 종류
+     * @param tradePrice 코인 가격
+     * @param bidPrice   매수 금액
+     */
     private void doBid(String market, double tradePrice, double bidPrice) {
-        orderService.callOrderBidByMarket(market, ApplicationUtil.toNumberString(bidPrice));
+        // 높은 가격으로 매수(시장가 효과)
+        double fitPrice = AskPriceRange.askPrice(tradePrice + tradePrice * DIFF_RATE);
+        String volume = ApplicationUtil.toNumberString(bidPrice / fitPrice);
+        String price = ApplicationUtil.toNumberString(fitPrice);
+        orderService.callOrderBid(market, volume, price);
         tradeEvent.bid(market, tradePrice, bidPrice);
     }
 
-    private void doAsk(String market, double currentPrice, double balance, AskReason maDown) {
-        orderService.callOrderAskByMarket(market, ApplicationUtil.toNumberString(balance));
-        tradeEvent.ask(market, balance, currentPrice, maDown);
+
+    /**
+     * 매도
+     *
+     * @param market       코인 종류
+     * @param currentPrice 코인 가격
+     * @param balance      코인 주문량
+     * @param askReason    매도 이유
+     */
+    private void doAsk(String market, double currentPrice, double balance, AskReason askReason) {
+        // 낮은 가격으로 매도(시장가 효과)
+        double fitPrice = AskPriceRange.askPrice(currentPrice - currentPrice * DIFF_RATE);
+        orderService.callOrderAsk(market, ApplicationUtil.toNumberString(balance), ApplicationUtil.toNumberString(fitPrice));
+        tradeEvent.ask(market, balance, currentPrice, askReason);
         highYield.put(market, 0.0);
         lowYield.put(market, 0.0);
         tradeCompleteOfPeriod.add(market);
