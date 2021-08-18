@@ -107,6 +107,7 @@ public class MaisMultiBacktest {
                 .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS"))// 대상 코인
 //                .markets(Arrays.asList("KRW-BTC"))// 대상 코인
                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                .maxBuyCount(3)
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(0)// 매매시 채결 가격 차이
                 .feeBid(0.0007) //  매수 수수료
@@ -187,6 +188,7 @@ public class MaisMultiBacktest {
                             .markets(markets)// 대상 코인
                             .range(range)
                             .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                            .maxBuyCount(3)
                             .cash(10_000_000) // 최초 투자 금액
                             .tradeMargin(0)// 매매시 채결 가격 차이>>
                             // 슬리피지를 고려해 수수료 올림
@@ -520,6 +522,7 @@ public class MaisMultiBacktest {
 
     private void injectionFieldValue(MaisMultiCondition condition) {
         ReflectionTestUtils.setField(maisMultiService, "markets", condition.getMarkets());
+        ReflectionTestUtils.setField(maisMultiService, "maxByCount", condition.getMaxBuyCount());
         ReflectionTestUtils.setField(maisMultiService, "investRatio", condition.getInvestRatio());
         ReflectionTestUtils.setField(maisMultiService, "upBuyRate", condition.getUpBuyRate());
         ReflectionTestUtils.setField(maisMultiService, "loseStopRate", condition.getLoseStopRate());

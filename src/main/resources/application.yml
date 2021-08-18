@@ -64,6 +64,8 @@ com:
           mabsMulti:
             # 매수, 매도 대상 코인
             markets: KRW-BTC,KRW-ETH,KRW-XRP,KRW-EOS
+            # 최대 코인 매매 갯수
+            maxBuyCount: 3
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
             investRatio: 0.5
             # 손절 매도
@@ -89,6 +91,8 @@ com:
           maisMulti:
             # 매수, 매도 대상 코인
             markets: KRW-BTC,KRW-ETH,KRW-XRP,KRW-EOS
+            # 최대 코인 매매 갯수
+            maxBuyCount: 3
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
             investRatio: 0.5
             # 손절 매도

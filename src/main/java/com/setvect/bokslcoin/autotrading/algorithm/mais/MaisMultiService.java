@@ -59,6 +59,12 @@ public class MaisMultiService implements CoinTrading {
     private List<String> markets;
 
     /**
+     * 최대 코인 매매 갯수
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.maisMulti.maxBuyCount}")
+    private int maxBuyCount;
+
+    /**
      * 총 현금을 기준으로 투자 비율
      * 1은 100%, 0.5은 50% 투자
      */
@@ -146,9 +152,10 @@ public class MaisMultiService implements CoinTrading {
         Account krw = coinAccount.get("KRW");
         BigDecimal cash = BigDecimal.valueOf(krw.getBalanceValue());
 
+        int allowBuyCount = Math.min(this.maxBuyCount, markets.size());
         // 이미 매수한 코인 갯수
         int buyCount = (int) markets.stream().filter(p -> coinAccount.get(p) != null).count();
-        int rate = markets.size() - buyCount;
+        int rate = allowBuyCount - buyCount;
 
         double buyCash = 0;
         if (rate > 0) {
@@ -178,8 +185,7 @@ public class MaisMultiService implements CoinTrading {
                 return;
             }
 
-
-            if (account == null && !tradeCompleteOfPeriod.contains(market)) {
+            if (account == null && !tradeCompleteOfPeriod.contains(market) && buyCash != 0) {
                 buyCheck(buyCash, candleList);
             } else if (account != null) {
                 sellCheck(account, candleList);
@@ -257,7 +263,6 @@ public class MaisMultiService implements CoinTrading {
         double currentMa = MathUtil.getAverage(priceValues, 0, maPeriod);
         List<Double> beforePriceMa = MathUtil.getAverageValues(priceValues, 1, maPeriod, COMPARISON_RANGE);
         double maxMa = MathUtil.getContinuesMax(beforePriceMa);
-
 
         String market = account.getMarket();
 

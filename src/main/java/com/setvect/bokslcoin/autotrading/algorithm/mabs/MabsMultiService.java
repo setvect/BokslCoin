@@ -53,6 +53,12 @@ public class MabsMultiService implements CoinTrading {
     private List<String> markets;
 
     /**
+     * 최대 코인 매매 갯수
+     */
+    @Value("${com.setvect.bokslcoin.autotrading.algorithm.mabsMulti.maxBuyCount}")
+    private int maxBuyCount;
+
+    /**
      * 총 현금을 기준으로 투자 비율
      * 1은 100%, 0.5은 50% 투자
      */
@@ -156,8 +162,9 @@ public class MabsMultiService implements CoinTrading {
         BigDecimal cash = BigDecimal.valueOf(krw.getBalanceValue());
 
         // 이미 매수한 코인 갯수
+        int allowBuyCount = Math.min(this.maxBuyCount, markets.size());
         int buyCount = (int) markets.stream().filter(p -> coinAccount.get(p) != null).count();
-        int rate = markets.size() - buyCount;
+        int rate = allowBuyCount - buyCount;
 
         double buyCash = 0;
         if (rate > 0) {
@@ -182,7 +189,7 @@ public class MabsMultiService implements CoinTrading {
 
             checkMa(candleList);
 
-            if (account == null && !tradeCompleteOfPeriod.contains(market)) {
+            if (account == null && !tradeCompleteOfPeriod.contains(market) && buyCash != 0) {
                 buyCheck(buyCash, candleList);
             } else if (account != null) {
                 sellCheck(account, candleList);
@@ -306,7 +313,7 @@ public class MabsMultiService implements CoinTrading {
 
         sendSlackDaily(market, message1 + "\n" + message2);
 
-        if (isSell || loseStopRate < -rate ) {
+        if (isSell || loseStopRate < -rate) {
             slackMessageService.sendMessage(message1);
             doAsk(market, candle.getTradePrice(), account.getBalanceValue(), AskReason.MA_DOWN);
         }

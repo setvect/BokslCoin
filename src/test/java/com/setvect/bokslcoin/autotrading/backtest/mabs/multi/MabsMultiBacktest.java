@@ -87,10 +87,10 @@ public class MabsMultiBacktest {
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
         MabsMultiCondition condition = MabsMultiCondition.builder()
-                .range(new DateRange("2021-06-07T00:00:00", "2021-08-03T23:59:59"))
+//                .range(new DateRange("2021-06-07T00:00:00", "2021-08-03T23:59:59"))
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-07-14T23:59:59"))
 //                .range(new DateRange("2021-06-14T00:00:00", "2021-07-07T23:59:59"))
-//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -105,8 +105,9 @@ public class MabsMultiBacktest {
 //                .range(new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59")) // 하락장 이후 약간의 상승장
 //                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
 
-                .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS"))// 대상 코인
+                .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC"))// 대상 코인
                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                .maxBuyCount(5)
                 .cash(10_000_000) // 최초 투자 금액
                 .tradeMargin(0)// 매매시 채결 가격 차이
                 // 슬리피지를 고려해 수수료 올림
@@ -115,9 +116,9 @@ public class MabsMultiBacktest {
                 .loseStopRate(0.99) // 손절 라인
                 .upBuyRate(0.01) //상승 매수율
                 .downSellRate(0.01) // 하락 매도률
-                .shortPeriod(5) // 단기 이동평균 기간
-                .longPeriod(30) // 장기 이동평균 기간
-                .tradePeriod(TradePeriod.P_15) //매매 주기
+                .shortPeriod(13) // 단기 이동평균 기간
+                .longPeriod(64) // 장기 이동평균 기간
+                .tradePeriod(TradePeriod.P_60) //매매 주기
                 .build();
 
         // === 2. 백테스트 ===
@@ -160,7 +161,7 @@ public class MabsMultiBacktest {
 
         List<DateRange> rangeList = Arrays.asList(
 //                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
-//                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59") // 상승장 후 하락장
+//                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
 //                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
 //                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
 //                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
@@ -175,9 +176,9 @@ public class MabsMultiBacktest {
                 new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59") // 전체 기간
         );
         List<List<String>> marketsList = new ArrayList<>();
-//        markets.add(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC"));
-        marketsList.add(Arrays.asList("KRW-XRP", "KRW-EOS"));
-        marketsList.add(Arrays.asList("KRW-ETH", "KRW-ETC"));
+        marketsList.add(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC"));
+//        marketsList.add(Arrays.asList("KRW-XRP", "KRW-EOS"));
+//        marketsList.add(Arrays.asList("KRW-ETH", "KRW-ETC"));
 
         int count = 0;
         Date now = new Date();
@@ -190,6 +191,7 @@ public class MabsMultiBacktest {
                         condition = MabsMultiCondition.builder()
                                 .markets(markets)// 대상 코인
                                 .range(range)
+                                .maxBuyCount(3)
                                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                                 .cash(10_000_000) // 최초 투자 금액
                                 .tradeMargin(0)// 매매시 채결 가격 차이
@@ -520,6 +522,7 @@ public class MabsMultiBacktest {
 
     private void injectionFieldValue(MabsMultiCondition condition) {
         ReflectionTestUtils.setField(mabsMultiService, "markets", condition.getMarkets());
+        ReflectionTestUtils.setField(mabsMultiService, "maxBuyCount", condition.getMaxBuyCount());
         ReflectionTestUtils.setField(mabsMultiService, "investRatio", condition.getInvestRatio());
         ReflectionTestUtils.setField(mabsMultiService, "upBuyRate", condition.getUpBuyRate());
         ReflectionTestUtils.setField(mabsMultiService, "loseStopRate", condition.getLoseStopRate());

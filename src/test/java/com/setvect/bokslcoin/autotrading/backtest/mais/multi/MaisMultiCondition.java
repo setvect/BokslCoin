@@ -19,6 +19,10 @@ public class MaisMultiCondition extends BaseCondition {
      */
     private final List<String> markets;
     /**
+     * 최대 코인 매매 갯수
+     */
+    private final int maxBuyCount;
+    /**
      * 상승 매수률
      */
     private final double upBuyRate;
