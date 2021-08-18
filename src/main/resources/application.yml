@@ -60,29 +60,6 @@ com:
             # 매매 주기(P_60, P_240, P_1440)
             tradePeriod: P_1440
 
-          # 이동평균선 돌파 전략
-          mabs:
-            # 매수, 매도 대상 코인
-            market: KRW-BTC
-            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-            investRatio: 0.5
-            # 매매 주기(P_60, P_240, P_1440)
-            tradePeriod: P_240
-            # 상승 매수률
-            upBuyRate: 0.01
-            # 하락 매도률
-            downSellRate: 0.01
-            # 단기 이동평균 기간
-            shortPeriod: 3
-            # 장기 이동평균 기간
-            longPeriod: 15
-            # 하루에 한번씩 정해진 시간에 매수 또는 매도 목표가를 Slack 메시지 발송
-            slackTime: '08:00'
-            # 프로그램을 시작하자마자 매수하는걸 방지하기 위함.
-            # true: 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
-            # false: 프로그램 시작과 동시에 매수 조건이 만족하면 매수, 고가에 매수할 가능성 있음
-            newMasBuy: true
-
           # 이동평균선 돌파 전략, 멀티코인
           mabsMulti:
             # 매수, 매도 대상 코인
@@ -107,23 +84,6 @@ com:
             # true: 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
             # false: 프로그램 시작과 동시에 매수 조건이 만족하면 매수, 고가에 매수할 가능성 있음
             newMasBuy: true
-
-          # 이동평균선 반전 전략
-          mais:
-            # 매수, 매도 대상 코인
-            market: KRW-BTC
-            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-            investRatio: 0.5
-            # 매매 주기(P_60, P_240, P_1440)
-            tradePeriod: P_240
-            # 상승 매수률
-            upBuyRate: 0.005
-            # 하락 매도률
-            downSellRate: 0.005
-            # 기준 이동평균 기간
-            maPeriod: 5
-            # 하루에 한번씩 정해진 시간에 매수 또는 매도 목표가를 Slack 메시지 발송
-            slackTime: '08:00'
 
           # 이동평균선 반전 전략, 멀티코인
           maisMulti:
