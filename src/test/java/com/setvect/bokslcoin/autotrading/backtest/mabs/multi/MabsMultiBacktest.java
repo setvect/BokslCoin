@@ -160,19 +160,19 @@ public class MabsMultiBacktest {
         MabsMultiCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
-                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
-                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
-                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
-                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
-                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
-                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
-                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
-                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
-                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
-                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
-                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
-                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
-                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
+//                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
+//                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
+//                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
+//                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
+//                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
+//                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
+//                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
+//                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
+//                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
+//                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
+//                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
+//                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
+//                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
                 new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59") // 전체 기간
         );
         List<List<String>> marketsList = new ArrayList<>();
@@ -184,39 +184,42 @@ public class MabsMultiBacktest {
         Date now = new Date();
         int[] shortPeriod = {13};
         int[] longPeriod = {64};
+        double[] rateList = {0.008, 0.009, 0.011};
         for (int sp : shortPeriod) {
             for (int lp : longPeriod) {
-                for (List<String> markets : marketsList) {
-                    for (DateRange range : rangeList) {
-                        condition = MabsMultiCondition.builder()
-                                .markets(markets)// 대상 코인
-                                .range(range)
-                                .maxBuyCount(3)
-                                .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
-                                .cash(10_000_000) // 최초 투자 금액
-                                .tradeMargin(0)// 매매시 채결 가격 차이
-                                // 슬리피지를 고려해 수수료 올림
-                                .feeBid(0.0007) //  매수 수수료
-                                .feeAsk(0.0007)//  매도 수수료
-                                .loseStopRate(0.99) // 손절 라인
-                                .upBuyRate(0.01) //상승 매수율
-                                .downSellRate(0.01) // 하락 매도률
-                                .shortPeriod(sp) // 단기 이동평균 기간
-                                .longPeriod(lp) // 장기 이동평균 기간
-                                .tradePeriod(TradePeriod.P_60) //매매 주기
-                                .build();
-                        log.info(condition.toString());
+                for (double rate : rateList) {
+                    for (List<String> markets : marketsList) {
+                        for (DateRange range : rangeList) {
+                            condition = MabsMultiCondition.builder()
+                                    .markets(markets)// 대상 코인
+                                    .range(range)
+                                    .maxBuyCount(markets.size())
+                                    .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+                                    .cash(10_000_000) // 최초 투자 금액
+                                    .tradeMargin(0)// 매매시 채결 가격 차이
+                                    // 슬리피지를 고려해 수수료 올림
+                                    .feeBid(0.0007) //  매수 수수료
+                                    .feeAsk(0.0007)//  매도 수수료
+                                    .loseStopRate(0.99) // 손절 라인
+                                    .upBuyRate(rate) //상승 매수율
+                                    .downSellRate(rate) // 하락 매도률
+                                    .shortPeriod(sp) // 단기 이동평균 기간
+                                    .longPeriod(lp) // 장기 이동평균 기간
+                                    .tradePeriod(TradePeriod.P_60) //매매 주기
+                                    .build();
+                            log.info(condition.toString());
 
-                        TestAnalysisMulti testAnalysis = backtest(condition);
-                        report.append(getReportRow(condition, testAnalysis) + "\n");
-                        makeReport(condition, tradeHistory, testAnalysis);
+                            TestAnalysisMulti testAnalysis = backtest(condition);
+                            report.append(getReportRow(condition, testAnalysis) + "\n");
+                            makeReport(condition, tradeHistory, testAnalysis);
 
-                        // -- 결과 저장 --
-                        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
-                        FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
-                        System.out.println("결과 파일:" + reportFile.getName());
+                            // -- 결과 저장 --
+                            File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + (++count) + "_" + now.getTime() + ".txt");
+                            FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
+                            System.out.println("결과 파일:" + reportFile.getName());
+                        }
+                        report.append("\n");
                     }
-                    report.append("\n");
                 }
             }
         }
