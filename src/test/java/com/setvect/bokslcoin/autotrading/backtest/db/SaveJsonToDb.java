@@ -43,6 +43,7 @@ public class SaveJsonToDb {
     private void restore(String market) throws IOException {
         File dir = new File("./craw-data/minute");
         File[] files = dir.listFiles(n -> n.getName().contains(market));
+        Arrays.sort(files, (a, b)->a.getName().compareTo(b.getName()));
 
         List<CandleMinute> p15 = new ArrayList<>();
         List<CandleMinute> p30 = new ArrayList<>();
