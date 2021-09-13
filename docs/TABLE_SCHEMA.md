@@ -16,7 +16,7 @@
     | ----------------- | -------------- | --- | -------- | --- | -------- | ---------------------------------- |
     | ASSET_HISTORY_SEQ | 키             | PK  | INTEGER  | 4   | Y        |                                    |
     | CURRENCY          | 자산 종류      |     | VARCHAR  | 20  | Y        | KRW, BTC, ETH, ...                 |
-    | PRICE             | 원화 환산 금액 |     | NUMBER   |     | Y        | BUY, SELL                          |
+    | PRICE             | 원화 환산 금액 |     | NUMBER   |     | Y        |                                    |
     | YIELD             | 수익률         |     | NUMBER   |     | Y        | 소수로 표현, 1->100%, -0.02 -> -2% |
     | REG_DATE          | 자산 조회 시간 |     | DATETIME |     | Y        |                                    |
 
