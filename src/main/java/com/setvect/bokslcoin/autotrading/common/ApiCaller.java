@@ -6,18 +6,11 @@ import com.setvect.bokslcoin.autotrading.ConnectionInfo;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;

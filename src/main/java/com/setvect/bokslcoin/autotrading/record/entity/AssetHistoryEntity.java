@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.entity;
+package com.setvect.bokslcoin.autotrading.record.entity;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Entity(name = "BA_ASSET_HISTORY")
 @Getter
 @Setter
-public class AssetHistory {
+public class AssetHistoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "ASSET_HISTORY_SEQ", nullable = true)

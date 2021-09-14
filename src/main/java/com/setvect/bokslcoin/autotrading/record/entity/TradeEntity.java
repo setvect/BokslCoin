@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.entity;
+package com.setvect.bokslcoin.autotrading.record.entity;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -52,4 +52,5 @@ public class TradeEntity {
      */
     @Column(name = "REG_DATE", nullable = false)
     private LocalDateTime regDate;
+
 }
