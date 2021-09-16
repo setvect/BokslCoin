@@ -17,6 +17,11 @@ spring:
         show_sql: false
         format_sql: true
         use_sql_comments: false
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
 
 logging.level:
   org.hibernate.SQL: error

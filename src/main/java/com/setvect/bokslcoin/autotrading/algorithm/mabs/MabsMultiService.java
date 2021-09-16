@@ -174,13 +174,7 @@ public class MabsMultiService implements CoinTrading {
             assetCoinSave = false;
         }
 
-        final CandleMinute candleCheckSendValue = candleCheck;
-
         Map<String, Account> coinAccount = accountService.getMyAccountBalance();
-        if (!assetCoinSave) {
-            saveAccount(coinAccount, candleCheckSendValue.getCandleDateTimeKst());
-            assetCoinSave = true;
-        }
         Account krw = coinAccount.get("KRW");
         BigDecimal cash = BigDecimal.valueOf(krw.getBalanceValue());
 
@@ -193,6 +187,9 @@ public class MabsMultiService implements CoinTrading {
         if (rate > 0) {
             buyCash = (cash.doubleValue() * investRatio) / rate;
         }
+
+        // 코인별 마지막 캔들
+        Map<String, Candle> lastCandle = new HashMap<>();
 
         for (String market : markets) {
             candleCheck = candleService.getMinute(1, market);
@@ -211,6 +208,7 @@ public class MabsMultiService implements CoinTrading {
             }
 
             checkMa(candleList);
+            lastCandle.put(market, candleList.get(0));
 
             if (account == null && !tradeCompleteOfPeriod.contains(market) && buyCash != 0) {
                 buyCheck(buyCash, candleList);
@@ -220,20 +218,31 @@ public class MabsMultiService implements CoinTrading {
                 log.debug(String.format("[%s] 현재 가격:%,.2f", candleCheck.getMarket(), candleCheck.getTradePrice()));
             }
         }
+
+        if (!assetCoinSave) {
+            writeAccount(coinAccount, lastCandle, candleCheck.getCandleDateTimeKst());
+        }
+        assetCoinSave = true;
     }
 
     /**
      * 현재 보유중인 코인 및 현금 수익률 저장
+     *
      * @param accounts
+     * @param lastCandle
      * @param regDate
      */
-    private void saveAccount(Map<String, Account> accounts, LocalDateTime regDate) {
+    private void writeAccount(Map<String, Account> accounts, Map<String, Candle> lastCandle, LocalDateTime regDate) {
         List<AssetHistoryEntity> accountHistoryList = accounts.entrySet().stream().map(entity -> {
             Account account = entity.getValue();
             AssetHistoryEntity assetHistory = new AssetHistoryEntity();
             assetHistory.setCurrency(entity.getKey());
             assetHistory.setPrice(account.getAvgBuyPriceValue());
-            assetHistory.setYield(account.getAvgBuyPriceValue());
+
+            Candle candle = lastCandle.get(entity.getKey());
+            if (candle != null) {
+                assetHistory.setYield(getYield(candle, account));
+            }
             assetHistory.setRegDate(regDate);
             return assetHistory;
         }).collect(Collectors.toList());
@@ -357,7 +366,7 @@ public class MabsMultiService implements CoinTrading {
 
         if (isSell || loseStopRate < -rate) {
             slackMessageService.sendMessage(message1);
-            doAsk(market, candle.getTradePrice(), account.getBalanceValue(), AskReason.MA_DOWN);
+            doAsk(market, candle.getTradePrice(), account.getBalanceValue(), AskReason.MA_DOWN, rate);
         }
     }
 
@@ -426,19 +435,21 @@ public class MabsMultiService implements CoinTrading {
      * @param currentPrice 코인 가격
      * @param balance      코인 주문량
      * @param askReason    매도 이유
+     * @param yield        수익률
      */
-    private void doAsk(String market, double currentPrice, double balance, AskReason askReason) {
+    private void doAsk(String market, double currentPrice, double balance, AskReason askReason, double yield) {
         // 매도 가격, 낮은 가격으로 매도(시장가 효과)
         double fitPrice = AskPriceRange.askPrice(currentPrice - currentPrice * DIFF_RATE);
         orderService.callOrderAsk(market, ApplicationUtil.toNumberString(balance), ApplicationUtil.toNumberString(fitPrice));
 
         TradeEntity trade = new TradeEntity();
         trade.setMarket(market);
-        trade.setTradeType(TradeEntity.TradeType.BUY);
+        trade.setTradeType(TradeEntity.TradeType.SELL);
         // 매도 호가 보다 낮게 체결 될 가능성이 있기 때문에 오차가 있음
         trade.setAmount(currentPrice * balance);
         trade.setUnitPrice(currentPrice);
         trade.setRegDate(LocalDateTime.now());
+        trade.setYield(yield);
         tradeRepository.save(trade);
 
         tradeEvent.ask(market, balance, currentPrice, askReason);

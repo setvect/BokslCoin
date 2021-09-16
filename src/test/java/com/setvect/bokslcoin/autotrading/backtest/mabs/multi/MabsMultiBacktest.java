@@ -12,6 +12,8 @@ import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
+import com.setvect.bokslcoin.autotrading.record.repository.AssetHistoryRepository;
+import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
@@ -53,6 +55,13 @@ public class MabsMultiBacktest {
 
     @Autowired
     private CandleRepository candleRepository;
+
+    @Autowired
+    private AssetHistoryRepository assetHistoryRepository;
+
+    @Autowired
+    private TradeRepository tradeRepository;
+
     @Mock
     private SlackMessageService slackMessageService;
 
@@ -87,10 +96,10 @@ public class MabsMultiBacktest {
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
         MabsMultiCondition condition = MabsMultiCondition.builder()
-//                .range(new DateRange("2021-06-07T00:00:00", "2021-08-03T23:59:59"))
-//                .range(new DateRange("2020-11-01T00:00:00", "2021-07-14T23:59:59"))
+                .range(new DateRange("2021-06-07T00:00:00", "2021-06-30T23:59:59"))
+//                .range(new DateRange("2020-11-01T00:00:00", "2021-0>>7-14T23:59:59"))
 //                .range(new DateRange("2021-06-14T00:00:00", "2021-07-07T23:59:59"))
-                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
+//                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
 //                .range(new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59")) // 횡보장1
 //                .range(new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59")) // 횡보장2
@@ -524,6 +533,8 @@ public class MabsMultiBacktest {
 
 
     private void injectionFieldValue(MabsMultiCondition condition) {
+        ReflectionTestUtils.setField(mabsMultiService, "assetHistoryRepository", this.assetHistoryRepository);
+        ReflectionTestUtils.setField(mabsMultiService, "tradeRepository", this.tradeRepository);
         ReflectionTestUtils.setField(mabsMultiService, "markets", condition.getMarkets());
         ReflectionTestUtils.setField(mabsMultiService, "maxBuyCount", condition.getMaxBuyCount());
         ReflectionTestUtils.setField(mabsMultiService, "investRatio", condition.getInvestRatio());

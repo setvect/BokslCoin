@@ -36,8 +36,8 @@ public class AssetHistoryEntity {
      * 수익률
      * 소수로 표현, 1->100%, -0.02 -> -2%
      */
-    @Column(name = "YIELD", nullable = false)
-    private double yield;
+    @Column(name = "YIELD", nullable = true)
+    private Double yield;
 
     /**
      * 자산 조회 시간

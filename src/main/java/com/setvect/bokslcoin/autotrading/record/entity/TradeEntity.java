@@ -5,6 +5,8 @@ import lombok.Setter;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -33,7 +35,16 @@ public class TradeEntity {
      * 매수/매도
      */
     @Column(name = "TRADE_TYPE", length = 20, nullable = false)
+    @Enumerated(EnumType.STRING)
     private TradeType tradeType;
+
+    /**
+     * 매도시 수익률
+     * 소수로 표현, 1->100%, -0.02 -> -2%
+     */
+    @Column(name = "YIELD", nullable = true)
+    private Double yield;
+
 
     /**
      * 거래 금액
