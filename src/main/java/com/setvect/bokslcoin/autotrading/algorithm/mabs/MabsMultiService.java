@@ -12,6 +12,10 @@ import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
+import com.setvect.bokslcoin.autotrading.record.entity.AssetHistoryEntity;
+import com.setvect.bokslcoin.autotrading.record.entity.TradeEntity;
+import com.setvect.bokslcoin.autotrading.record.repository.AssetHistoryRepository;
+import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
@@ -32,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 이평선 돌파 전략 + 멀티 코인
@@ -44,12 +49,14 @@ public class MabsMultiService implements CoinTrading {
     /**
      * 매수/매도 시 즉각적인 매매를 위해 호가보다 상단 또는 하단에 주문을 넣는 퍼센트
      */
-    public static final double DIFF_RATE = 0.02;
+    public static final double DIFF_RATE = 0.015;
     private final AccountService accountService;
     private final CandleService candleService;
     private final TradeEvent tradeEvent;
     private final OrderService orderService;
     private final SlackMessageService slackMessageService;
+    private final AssetHistoryRepository assetHistoryRepository;
+    private final TradeRepository tradeRepository;
 
     /**
      * 매수, 매도 대상 코인
@@ -132,6 +139,11 @@ public class MabsMultiService implements CoinTrading {
      */
     private Set<String> messageSend = new HashSet<>();
 
+    /**
+     * 가격 저장
+     */
+    private boolean assetCoinSave = false;
+
     private int periodIdx = -1;
 
     /**
@@ -159,10 +171,16 @@ public class MabsMultiService implements CoinTrading {
             periodIdx = currentPeriod;
             tradeCompleteOfPeriod.clear();
             messageSend.clear();
+            assetCoinSave = false;
         }
 
+        final CandleMinute candleCheckSendValue = candleCheck;
 
         Map<String, Account> coinAccount = accountService.getMyAccountBalance();
+        if (!assetCoinSave) {
+            saveAccount(coinAccount, candleCheckSendValue.getCandleDateTimeKst());
+            assetCoinSave = true;
+        }
         Account krw = coinAccount.get("KRW");
         BigDecimal cash = BigDecimal.valueOf(krw.getBalanceValue());
 
@@ -202,6 +220,25 @@ public class MabsMultiService implements CoinTrading {
                 log.debug(String.format("[%s] 현재 가격:%,.2f", candleCheck.getMarket(), candleCheck.getTradePrice()));
             }
         }
+    }
+
+    /**
+     * 현재 보유중인 코인 및 현금 수익률 저장
+     * @param accounts
+     * @param regDate
+     */
+    private void saveAccount(Map<String, Account> accounts, LocalDateTime regDate) {
+        List<AssetHistoryEntity> accountHistoryList = accounts.entrySet().stream().map(entity -> {
+            Account account = entity.getValue();
+            AssetHistoryEntity assetHistory = new AssetHistoryEntity();
+            assetHistory.setCurrency(entity.getKey());
+            assetHistory.setPrice(account.getAvgBuyPriceValue());
+            assetHistory.setYield(account.getAvgBuyPriceValue());
+            assetHistory.setRegDate(regDate);
+            return assetHistory;
+        }).collect(Collectors.toList());
+
+        assetHistoryRepository.saveAll(accountHistoryList);
     }
 
     /**
@@ -359,11 +396,25 @@ public class MabsMultiService implements CoinTrading {
      * @param bidPrice   매수 금액
      */
     private void doBid(String market, double tradePrice, double bidPrice) {
-        // 높은 가격으로 매수(시장가 효과)
+        // 매수 가격, 높은 가격으로 매수(시장가 효과)
         double fitPrice = AskPriceRange.askPrice(tradePrice + tradePrice * DIFF_RATE);
+
+        // 매수 수량
         String volume = ApplicationUtil.toNumberString(bidPrice / fitPrice);
+
         String price = ApplicationUtil.toNumberString(fitPrice);
         orderService.callOrderBid(market, volume, price);
+
+        TradeEntity trade = new TradeEntity();
+        trade.setMarket(market);
+        trade.setTradeType(TradeEntity.TradeType.BUY);
+        // 매수 호가 보다 높게 체결 될 가능성이 있기 때문에 오차가 있음
+        double amount = tradePrice * Double.parseDouble(volume);
+        trade.setAmount(amount);
+        trade.setUnitPrice(tradePrice);
+        trade.setRegDate(LocalDateTime.now());
+        tradeRepository.save(trade);
+
         tradeEvent.bid(market, tradePrice, bidPrice);
     }
 
@@ -377,9 +428,19 @@ public class MabsMultiService implements CoinTrading {
      * @param askReason    매도 이유
      */
     private void doAsk(String market, double currentPrice, double balance, AskReason askReason) {
-        // 낮은 가격으로 매도(시장가 효과)
+        // 매도 가격, 낮은 가격으로 매도(시장가 효과)
         double fitPrice = AskPriceRange.askPrice(currentPrice - currentPrice * DIFF_RATE);
         orderService.callOrderAsk(market, ApplicationUtil.toNumberString(balance), ApplicationUtil.toNumberString(fitPrice));
+
+        TradeEntity trade = new TradeEntity();
+        trade.setMarket(market);
+        trade.setTradeType(TradeEntity.TradeType.BUY);
+        // 매도 호가 보다 낮게 체결 될 가능성이 있기 때문에 오차가 있음
+        trade.setAmount(currentPrice * balance);
+        trade.setUnitPrice(currentPrice);
+        trade.setRegDate(LocalDateTime.now());
+        tradeRepository.save(trade);
+
         tradeEvent.ask(market, balance, currentPrice, askReason);
         highYield.put(market, 0.0);
         lowYield.put(market, 0.0);

@@ -27,7 +27,7 @@ public class AssetHistoryEntity {
     private String currency;
 
     /**
-     * 원화 환산 금액
+     * 투자금
      */
     @Column(name = "PRICE", nullable = false)
     private double price;

@@ -37,6 +37,7 @@ public class TradeEntity {
 
     /**
      * 거래 금액
+     * 살때 현금 또는 팔고 나서 생기는 현금
      */
     @Column(name = "AMOUNT", nullable = false)
     private double amount;
