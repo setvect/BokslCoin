@@ -237,7 +237,8 @@ public class MabsMultiService implements CoinTrading {
             Account account = entity.getValue();
             AssetHistoryEntity assetHistory = new AssetHistoryEntity();
             assetHistory.setCurrency(entity.getKey());
-            assetHistory.setPrice(account.getAvgBuyPriceValue());
+            double price = entity.getKey().equals("KRW") ? account.getBalanceValue() : account.getInvestCash();
+            assetHistory.setPrice(price);
 
             Candle candle = lastCandle.get(entity.getKey());
             if (candle != null) {

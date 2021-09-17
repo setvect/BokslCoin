@@ -10,15 +10,21 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Index;
+import javax.persistence.Table;
 import java.time.LocalDateTime;
 
 @Entity(name = "AA_TRADE")
+@Table(indexes = {
+        @Index(name = "IDX_REG_DATE_AA", columnList = "REG_DATE DESC"),
+})
 @Getter
 @Setter
 public class TradeEntity {
     public enum TradeType {
         BUY, SELL
     }
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "TRADE_SEQ", nullable = true)
