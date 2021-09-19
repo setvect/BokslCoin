@@ -1,0 +1,9 @@
+GET http://127.0.0.1:8080/trade/page?size=10&page=1&currency=KRW-ETC
+Accept: application/json
+
+###
+
+GET http://127.0.0.1:8080/trade/page?size=10&page=1&from=2021-01-09T00:00:00&to=2021-12-31T23:59:59
+Accept: application/json
+
+###

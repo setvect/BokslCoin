@@ -24,7 +24,7 @@ public class AssetHistoryRepositoryImpl implements AssetHistoryRepositoryCustom 
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Page<AssetHistoryDto> pageArticle(AssetHistorySearchForm searchForm, Pageable pageable) {
+    public Page<AssetHistoryDto> pageAssetHistory(AssetHistorySearchForm searchForm, Pageable pageable) {
         QueryResults<AssetHistoryDto> result = queryFactory
                 .from(assetHistoryEntity)
                 .select(Projections.fields(AssetHistoryDto.class,

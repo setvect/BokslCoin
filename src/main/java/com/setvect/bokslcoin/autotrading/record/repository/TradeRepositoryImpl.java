@@ -25,7 +25,7 @@ public class TradeRepositoryImpl implements TradeRepositoryCustom {
 
 
     @Override
-    public Page<TradeDto> pageArticle(TradeSearchForm searchForm, Pageable pageable) {
+    public Page<TradeDto> pageTrade(TradeSearchForm searchForm, Pageable pageable) {
         QueryResults<TradeDto> result = queryFactory
                 .from(tradeEntity)
                 .select(Projections.fields(TradeDto.class,
