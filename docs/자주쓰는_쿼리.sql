@@ -24,3 +24,13 @@ SELECT REG_DATE,
 FROM BA_ASSET_HISTORY
 GROUP BY REG_DATE
 ORDER BY REG_DATE DESC
+
+
+
+select sum(assethisto0_.price)                                             as col_0_0_,
+       sum(assethisto0_.price * (1.0 + coalesce(assethisto0_.yield, 0.0))) as col_1_0_,
+       count(assethisto0_.yield)                                           as col_2_0_,
+       assethisto0_.reg_date                                               as col_3_0_
+from ba_asset_history assethisto0_
+group by assethisto0_.reg_date
+order by assethisto0_.reg_date desc limit 3;

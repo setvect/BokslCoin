@@ -7,21 +7,12 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public class AssetHistorySearchForm {
+public class AssetHistorySearchForm extends RangeForm{
     /**
      * 자산 종류
      * KRW, BTC, ETH, ...
      */
     private String currency;
 
-    /**
-     * 시작 날짜
-     */
-    private LocalDateTime from;
-
-    /**
-     * 종료 날짜
-     */
-    private LocalDateTime to;
 
 }

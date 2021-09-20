@@ -5,14 +5,16 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter
 @Setter
-public class TradeSearchForm extends RangeForm {
+@Getter
+public class RangeForm {
     /**
-     * 코인 이름
-     * KRW-BTC, KRW-ETH, ...
+     * 시작 날짜
      */
-    private String market;
+    private LocalDateTime from;
 
-
+    /**
+     * 종료 날짜
+     */
+    private LocalDateTime to;
 }

@@ -1,11 +1,16 @@
 package com.setvect.bokslcoin.autotrading.record.repository;
 
 import com.querydsl.core.QueryResults;
+import com.querydsl.core.types.ExpressionUtils;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.setvect.bokslcoin.autotrading.record.model.AssetHistoryDto;
 import com.setvect.bokslcoin.autotrading.record.model.AssetHistorySearchForm;
+import com.setvect.bokslcoin.autotrading.record.model.AssetPeriodHistoryDto;
+import com.setvect.bokslcoin.autotrading.record.model.AssetPeriodHistorySearchForm;
+import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
@@ -44,6 +49,34 @@ public class AssetHistoryRepositoryImpl implements AssetHistoryRepositoryCustom 
                 .fetchResults();
 
         Page<AssetHistoryDto> pageResult = new PageImpl<>(result.getResults(), pageable, result.getTotal());
+        return pageResult;
+    }
+
+    @Override
+    public Page<AssetPeriodHistoryDto> pageAssetPeriodHistory(AssetPeriodHistorySearchForm searchForm, Pageable pageable) {
+        QueryResults<AssetPeriodHistoryDto> result = queryFactory
+                .from(assetHistoryEntity)
+                .select(Projections.fields(AssetPeriodHistoryDto.class,
+                        assetHistoryEntity.price.sum().as("price"),
+                        ExpressionUtils.as(
+                                assetHistoryEntity.price.multiply(
+                                        Expressions.asNumber(1.0).add(assetHistoryEntity.yield.coalesce(0.0))
+                                ).sum()
+                                , "evlPrice"),
+                        assetHistoryEntity.yield.count().as("coinCount"),
+                        assetHistoryEntity.regDate
+                ))
+                .where(
+                        range(searchForm.getFrom(), searchForm.getTo())
+                )
+                .groupBy(assetHistoryEntity.regDate)
+                .orderBy(assetHistoryEntity.regDate.desc())
+                .offset(pageable.getOffset())
+                .limit(pageable.getPageSize())
+                .fetchResults();
+
+        Page<AssetPeriodHistoryDto> pageResult = new PageImpl<>(result.getResults(), pageable, result.getTotal());
+        pageResult.toList().forEach(p -> p.setYield(MathUtil.getYield(p.getEvlPrice(), p.getPrice())));
         return pageResult;
     }
 

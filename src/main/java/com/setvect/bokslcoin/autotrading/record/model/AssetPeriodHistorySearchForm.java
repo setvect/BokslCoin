@@ -7,12 +7,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public class TradeSearchForm extends RangeForm {
-    /**
-     * 코인 이름
-     * KRW-BTC, KRW-ETH, ...
-     */
-    private String market;
+public class AssetPeriodHistorySearchForm extends RangeForm {
 
 
 }

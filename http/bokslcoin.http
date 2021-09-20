@@ -1,9 +1,25 @@
-GET http://127.0.0.1:8080/trade/page?size=10&page=1&currency=KRW-ETC
+
+# 종목별 자산 내역
+# page는 0부터 시작
+GET http://127.0.0.1:8080/assetHistory/page?size=3&page=2&currency=KRW-ETC
 Accept: application/json
 
 ###
 
-GET http://127.0.0.1:8080/trade/page?size=10&page=1&from=2021-01-09T00:00:00&to=2021-12-31T23:59:59
+# 종목별 자산 내역
+GET http://127.0.0.1:8080/assetHistory/page?size=10&page=1&from=2021-01-09T00:00:00&to=2021-12-31T23:59:59
+Accept: application/json
+
+###
+
+# 거래주기별 자산 합산 내역
+GET http://127.0.0.1:8080/assetPeriodHistory/page?size=3&page=0
+Accept: application/json
+
+###
+
+# 거래 내역
+GET http://127.0.0.1:8080/trade/page?size=10&page=2
 Accept: application/json
 
 ###
