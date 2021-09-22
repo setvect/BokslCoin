@@ -19,7 +19,7 @@ Accept: application/json
 ###
 
 # 거래 내역
-GET http://127.0.0.1:8080/trade/page?size=10&page=2
+GET http://127.0.0.1:8080/trade/page?size=10&page=2&market=KRW-BTC
 Accept: application/json
 
 ###

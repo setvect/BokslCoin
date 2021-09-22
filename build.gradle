@@ -52,6 +52,7 @@ dependencies {
     implementation 'org.modelmapper:modelmapper:2.4.0'
     implementation 'com.h2database:h2'
     implementation 'org.projectlombok:lombok'
+    compileOnly "org.springframework.boot:spring-boot-devtools"
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }

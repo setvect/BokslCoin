@@ -99,7 +99,12 @@ gradle makeInstallFile
     - 매도 이벤트 발생 시
     - 어플리케이션에서 발생하는 오류
 
-## 1.7. 참고
+
+## 1.7. 통계 페이지
+- 접속주소: http://127.0.0.1:8080/static/BokslCoin.html
+- 거래내역, 거래주기별 자산합계 제공
+
+## 1.8. 참고
 
 - [업비트 공식 문서](https://docs.upbit.com)
 - [조코딩-코인자동 매매](https://github.com/youtube-jocoding/pyupbit-autotrade)
