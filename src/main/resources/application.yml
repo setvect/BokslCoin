@@ -17,6 +17,11 @@ spring:
         show_sql: false
         format_sql: true
         use_sql_comments: false
+  mvc:
+    static-path-pattern: /static/**
+  devtools:
+    livereload:
+      enabled: true
   h2:
     console:
       enabled: true

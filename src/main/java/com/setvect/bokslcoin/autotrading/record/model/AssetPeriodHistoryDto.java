@@ -13,7 +13,7 @@ public class AssetPeriodHistoryDto {
     private int assetHistorySeq;
 
     /**
-     * 투 합계
+     * 투자금액 합계
      */
     private double price;
 
