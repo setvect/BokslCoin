@@ -38,8 +38,8 @@ public class AskPriceRange {
     public static double askPrice(double price) {
         for (RangeItem r : RANGE_LIST) {
             if (price >= r.upperValue) {
-                int value = (int) (price * 100);
-                int temp = value - value % (int) (r.unit * 100);
+                long value = (long) (price * 100);
+                long temp = value - value % (long) (r.unit * 100);
                 double v = temp * 0.01;
                 return v;
             }

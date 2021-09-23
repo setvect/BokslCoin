@@ -49,7 +49,11 @@ public class MabsMultiService implements CoinTrading {
     /**
      * 매수/매도 시 즉각적인 매매를 위해 호가보다 상단 또는 하단에 주문을 넣는 퍼센트
      */
-    public static final double DIFF_RATE = 0.015;
+    private static final double DIFF_RATE = 0.015;
+    /**
+     * 최소 매매 금액
+     */
+    private static final int MINIMUM_BUY_CASH = 5_000;
     private final AccountService accountService;
     private final CandleService candleService;
     private final TradeEvent tradeEvent;
@@ -304,7 +308,7 @@ public class MabsMultiService implements CoinTrading {
         sendSlackDaily(market, message);
         log.debug(message);
 
-        if (isBuy) {
+        if (isBuy && cash >= MINIMUM_BUY_CASH) {
             // 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
             boolean isBeforeBuy = isBeforeBuy(candleList);
             if (isBeforeBuy && newMasBuy) {

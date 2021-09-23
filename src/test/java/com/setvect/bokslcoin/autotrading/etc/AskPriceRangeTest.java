@@ -8,6 +8,7 @@ public class AskPriceRangeTest {
     @Test
     public void test() {
         Assertions.assertEquals(11, AskPriceRange.askPrice(11));
+        Assertions.assertEquals(50_000_000, AskPriceRange.askPrice(50_000_050));
         Assertions.assertEquals(2000000, AskPriceRange.askPrice(2000050));
         Assertions.assertEquals(3000000, AskPriceRange.askPrice(3000950));
         Assertions.assertEquals(1955000, AskPriceRange.askPrice(1955000));
