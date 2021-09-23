@@ -76,12 +76,19 @@
         {data: "tradeType", title: "매매"},
         {data: "amount", title: "거래 금액", className: "text-right"},
         {data: "unitPrice", title: "거래 단가", className: "text-right"},
+        {data: "yield", title: "매도 수익률", className: "text-right"},
         {data: "regDate", title: "거래 시간"}
       ],
       columnDefs: [
         {
           targets: [3, 4],
           render: $.fn.dataTable.render.number(',', '.', 0, '', '원')
+        },
+        {
+          targets: [5],
+          render: function (data, type, row) {
+            return Math.round(data * 10000) / 100 + '%';
+          }
         }
       ],
       search: true,

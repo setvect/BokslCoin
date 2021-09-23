@@ -34,6 +34,11 @@ public class TradeDto {
     private double unitPrice;
 
     /**
+     * 매도 수익률
+     */
+    private double yield;
+
+    /**
      * 거래 시간
      */
     private LocalDateTime regDate;

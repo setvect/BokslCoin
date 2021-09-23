@@ -34,6 +34,7 @@ public class TradeRepositoryImpl implements TradeRepositoryCustom {
                         tradeEntity.tradeType,
                         tradeEntity.amount,
                         tradeEntity.unitPrice,
+                        tradeEntity.yield,
                         tradeEntity.regDate
                 ))
                 .where(
