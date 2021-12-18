@@ -57,7 +57,7 @@ public class Crawling {
             TimeUnit.MILLISECONDS.sleep(300);
         }
         File saveFile = new File(SAVE_DIR, market + ".json");
-        try (FileWriter writer = new FileWriter(saveFile);) {
+        try (FileWriter writer = new FileWriter(saveFile)) {
             gson.toJson(acc, writer);
         }
         System.out.printf("저장: %s%n끝%n", saveFile.getAbsolutePath());
@@ -66,15 +66,24 @@ public class Crawling {
     @Test
     public void 분봉수집() throws IOException, InterruptedException {
         makeSaveDir(SAVE_DIR_MINUTE);
-//        List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS");
-        List<String> marketList = Arrays.asList("KRW-ETC");
+        List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
+//        List<String> marketList = Arrays.asList("KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
 
         for (String market : marketList) {
             List<CandleMinute> acc = new ArrayList<>();
-            LocalDateTime to = null;
+            LocalDateTime start = LocalDateTime.of(2020, 1, 1, 0, 0, 0);
+            LocalDateTime to = start;
             int month = LocalDateTime.now(ZoneId.of("UTC")).getMonth().getValue();
-            for (int i = 0; i < 13_000; i++) {
-                List<CandleMinute> data = candleService.getMinute(1, market, 200, to);
+            for (int i = 0; i < 25_000; i++) {
+                List<CandleMinute> data;
+                try {
+                    data = candleService.getMinute(1, market, 200, to);
+                } catch (Exception e) {
+                    i--;
+                    System.out.println(e.getMessage() + ", 다시 실행");
+                    TimeUnit.MILLISECONDS.sleep(500);
+                    continue;
+                }
                 if (data.isEmpty()) {
                     break;
                 }
@@ -90,12 +99,12 @@ public class Crawling {
                 to = data.get(data.size() - 1).getCandleDateTimeUtc();
                 System.out.println(i + " 번째");
                 // API 횟수 제한 때문에 딜레이 적용
-                TimeUnit.MILLISECONDS.sleep(500);
-//                if (data.get(0).getCandleDateTimeKst().getMonth().getValue() == 6) {
+                TimeUnit.MILLISECONDS.sleep(300);
+//                if (data.get(0).getCandleDateTimeKst().getMonth().getValue() == 8) {
 //                    break;
 //                }
             }
-//            saveFileMinute(market, acc);
+            saveFileMinute(market, acc);
         }
     }
 
@@ -106,7 +115,7 @@ public class Crawling {
         Gson gson = TestCommonUtil.getGson();
         String fileName = String.format("%s-minute(%s).json", market, DateUtil.format(acc.get(0).getCandleDateTimeUtc(), "yyyy-MM"));
         File saveFile = new File(SAVE_DIR_MINUTE, fileName);
-        try (FileWriter writer = new FileWriter(saveFile);) {
+        try (FileWriter writer = new FileWriter(saveFile)) {
             gson.toJson(acc, writer);
         }
         System.out.printf("저장: %s%n", saveFile.getAbsolutePath());
