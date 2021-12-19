@@ -224,7 +224,11 @@ public class MabsMultiService implements CoinTrading {
         }
 
         if (!assetCoinSave) {
-            writeAccount(coinAccount, lastCandle, candleCheck.getCandleDateTimeKst());
+            if (candleCheck != null) {
+                writeAccount(coinAccount, lastCandle, candleCheck.getCandleDateTimeKst());
+            } else {
+                log.warn("candleCheck is null");
+            }
         }
         assetCoinSave = true;
     }

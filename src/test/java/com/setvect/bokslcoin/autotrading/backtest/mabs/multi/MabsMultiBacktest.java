@@ -43,6 +43,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -96,8 +97,10 @@ public class MabsMultiBacktest {
     public void singleBacktest() throws IOException {
         // === 1. 변수값 설정 ===
         MabsMultiCondition condition = MabsMultiCondition.builder()
-                .range(new DateRange("2021-06-07T00:00:00", "2021-06-30T23:59:59"))
-//                .range(new DateRange("2020-11-01T00:00:00", "2021-0>>7-14T23:59:59"))
+                .range(new DateRange("2021-06-14T00:00:00", "2021-12-18T23:59:59"))
+//                .range(new DateRange("2021-12-11T00:00:00", "2021-12-18T23:59:59"))
+//                .range(new DateRange("2021-09-20T00:00:00", "2021-12-18T23:59:59"))
+//                .range(new DateRange("2020-11-01T00:00:00", "2021-07-14T23:59:59"))
 //                .range(new DateRange("2021-06-14T00:00:00", "2021-07-07T23:59:59"))
 //                .range(new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59")) // 상승후 하락
 //                .range(new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59")) // 상승장
@@ -115,6 +118,7 @@ public class MabsMultiBacktest {
 //                .range(new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59")) // 전체 기간
 
                 .markets(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC"))// 대상 코인
+//                .markets(Arrays.asList("KRW-BTC"))// 대상 코인
                 .investRatio(0.99) // 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
                 .maxBuyCount(5)
                 .cash(10_000_000) // 최초 투자 금액
@@ -132,26 +136,31 @@ public class MabsMultiBacktest {
 
         // === 2. 백테스트 ===
         TestAnalysisMulti testAnalysis = backtest(condition);
-        System.out.println(condition.toString());
+        System.out.println(condition);
 
+        System.out.println("-------- 1. 균등배분 수익률 ----------");
         for (String market : condition.getMarkets()) {
-            TestAnalysisMulti.YieldMdd coinYield = testAnalysis.getCoinYield(market);
+            TestAnalysisMulti.YieldMdd coinYield = testAnalysis.getCoinTotalYield(market);
             System.out.printf("[%s] 실제 수익: %,.2f%%\n", market, coinYield.getYield() * 100);
             System.out.printf("[%s] 실제 MDD: %,.2f%%\n", market, coinYield.getMdd() * 100);
         }
+        System.out.printf("실제 수익: %,.2f%%\n", testAnalysis.getCoinTotalYield().getYield() * 100);
+        System.out.printf("실제 MDD(평균값으로 계산한 추정치): %,.2f%%\n", testAnalysis.getCoinTotalYield().getMdd() * 100);
 
+        System.out.println();
+        System.out.println("-------- 2. 복슬코인 전략 수익률 ----------");
         for (String market : condition.getMarkets()) {
-            TestAnalysisMulti.CoinInvestment coinInvestment = testAnalysis.getCoinInvestment(market);
+            TestAnalysisMulti.CoinInvestment coinInvestment = testAnalysis.getInvestmentInvestment(market);
             System.out.printf("[%s] 수익금액 합계: %,.0f\n", market, coinInvestment.getInvest());
             System.out.printf("[%s] 매매 횟수: %d\n", market, coinInvestment.getTradeCount());
             System.out.printf("[%s] 승률: %,.2f%%\n", market, coinInvestment.getWinRate() * 100);
         }
 
-        System.out.printf("실현 수익: %,.2f%%\n", testAnalysis.getTotal().getYield() * 100);
-        System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getTotal().getMdd() * 100);
-        System.out.printf("매매 횟수: %d\n", testAnalysis.getTotal().getTradeCount());
-        System.out.printf("승률: %,.2f%%\n", testAnalysis.getTotal().getWinRate() * 100);
-        System.out.printf("CAGR: %,.2f%%\n", testAnalysis.getTotal().getCagr() * 100);
+        System.out.printf("실현 수익: %,.2f%%\n", testAnalysis.getInvestmentTotalYield().getYield() * 100);
+        System.out.printf("실현 MDD: %,.2f%%\n", testAnalysis.getInvestmentTotalYield().getMdd() * 100);
+        System.out.printf("매매 횟수: %d\n", testAnalysis.getInvestmentTotalYield().getTradeCount());
+        System.out.printf("승률: %,.2f%%\n", testAnalysis.getInvestmentTotalYield().getWinRate() * 100);
+        System.out.printf("CAGR: %,.2f%%\n", testAnalysis.getInvestmentTotalYield().getCagr() * 100);
 
 
         // === 3. 리포트 ===
@@ -165,7 +174,7 @@ public class MabsMultiBacktest {
     public void multiBacktest() throws IOException {
         String header = "분석기간,분석주기,대상 코인,투자비율,최대 코인 매매 갯수,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,손절,단기 이동평균 기간,장기 이동평균 기간,조건 설명,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
-        StringBuffer report = new StringBuffer(header.replace(",", "\t") + "\n");
+        StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
         MabsMultiCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
@@ -219,7 +228,7 @@ public class MabsMultiBacktest {
                             log.info(condition.toString());
 
                             TestAnalysisMulti testAnalysis = backtest(condition);
-                            report.append(getReportRow(condition, testAnalysis) + "\n");
+                            report.append(getReportRow(condition, testAnalysis)).append("\n");
                             makeReport(condition, tradeHistory, testAnalysis);
 
                             // -- 결과 저장 --
@@ -312,25 +321,28 @@ public class MabsMultiBacktest {
 
         // 대상 코인별 수익률 계산
         for (String market : condition.getMarkets()) {
-            TestAnalysisMulti.YieldMdd yield = getCoinYieldMdd(amountByCoin, market);
+            TestAnalysisMulti.YieldMdd yield = calculateCoinYieldMdd(market, amountByCoin);
             testAnalysis.addCoinYieldMdd(market, yield);
 
-            TestAnalysisMulti.CoinInvestment coinInvestment = getCoinInvestment(market, tradeHistory);
+            TestAnalysisMulti.CoinInvestment coinInvestment = calculateInvestment(market, tradeHistory);
             testAnalysis.addCoinInvestment(market, coinInvestment);
         }
+        TestAnalysisMulti.YieldMdd coinYield = calculateCoinTotalYieldMdd(amountByCoin);
+        testAnalysis.setCoinTotalYield(coinYield);
 
-        TestAnalysisMulti.TotalYield totalYield = getCoinYield(tradeHistory, condition);
-        testAnalysis.setTotal(totalYield);
+
+        TestAnalysisMulti.TotalYield totalYield = calculateTotalInvestment(tradeHistory, condition);
+        testAnalysis.setInvestmentTotalYield(totalYield);
 
         return testAnalysis;
     }
 
     /**
-     * @param amountByCoin
-     * @param market
+     * @param market       코인
+     * @param amountByCoin 실제 코인 변화 가격
      * @return 코인별 수익률, MDD
      */
-    private static TestAnalysisMulti.YieldMdd getCoinYieldMdd(Map<String, List<Double>> amountByCoin, String market) {
+    private static TestAnalysisMulti.YieldMdd calculateCoinYieldMdd(String market, Map<String, List<Double>> amountByCoin) {
         List<Double> amounts = amountByCoin.get(market);
         if (amounts.isEmpty()) {
             return new TestAnalysisMulti.YieldMdd();
@@ -341,17 +353,53 @@ public class MabsMultiBacktest {
         return yield;
     }
 
+
     /**
-     * @param market
-     * @param tradeHistory
-     * @return 코인별 수익률
+     * @param amountByCoin 실제 코인 변화 가격
+     * @return 코인 균등 배분 시 수익률 정보를 제공
      */
-    private static TestAnalysisMulti.CoinInvestment getCoinInvestment(String market, List<MabsMultiBacktestRow> tradeHistory) {
+    private static TestAnalysisMulti.YieldMdd calculateCoinTotalYieldMdd(Map<String, List<Double>> amountByCoin) {
+        List<TestAnalysisMulti.YieldMdd> yieldMddList = amountByCoin.keySet().stream().map(market -> calculateCoinYieldMdd(market, amountByCoin)).collect(Collectors.toList());
+        double yield = yieldMddList.stream()
+                .mapToDouble(TestAnalysisMulti.YieldMdd::getYield)
+                .average()
+                .orElse(0);
+
+        double mdd = yieldMddList.stream()
+                .mapToDouble(TestAnalysisMulti.YieldMdd::getMdd)
+                .average()
+                .orElse(0);
+
+        TestAnalysisMulti.YieldMdd result = new TestAnalysisMulti.YieldMdd();
+        result.setYield(yield);
+        result.setMdd(mdd);
+        return result;
+    }
+
+    /**
+     * @param amountByCoin 실제 코인 변화 가격
+     * @return 코인별 시리얼 데이터가 갯수가 모두 같으면 true
+     */
+    @Deprecated
+    private static boolean isSizeMath(Map<String, List<Double>> amountByCoin) {
+        if (amountByCoin.size() == 1) {
+            return true;
+        }
+        Set<Integer> coinSerialSize = amountByCoin.keySet().stream().map(p -> amountByCoin.get(p).size()).collect(Collectors.toSet());
+        return coinSerialSize.size() == 1;
+    }
+
+    /**
+     * @param market       코인
+     * @param tradeHistory 매매 기록
+     * @return 코인별 투자전략 수익률
+     */
+    private static TestAnalysisMulti.CoinInvestment calculateInvestment(String market, List<MabsMultiBacktestRow> tradeHistory) {
         List<MabsMultiBacktestRow> filter = tradeHistory.stream()
                 .filter(p -> p.getCandle().getMarket().equals(market))
                 .filter(p -> p.getTradeEvent() == MabsMultiBacktestRow.TradeEvent.SELL)
                 .collect(Collectors.toList());
-        double totalInvest = filter.stream().mapToDouble(p -> p.getGains()).sum();
+        double totalInvest = filter.stream().mapToDouble(MabsMultiBacktestRow::getGains).sum();
         int gainCount = (int) filter.stream().filter(p -> p.getGains() > 0).count();
         TestAnalysisMulti.CoinInvestment coinInvestment = new TestAnalysisMulti.CoinInvestment();
         coinInvestment.setInvest(totalInvest);
@@ -361,14 +409,14 @@ public class MabsMultiBacktest {
     }
 
     /**
-     * @param tradeHistory
-     * @param condition
+     * @param tradeHistory 매매 기록
+     * @param condition    투자 조건
      * @return 대상코인의 수익률 정보를 제공
      */
-    private static TestAnalysisMulti.TotalYield getCoinYield(List<MabsMultiBacktestRow> tradeHistory, MabsMultiCondition condition) {
+    private static TestAnalysisMulti.TotalYield calculateTotalInvestment(List<MabsMultiBacktestRow> tradeHistory, MabsMultiCondition condition) {
         List<Double> amountHistory = new ArrayList<>();
         amountHistory.add(tradeHistory.get(0).getFinalResult());
-        amountHistory.addAll(tradeHistory.stream().skip(1).map(p -> p.getFinalResult()).collect(Collectors.toList()));
+        amountHistory.addAll(tradeHistory.stream().skip(1).map(MabsMultiBacktestRow::getFinalResult).collect(Collectors.toList()));
         TestAnalysisMulti.TotalYield totalYield = new TestAnalysisMulti.TotalYield();
         double realYield = tradeHistory.get(tradeHistory.size() - 1).getFinalResult() / tradeHistory.get(0).getFinalResult() - 1;
         double realMdd = ApplicationUtil.getMdd(amountHistory);
@@ -408,12 +456,9 @@ public class MabsMultiBacktest {
                 .then((invocation) -> candleDataProvider.beforeDayCandle(invocation.getArgument(0, String.class), invocation.getArgument(1, Integer.class)));
 
         // 현재 가지고있는 자산 조회
-        when(accountService.getMyAccountBalance()).then((method) -> {
-            Map<String, Account> map = accountMap.entrySet().stream()
-                    .filter(e -> e.getValue().getBalanceValue() != 0)
-                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-            return map;
-        });
+        when(accountService.getMyAccountBalance()).then((method) -> accountMap.entrySet().stream()
+                .filter(e -> e.getValue().getBalanceValue() != 0)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
 
         // 시세 체크
@@ -523,12 +568,11 @@ public class MabsMultiBacktest {
     }
 
     /**
-     * @param accountMap
+     * @param accountMap 코인(현금 포함) 계좌
      * @return 현재 투자한 코인 함
      */
     private double getBuyTotalAmount(Map<String, Account> accountMap) {
-        double buyTotal = accountMap.entrySet().stream().filter(e -> !e.getKey().equals("KRW")).mapToDouble(e -> e.getValue().getInvestCash()).sum();
-        return buyTotal;
+        return accountMap.entrySet().stream().filter(e -> !e.getKey().equals("KRW")).mapToDouble(e -> e.getValue().getInvestCash()).sum();
     }
 
 
@@ -566,11 +610,11 @@ public class MabsMultiBacktest {
         reportRow.append(String.format("%d\t", condition.getShortPeriod()));
         reportRow.append(String.format("%d\t", condition.getLongPeriod()));
         reportRow.append(String.format("%s\t", condition.getComment()));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getYield() * 100));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getMdd() * 100));
-        reportRow.append(String.format("%d\t", testAnalysis.getTotal().getTradeCount()));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getWinRate() * 100));
-        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getTotal().getCagr() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getInvestmentTotalYield().getYield() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getInvestmentTotalYield().getMdd() * 100));
+        reportRow.append(String.format("%d\t", testAnalysis.getInvestmentTotalYield().getTradeCount()));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getInvestmentTotalYield().getWinRate() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getInvestmentTotalYield().getCagr() * 100));
         return reportRow;
     }
 
@@ -603,29 +647,31 @@ public class MabsMultiBacktest {
             report.append(String.format("%,.2f\n", row.getFinalResult() / condition.getCash()));
         }
 
-        String coins = condition.getMarkets().stream().collect(Collectors.joining(","));
+        String coins = String.join(",", condition.getMarkets());
         String reportFileName = String.format("%s(%s ~ %s)_%s.txt",
                 FilenameUtils.getBaseName(coins), condition.getRange().getFromString(), condition.getRange().getToString(), condition.getTradePeriod());
         report.append("\n-----------\n");
         for (String market : condition.getMarkets()) {
-            TestAnalysisMulti.YieldMdd coinYield = testAnalysis.getCoinYield(market);
+            TestAnalysisMulti.YieldMdd coinYield = testAnalysis.getCoinTotalYield(market);
             report.append(String.format("[%s] 실제 수익\t %,.2f%%", market, coinYield.getYield() * 100)).append("\n");
             report.append(String.format("[%s] 실제 MDD\t %,.2f%%", market, coinYield.getMdd() * 100)).append("\n");
         }
+        report.append(String.format("실제 수익\t %,.2f%%", testAnalysis.getCoinTotalYield().getYield() * 100)).append("\n");
+        report.append(String.format("실제 MDD(평균값으로 계산한 추정치)\t %,.2f%%", testAnalysis.getCoinTotalYield().getMdd() * 100)).append("\n");
 
         report.append("\n-----------\n");
         for (String market : condition.getMarkets()) {
-            TestAnalysisMulti.CoinInvestment coinInvestment = testAnalysis.getCoinInvestment(market);
+            TestAnalysisMulti.CoinInvestment coinInvestment = testAnalysis.getInvestmentInvestment(market);
             report.append(String.format("[%s] 수익금액 합계\t %,.0f", market, coinInvestment.getInvest())).append("\n");
             report.append(String.format("[%s] 매매 횟수\t %d", market, coinInvestment.getTradeCount())).append("\n");
             report.append(String.format("[%s] 승률\t %,.2f%%", market, coinInvestment.getWinRate() * 100)).append("\n");
         }
         report.append("\n-----------\n");
-        report.append(String.format("실현 수익\t %,.2f%%", testAnalysis.getTotal().getYield() * 100)).append("\n");
-        report.append(String.format("실현 MDD\t %,.2f%%", testAnalysis.getTotal().getMdd() * 100)).append("\n");
-        report.append(String.format("매매회수\t %d", testAnalysis.getTotal().getTradeCount())).append("\n");
-        report.append(String.format("승률\t %,.2f%%", testAnalysis.getTotal().getWinRate() * 100)).append("\n");
-        report.append(String.format("CAGR\t %,.2f%%", testAnalysis.getTotal().getCagr() * 100)).append("\n");
+        report.append(String.format("실현 수익\t %,.2f%%", testAnalysis.getInvestmentTotalYield().getYield() * 100)).append("\n");
+        report.append(String.format("실현 MDD\t %,.2f%%", testAnalysis.getInvestmentTotalYield().getMdd() * 100)).append("\n");
+        report.append(String.format("매매회수\t %d", testAnalysis.getInvestmentTotalYield().getTradeCount())).append("\n");
+        report.append(String.format("승률\t %,.2f%%", testAnalysis.getInvestmentTotalYield().getWinRate() * 100)).append("\n");
+        report.append(String.format("CAGR\t %,.2f%%", testAnalysis.getInvestmentTotalYield().getCagr() * 100)).append("\n");
 
         report.append("\n-----------\n");
         report.append(String.format("분석기간\t %s", condition.getRange())).append("\n");
@@ -651,7 +697,7 @@ public class MabsMultiBacktest {
 
     @RequiredArgsConstructor
     @Getter
-    class CurrentPrice {
+    static class CurrentPrice {
         final Candle candle;
         final double maShort;
         final double maLong;

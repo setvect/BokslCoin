@@ -67,12 +67,11 @@ public class Crawling {
     public void 분봉수집() throws IOException, InterruptedException {
         makeSaveDir(SAVE_DIR_MINUTE);
         List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
-//        List<String> marketList = Arrays.asList("KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
 
         for (String market : marketList) {
             List<CandleMinute> acc = new ArrayList<>();
-            LocalDateTime start = LocalDateTime.of(2020, 1, 1, 0, 0, 0);
-            LocalDateTime to = start;
+//            LocalDateTime start = LocalDateTime.of(2020, 1, 1, 0, 0, 0);
+            LocalDateTime to = null;
             int month = LocalDateTime.now(ZoneId.of("UTC")).getMonth().getValue();
             for (int i = 0; i < 25_000; i++) {
                 List<CandleMinute> data;
@@ -100,11 +99,12 @@ public class Crawling {
                 System.out.println(i + " 번째");
                 // API 횟수 제한 때문에 딜레이 적용
                 TimeUnit.MILLISECONDS.sleep(300);
-//                if (data.get(0).getCandleDateTimeKst().getMonth().getValue() == 8) {
-//                    break;
-//                }
+                // 임의의 조건에서 크롤링 멈춤
+                if (data.get(0).getCandleDateTimeKst().getMonth().getValue() == 11) {
+                    break;
+                }
             }
-            saveFileMinute(market, acc);
+//            saveFileMinute(market, acc);
         }
     }
 

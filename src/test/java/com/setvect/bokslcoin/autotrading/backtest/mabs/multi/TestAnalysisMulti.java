@@ -1,9 +1,11 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs.multi;
 
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,35 +19,38 @@ public class TestAnalysisMulti {
      * 코인별 시세 정보
      * Key: Market(KRW-BTC, KRW-ETH, ...)
      */
-    private Map<String, YieldMdd> coin = new HashMap<>();
+    private Map<String, YieldMdd> coinByYield = new HashMap<>();
 
+    /**
+     * 균등 배분 시 코인 수익률, MDD
+     */
+    private YieldMdd coinTotalYield;
 
     /**
      * 코인별 투자 수익률 정보
      * Key: Market(KRW-BTC, KRW-ETH, ...)
      */
-    private Map<String, CoinInvestment> coinInvestment = new HashMap<>();
-
+    private Map<String, CoinInvestment> investmentInvestment = new HashMap<>();
     /**
-     * 전체 수익률
+     * 전체 투자 수익률, MDD
      */
-    private TotalYield total;
-
+    private TotalYield investmentTotalYield;
 
     public void addCoinYieldMdd(String market, YieldMdd yieldMdd) {
-        coin.put(market, yieldMdd);
+        coinByYield.put(market, yieldMdd);
     }
 
-    public YieldMdd getCoinYield(String market) {
-        return coin.get(market);
+    public YieldMdd getCoinTotalYield(String market) {
+        return coinByYield.get(market);
     }
+
 
     public void addCoinInvestment(String market, CoinInvestment yield) {
-        coinInvestment.put(market, yield);
+        investmentInvestment.put(market, yield);
     }
 
-    public CoinInvestment getCoinInvestment(String market) {
-        return coinInvestment.get(market);
+    public CoinInvestment getInvestmentInvestment(String market) {
+        return investmentInvestment.get(market);
     }
 
     /**
