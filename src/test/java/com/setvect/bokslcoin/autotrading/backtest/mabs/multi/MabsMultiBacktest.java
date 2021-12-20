@@ -172,12 +172,16 @@ public class MabsMultiBacktest {
 
     @Test
     public void multiBacktest() throws IOException {
-        String header = "분석기간,분석주기,대상 코인,투자비율,최대 코인 매매 갯수,최초 투자금액,매매 마진,매수 수수료,매도 수수료,상승 매수률,하락 매도률,손절,단기 이동평균 기간,장기 이동평균 기간,조건 설명,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
+        String header = "분석기간,분석주기,대상 코인,투자비율,최대 코인 매매 갯수,최초 투자금액,매매 마진,매수 수수료,매도 수수료," +
+                "상승 매수률,하락 매도률,손절,단기 이동평균 기간,장기 이동평균 기간,조건 설명," +
+                "실제수익,실제MDD(평균추정),실현 수익,실현 MDD,매매 횟수,승률,CAGR";
 
         StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
         MabsMultiCondition condition;
 
         List<DateRange> rangeList = Arrays.asList(
+//                new DateRange("2017-10-01T00:00:00", "2021-12-18T23:59:59") // 전체 기간2
+//                new DateRange("2021-06-14T00:00:00", "2021-12-18T23:59:59") // 최근
 //                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
 //                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
 //                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
@@ -200,9 +204,9 @@ public class MabsMultiBacktest {
 
         int count = 0;
         Date now = new Date();
-        int[] shortPeriod = {13};
-        int[] longPeriod = {64};
-        double[] rateList = {0.008, 0.009, 0.011};
+        int[] shortPeriod = {20,30};
+        int[] longPeriod = {70,80};
+        double[] rateList = {0.01};
         for (int sp : shortPeriod) {
             for (int lp : longPeriod) {
                 for (double rate : rateList) {
@@ -223,7 +227,7 @@ public class MabsMultiBacktest {
                                     .downSellRate(rate) // 하락 매도률
                                     .shortPeriod(sp) // 단기 이동평균 기간
                                     .longPeriod(lp) // 장기 이동평균 기간
-                                    .tradePeriod(TradePeriod.P_60) //매매 주기
+                                    .tradePeriod(TradePeriod.P_30) //매매 주기
                                     .build();
                             log.info(condition.toString());
 
@@ -610,6 +614,10 @@ public class MabsMultiBacktest {
         reportRow.append(String.format("%d\t", condition.getShortPeriod()));
         reportRow.append(String.format("%d\t", condition.getLongPeriod()));
         reportRow.append(String.format("%s\t", condition.getComment()));
+
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCoinTotalYield().getYield() * 100));
+        reportRow.append(String.format("%,.2f%%\t", testAnalysis.getCoinTotalYield().getMdd() * 100));
+
         reportRow.append(String.format("%,.2f%%\t", testAnalysis.getInvestmentTotalYield().getYield() * 100));
         reportRow.append(String.format("%,.2f%%\t", testAnalysis.getInvestmentTotalYield().getMdd() * 100));
         reportRow.append(String.format("%d\t", testAnalysis.getInvestmentTotalYield().getTradeCount()));
