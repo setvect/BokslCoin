@@ -14,6 +14,7 @@ import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.record.entity.AssetHistoryEntity;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeEntity;
+import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.record.repository.AssetHistoryRepository;
 import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
@@ -236,9 +237,9 @@ public class MabsMultiService implements CoinTrading {
     /**
      * 현재 보유중인 코인 및 현금 수익률 저장
      *
-     * @param accounts
-     * @param lastCandle
-     * @param regDate
+     * @param accounts   Key: 계좌이름,Value: 계좌 정보
+     * @param lastCandle 마지막 캔들
+     * @param regDate    등록일
      */
     private void writeAccount(Map<String, Account> accounts, Map<String, Candle> lastCandle, LocalDateTime regDate) {
         List<AssetHistoryEntity> accountHistoryList = accounts.entrySet().stream().map(entity -> {
@@ -262,7 +263,7 @@ public class MabsMultiService implements CoinTrading {
     /**
      * 시세 체크
      *
-     * @param candleList
+     * @param candleList 캔들 값
      */
     private void checkMa(List<Candle> candleList) {
         double maShort = CommonTradeHelper.getMa(candleList, shortPeriod);
@@ -285,7 +286,7 @@ public class MabsMultiService implements CoinTrading {
      * 조건이 만족하면 매수 수행
      *
      * @param cash       매수에 사용될 현금
-     * @param candleList
+     * @param candleList 캔들
      */
     private void buyCheck(double cash, List<Candle> candleList) {
         double maShort = CommonTradeHelper.getMa(candleList, shortPeriod);
@@ -326,7 +327,7 @@ public class MabsMultiService implements CoinTrading {
     /**
      * 조건이 만족하면 매도
      *
-     * @param account
+     * @param account 계좌
      */
     private void sellCheck(Account account, List<Candle> candleList) {
         String market = account.getMarket();
@@ -386,8 +387,7 @@ public class MabsMultiService implements CoinTrading {
 
     private int getCurrentPeriod(LocalDateTime nowUtc) {
         int dayHourMinuteSum = nowUtc.getDayOfMonth() * 1440 + nowUtc.getHour() * 60 + nowUtc.getMinute();
-        int currentPeriod = dayHourMinuteSum / tradePeriod.getTotal();
-        return currentPeriod;
+        return dayHourMinuteSum / tradePeriod.getTotal();
     }
 
 
@@ -425,7 +425,7 @@ public class MabsMultiService implements CoinTrading {
 
         TradeEntity trade = new TradeEntity();
         trade.setMarket(market);
-        trade.setTradeType(TradeEntity.TradeType.BUY);
+        trade.setTradeType(TradeType.BUY);
         // 매수 호가 보다 높게 체결 될 가능성이 있기 때문에 오차가 있음
         double amount = tradePrice * Double.parseDouble(volume);
         trade.setAmount(amount);
@@ -453,7 +453,7 @@ public class MabsMultiService implements CoinTrading {
 
         TradeEntity trade = new TradeEntity();
         trade.setMarket(market);
-        trade.setTradeType(TradeEntity.TradeType.SELL);
+        trade.setTradeType(TradeType.SELL);
         // 매도 호가 보다 낮게 체결 될 가능성이 있기 때문에 오차가 있음
         trade.setAmount(currentPrice * balance);
         trade.setUnitPrice(currentPrice);
@@ -469,7 +469,7 @@ public class MabsMultiService implements CoinTrading {
 
 
     /**
-     * @param candleList
+     * @param candleList 캔들
      * @return 이동 평균에서 직전 매수 조건 이면 true, 아니면 false
      */
     private boolean isBeforeBuy(List<Candle> candleList) {
@@ -479,8 +479,7 @@ public class MabsMultiService implements CoinTrading {
         double maLongBefore = CommonTradeHelper.getMa(beforeCandleList, longPeriod);
         double buyTargetPrice = maLongBefore + maLongBefore * upBuyRate;
         //(장기이평 + 장기이평 * 상승매수률) <= 단기이평
-        boolean isBuy = buyTargetPrice <= maShortBefore;
-        return isBuy;
+        return buyTargetPrice <= maShortBefore;
     }
 
 

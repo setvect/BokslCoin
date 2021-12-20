@@ -21,13 +21,9 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class TradeEntity {
-    public enum TradeType {
-        BUY, SELL
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "TRADE_SEQ", nullable = true)
+    @Column(name = "TRADE_SEQ")
     private int tradeSeq;
 
     /**
@@ -48,7 +44,7 @@ public class TradeEntity {
      * 매도시 수익률
      * 소수로 표현, 1->100%, -0.02 -> -2%
      */
-    @Column(name = "YIELD", nullable = true)
+    @Column(name = "YIELD")
     private Double yield;
 
 

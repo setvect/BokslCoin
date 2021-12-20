@@ -1,6 +1,7 @@
 package com.setvect.bokslcoin.autotrading.record.model;
 
 import com.setvect.bokslcoin.autotrading.record.entity.TradeEntity;
+import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.ModalMapper;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,7 +22,7 @@ public class TradeDto {
     /**
      * 매수/매도
      */
-    private TradeEntity.TradeType tradeType;
+    private TradeType tradeType;
 
     /**
      * 거래 금액

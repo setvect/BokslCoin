@@ -28,11 +28,10 @@ import java.time.LocalDateTime;
 })
 @Getter
 @Setter
-@EntityListeners(AuditingEntityListener.class)
 public class CandleEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "CANDLE_SEQ", nullable = true)
+    @Column(name = "CANDLE_SEQ")
     private int candleSeq;
 
     @Column(name = "MARKET", length = 20, nullable = false)

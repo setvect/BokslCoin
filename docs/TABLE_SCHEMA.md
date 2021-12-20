@@ -2,6 +2,7 @@
 =========================
 
 1. AA_TRADE: 거래내역
+
     | Column Name | Attribute Name | Key | Type     | Len | Not Null | Description                             |
     | ----------- | -------------- | --- | -------- | --- | -------- | --------------------------------------- |
     | TRADE_SEQ   | 키             | PK  | INTEGER  | 4   | Y        |                                         |
@@ -11,7 +12,8 @@
     | UNIT_PRICE  | 거래 단가      |     | NUMBER   |     | Y        |                                         |
     | REG_DATE    | 거래 시간      |     | DATETIME |     | Y        |                                         |
 
-1. BA_ASSET_HISTORY:  자산 기록
+3. BA_ASSET_HISTORY:  자산 기록
+
     | Column Name       | Attribute Name | Key | Type     | Len | Not Null | Description                        |
     | ----------------- | -------------- | --- | -------- | --- | -------- | ---------------------------------- |
     | ASSET_HISTORY_SEQ | 키             | PK  | INTEGER  | 4   | Y        |                                    |
@@ -20,7 +22,8 @@
     | YIELD             | 수익률         |     | NUMBER   |     | Y        | 소수로 표현, 1->100%, -0.02 -> -2% |
     | REG_DATE          | 자산 조회 시간 |     | DATETIME |     | Y        |                                    |
 
-1. CANDLE: 캔드 실세 - 백테스트 용도
+4. CANDLE: 캔드 실세 - 백테스트 용도
+
     | Column Name          | Attribute Name      | Key | Type     | Len | Not Null | Description                                                              |
     | -------------------- | ------------------- | --- | -------- | --- | -------- | ------------------------------------------------------------------------ |
     | CANDLE_SEQ           | 키                  | PK  | INTEGER  | 4   | Y        |                                                                          |
