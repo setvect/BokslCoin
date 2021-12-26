@@ -27,6 +27,8 @@ import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -41,6 +43,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -112,29 +115,37 @@ public class MabsTradeAnalyzerTest {
 
     @Test
     public void backtest() {
-        MabsConditionEntity condition = MabsConditionEntity.builder()
-                .market("KRW-BTC")
-//                .analysisFrom(DateUtil.getLocalDateTime("2017-10-01T00:00:00"))
-//                .analysisTo(DateUtil.getLocalDateTime("2021-12-18T23:59:59"))
-                .analysisFrom(DateUtil.getLocalDateTime("2021-10-01T00:00:00"))
-                .analysisTo(DateUtil.getLocalDateTime("2021-10-31T23:59:59"))
-                .tradePeriod(TradePeriod.P_60)
-                .upBuyRate(0.01)
-                .downSellRate(0.01)
-                .shortPeriod(16)
-                .longPeriod(63)
-                .loseStopRate(0.3)
-                .comment("비트코인")
-                .build();
+        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
 
-        mabsConditionEntityRepository.save(condition);
-        List<MabsMultiBacktestRow> tradeHistory = backtest(condition);
+        List<Pair<Integer, Integer>> periodList = new ArrayList<>();
+        periodList.add(new ImmutablePair<>(20, 80));
+        periodList.add(new ImmutablePair<>(22, 80));
+        periodList.add(new ImmutablePair<>(24, 80));
+        periodList.add(new ImmutablePair<>(20, 90));
+        periodList.add(new ImmutablePair<>(22, 90));
+        periodList.add(new ImmutablePair<>(24, 90));
 
-        List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
-        mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+        for (Pair<Integer, Integer> period : periodList) {
+            for (String coin : coinList) {
+                MabsConditionEntity condition = MabsConditionEntity.builder()
+                        .market(coin)
+                        .analysisFrom(DateUtil.getLocalDateTime("2017-10-01T00:00:00"))
+                        .analysisTo(DateUtil.getLocalDateTime("2021-12-18T23:59:59"))
+                        .tradePeriod(TradePeriod.P_30)
+                        .upBuyRate(0.01)
+                        .downSellRate(0.01)
+                        .shortPeriod(period.getLeft())
+                        .longPeriod(period.getRight())
+                        .loseStopRate(0.3)
+                        .comment(null)
+                        .build();
+                mabsConditionEntityRepository.save(condition);
+                List<MabsMultiBacktestRow> tradeHistory = backtest(condition);
 
-        System.out.println(tradeHistory);
-        System.out.println(condition);
+                List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
+                mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+            }
+        }
         System.out.println("끝");
     }
 
