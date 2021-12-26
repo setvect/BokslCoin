@@ -5,9 +5,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityListeners;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
@@ -23,6 +26,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "XA_MABS_CONDITION")
+@EntityListeners(AuditingEntityListener.class)
 public class MabsConditionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -35,6 +39,18 @@ public class MabsConditionEntity {
      */
     @Column(name = "MARKET", length = 20, nullable = false)
     private String market;
+
+    /**
+     * 분석 시작 날짜(KST 기준)
+     */
+    @Column(name = "ANALYSIS_FROM", nullable = false)
+    private LocalDateTime analysisFrom;
+
+    /**
+     * 분석 종료 날짜(KST 기준)
+     */
+    @Column(name = "ANALYSIS_TO", nullable = false)
+    private LocalDateTime analysisTo;
 
     /**
      * 매매 주기
@@ -83,5 +99,6 @@ public class MabsConditionEntity {
      * 백테스트 등록일
      */
     @Column(name = "REG_DATE", nullable = false)
+    @CreatedDate
     private LocalDateTime regDate;
 }

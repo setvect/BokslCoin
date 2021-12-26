@@ -52,7 +52,7 @@ import static org.mockito.Mockito.*;
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
-public class MabsMultiBacktest {
+public class MabsMultiBackTest {
 
     @Autowired
     private CandleRepository candleRepository;
@@ -710,6 +710,4 @@ public class MabsMultiBacktest {
         final double maShort;
         final double maLong;
     }
-
-
 }

@@ -43,6 +43,11 @@ public class DateUtil {
         return LocalDate.parse(dateStr, formatter);
     }
 
+    public static LocalDateTime getLocalDateTime(String dateStr) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(yyyy_MM_ddTHH_mm_ss);
+        return LocalDateTime.parse(dateStr, formatter);
+    }
+
     public static LocalTime getLocalTime(String timeStr) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(HH_mm_ss);
         return LocalTime.parse(timeStr, formatter);
@@ -54,7 +59,7 @@ public class DateUtil {
     }
 
     /**
-     * @param localDateTime
+     * @param localDateTime 날짜시간
      * @return yyyy-MM-dd 형태로 반환
      */
     public static String format(LocalDateTime localDateTime) {

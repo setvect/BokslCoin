@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.backtest.entity;
 
+import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,7 +22,7 @@ import java.time.LocalDateTime;
 public class MabsTradeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "BACKTEST_TRADE_SEQ")
+    @Column(name = "TRADE_SEQ")
     private int tradeSeq;
 
     /**
@@ -79,10 +80,11 @@ public class MabsTradeEntity {
     private double unitPrice;
 
     /**
-     * 거래시간(UTC 기준)
+     * 매도 이유
      */
-    @Column(name = "CANDLE_DATE_TIME_UTC", nullable = false)
-    private LocalDateTime candleDateTimeUtc;
+    @Column(name = "SELL_TYPE", length = 20)
+    @Enumerated(EnumType.STRING)
+    private AskReason sellReason;
 
     /**
      * 거래시간(KST 기준)
