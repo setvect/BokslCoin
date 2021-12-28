@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -16,7 +17,10 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 이평선 돌파 백테스트 조건
@@ -33,24 +37,16 @@ public class MabsConditionEntity {
     @Column(name = "BACKTEST_CONDITION_SEQ")
     private int mabsConditionSeq;
 
+    @OneToMany(mappedBy = "mabsConditionEntity")
+    @OrderBy("tradeTimeKst ASC")
+    private List<MabsTradeEntity> mabsTradeEntityList;
+
     /**
      * 코인 이름
      * KRW-BTC, KRW-ETH, ...
      */
     @Column(name = "MARKET", length = 20, nullable = false)
     private String market;
-
-    /**
-     * 분석 시작 날짜(KST 기준)
-     */
-    @Column(name = "ANALYSIS_FROM", nullable = false)
-    private LocalDateTime analysisFrom;
-
-    /**
-     * 분석 종료 날짜(KST 기준)
-     */
-    @Column(name = "ANALYSIS_TO", nullable = false)
-    private LocalDateTime analysisTo;
 
     /**
      * 매매 주기

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -18,7 +19,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "XB_MABS_TRADE")
-@Table
+@Table(indexes = {
+        @Index(name = "XB_MABS_TRADE_TRADE_TIME_KST_INDEX", columnList = "TRADE_TIME_KST")
+})
 public class MabsTradeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -89,6 +92,6 @@ public class MabsTradeEntity {
     /**
      * 거래시간(KST 기준)
      */
-    @Column(name = "CANDLE_DATE_TIME_KST", nullable = false)
-    private LocalDateTime candleDateTimeKst;
+    @Column(name = "TRADE_TIME_KST", nullable = false)
+    private LocalDateTime tradeTimeKst;
 }

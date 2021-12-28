@@ -22,6 +22,7 @@ import com.setvect.bokslcoin.autotrading.record.repository.AssetHistoryRepositor
 import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
+import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import lombok.Getter;
@@ -118,19 +119,19 @@ public class MabsTradeAnalyzerTest {
         List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
-        periodList.add(new ImmutablePair<>(20, 80));
-        periodList.add(new ImmutablePair<>(22, 80));
-        periodList.add(new ImmutablePair<>(24, 80));
-        periodList.add(new ImmutablePair<>(20, 90));
-        periodList.add(new ImmutablePair<>(22, 90));
+//        periodList.add(new ImmutablePair<>(20, 80));
+//        periodList.add(new ImmutablePair<>(22, 80));
+//        periodList.add(new ImmutablePair<>(24, 80));
+//        periodList.add(new ImmutablePair<>(20, 90));
+//        periodList.add(new ImmutablePair<>(22, 90));
         periodList.add(new ImmutablePair<>(24, 90));
+        periodList.add(new ImmutablePair<>(26, 100));
 
         for (Pair<Integer, Integer> period : periodList) {
             for (String coin : coinList) {
+                DateRange range = new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-12-18T23:59:59"));
                 MabsConditionEntity condition = MabsConditionEntity.builder()
                         .market(coin)
-                        .analysisFrom(DateUtil.getLocalDateTime("2017-10-01T00:00:00"))
-                        .analysisTo(DateUtil.getLocalDateTime("2021-12-18T23:59:59"))
                         .tradePeriod(TradePeriod.P_30)
                         .upBuyRate(0.01)
                         .downSellRate(0.01)
@@ -140,7 +141,7 @@ public class MabsTradeAnalyzerTest {
                         .comment(null)
                         .build();
                 mabsConditionEntityRepository.save(condition);
-                List<MabsMultiBacktestRow> tradeHistory = backtest(condition);
+                List<MabsMultiBacktestRow> tradeHistory = backtest(condition, range);
 
                 List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
                 mabsTradeEntityRepository.saveAll(mabsTradeEntities);
@@ -165,12 +166,12 @@ public class MabsTradeAnalyzerTest {
                 .yield(p.getRealYield())
                 .unitPrice(p.getTradeEvent() == TradeType.BUY ? p.getBidPrice() : p.getAskPrice())
                 .sellReason(p.getAskReason())
-                .candleDateTimeKst(p.getCandle().getCandleDateTimeKst())
+                .tradeTimeKst(p.getCandle().getCandleDateTimeKst())
                 .build()).collect(Collectors.toList());
     }
 
 
-    private List<MabsMultiBacktestRow> backtest(MabsConditionEntity condition) {
+    private List<MabsMultiBacktestRow> backtest(MabsConditionEntity condition, DateRange range) {
         // key: market, value: 자산
         accountMap = new HashMap<>();
 
@@ -193,8 +194,8 @@ public class MabsTradeAnalyzerTest {
         injectionFieldValue(condition);
         tradeHistory = new ArrayList<>();
 
-        LocalDateTime current = condition.getAnalysisFrom();
-        LocalDateTime to = condition.getAnalysisTo();
+        LocalDateTime current = range.getFrom();
+        LocalDateTime to = range.getTo();
         CandleDataProvider candleDataProvider = new CandleDataProvider(candleRepository);
 
         initMock(candleDataProvider);
@@ -237,38 +238,6 @@ public class MabsTradeAnalyzerTest {
         yield.setYield(MathUtil.getYield(amounts.get(amounts.size() - 1), amounts.get(0)));
         yield.setMdd(ApplicationUtil.getMdd(amounts));
         return yield;
-    }
-
-    /**
-     * @param tradeHistory 매매 기록
-     * @param condition    투자 조건
-     * @return 대상코인의 수익률 정보를 제공
-     */
-    private static TestAnalysisMulti.TotalYield calculateTotalInvestment(List<MabsMultiBacktestRow> tradeHistory, MabsConditionEntity condition) {
-        List<Double> amountHistory = new ArrayList<>();
-        amountHistory.add(tradeHistory.get(0).getFinalResult());
-        amountHistory.addAll(tradeHistory.stream().skip(1).map(MabsMultiBacktestRow::getFinalResult).collect(Collectors.toList()));
-        TestAnalysisMulti.TotalYield totalYield = new TestAnalysisMulti.TotalYield();
-        double realYield = tradeHistory.get(tradeHistory.size() - 1).getFinalResult() / tradeHistory.get(0).getFinalResult() - 1;
-        double realMdd = ApplicationUtil.getMdd(amountHistory);
-        totalYield.setYield(realYield);
-        totalYield.setMdd(realMdd);
-
-        // 승률
-        for (MabsMultiBacktestRow row : tradeHistory) {
-            if (row.getTradeEvent() != TradeType.SELL) {
-                continue;
-            }
-            if (row.getRealYield() > 0) {
-                totalYield.setGainCount(totalYield.getGainCount() + 1);
-            } else {
-                totalYield.setLossCount(totalYield.getLossCount() + 1);
-            }
-        }
-
-        long dayCount = ChronoUnit.DAYS.between(condition.getAnalysisFrom(), condition.getAnalysisTo());
-        totalYield.setDayCount((int) dayCount);
-        return totalYield;
     }
 
     private void injectionFieldValue(MabsConditionEntity condition) {
