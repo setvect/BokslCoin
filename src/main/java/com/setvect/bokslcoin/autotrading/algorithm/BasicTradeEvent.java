@@ -21,7 +21,7 @@ public class BasicTradeEvent implements TradeEvent {
     @Override
     public void newPeriod(Candle candle) {
         LocalDateTime localDateTime = candle.getCandleDateTimeUtc();
-        log.info("새로운 매매주기: {}", DateUtil.formatDateTime(localDateTime));
+        log.debug("새로운 매매주기: {}", DateUtil.formatDateTime(localDateTime));
     }
 
     @Override

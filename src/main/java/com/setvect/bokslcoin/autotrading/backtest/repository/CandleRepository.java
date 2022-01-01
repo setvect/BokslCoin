@@ -22,7 +22,7 @@ public interface CandleRepository extends JpaRepository<CandleEntity, Integer> {
      * @param end        종료 날짜 - UTC
      * @return 시세
      */
-    @Query("select c from CANDLE c " +
+    @Query("select c from WA_CANDLE c " +
             " where c.market = :market and c.periodType = :period and c.candleDateTimeUtc between :from and :end order by c.candleDateTimeUtc")
     List<CandleEntity> findMarketPrice(@Param("market") String market, @Param("period") PeriodType periodType,
                                        @Param("from") LocalDateTime from, @Param("end") LocalDateTime end);
@@ -36,7 +36,7 @@ public interface CandleRepository extends JpaRepository<CandleEntity, Integer> {
      * @param pageable   가져올 갯수
      * @return 시세
      */
-    @Query("select c from CANDLE c " +
+    @Query("select c from WA_CANDLE c " +
             " where c.market = :market and c.periodType = :period and c.candleDateTimeUtc < :base order by c.candleDateTimeUtc desc")
     List<CandleEntity> findMarketPricePeriod(@Param("market") String market, @Param("period") PeriodType periodType,
                                              @Param("base") LocalDateTime base, Pageable pageable);

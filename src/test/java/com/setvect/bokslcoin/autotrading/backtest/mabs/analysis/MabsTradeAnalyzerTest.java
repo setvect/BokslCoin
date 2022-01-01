@@ -24,7 +24,6 @@ import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
-import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +41,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -117,18 +115,25 @@ public class MabsTradeAnalyzerTest {
     @Test
     public void backtest() {
         List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
+//        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
+//        periodList.add(new ImmutablePair<>(20, 70));
+//        periodList.add(new ImmutablePair<>(20, 75));
 //        periodList.add(new ImmutablePair<>(20, 80));
 //        periodList.add(new ImmutablePair<>(22, 80));
 //        periodList.add(new ImmutablePair<>(24, 80));
 //        periodList.add(new ImmutablePair<>(20, 90));
 //        periodList.add(new ImmutablePair<>(22, 90));
-        periodList.add(new ImmutablePair<>(24, 90));
-        periodList.add(new ImmutablePair<>(26, 100));
+//        periodList.add(new ImmutablePair<>(30, 100));
+//        periodList.add(new ImmutablePair<>(32, 120));
+//        periodList.add(new ImmutablePair<>(40, 160));
+//        periodList.add(new ImmutablePair<>(50, 180));
+        periodList.add(new ImmutablePair<>(16 * 2, 64 * 2));
 
         for (Pair<Integer, Integer> period : periodList) {
             for (String coin : coinList) {
+                log.info("{} - {} start", period, coin);
                 DateRange range = new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-12-18T23:59:59"));
                 MabsConditionEntity condition = MabsConditionEntity.builder()
                         .market(coin)
@@ -225,20 +230,6 @@ public class MabsTradeAnalyzerTest {
         return tradeHistory;
     }
 
-
-    /**
-     * @param amounts 실제 코인 변화 가격
-     * @return 코인별 수익률, MDD
-     */
-    private static TestAnalysisMulti.YieldMdd calculateCoinYieldMdd(List<Double> amounts) {
-        if (amounts.isEmpty()) {
-            return new TestAnalysisMulti.YieldMdd();
-        }
-        TestAnalysisMulti.YieldMdd yield = new TestAnalysisMulti.TotalYield();
-        yield.setYield(MathUtil.getYield(amounts.get(amounts.size() - 1), amounts.get(0)));
-        yield.setMdd(ApplicationUtil.getMdd(amounts));
-        return yield;
-    }
 
     private void injectionFieldValue(MabsConditionEntity condition) {
         ReflectionTestUtils.setField(mabsMultiService, "assetHistoryRepository", this.assetHistoryRepository);

@@ -28,7 +28,7 @@ import java.util.Map;
  * 어플리케이션의 의존적인 유틸성 메소드
  */
 public class ApplicationUtil {
-    private static ModelMapper modelMapper = new ModelMapper();
+    private static final ModelMapper modelMapper = new ModelMapper();
 
     public static final NumberFormat NUMBER_FORMAT = new DecimalFormat("#.############");
 
@@ -99,18 +99,17 @@ public class ApplicationUtil {
         LocalDateTime fromLocal = fromUtc.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
         LocalDateTime toLocal = toUtc.withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
 
-        DateRange range = new DateRange(fromLocal, toLocal);
-        return range;
+        return new DateRange(fromLocal, toLocal);
     }
 
     /**
-     * @param values
+     * @param prices 시계열 가격 변화
      * @return 최대 낙폭 계산 - MDD(Max. Draw Down)
      */
-    public static double getMdd(List<Double> values) {
+    public static double getMdd(List<Double> prices) {
         double highValue = 0;
         double mdd = 0;
-        for (Double v : values) {
+        for (Double v : prices) {
             if (highValue < v) {
                 highValue = v;
             } else {
@@ -119,6 +118,27 @@ public class ApplicationUtil {
         }
         return mdd;
     }
+
+    /**
+     * @param prices 시계열 가격 변화
+     * @return 수익률 1 == 100%
+     */
+    public static double getYield(List<Double> prices) {
+        if (prices.isEmpty()) {
+            return 0;
+        }
+        return getYield(prices.get(0), prices.get(prices.size() - 1));
+    }
+
+    /**
+     * @param start   시작값
+     * @param current 현재 값
+     * @return 수익률 1 == 100%
+     */
+    public static double getYield(double start, double current) {
+        return current / start - 1;
+    }
+
 
     /**
      * 연 복리
@@ -151,11 +171,10 @@ public class ApplicationUtil {
     }
 
     public static String getQueryString(Map<String, String> params) {
-        String queryString = params.entrySet().stream()
+        return params.entrySet().stream()
                 .map(p -> p.getKey() + "=" + urlEncodeUTF8(p.getValue()))
                 .reduce((p1, p2) -> p1 + "&" + p2)
                 .orElse("");
-        return queryString;
     }
 
 

@@ -1,14 +1,10 @@
 package com.setvect.bokslcoin.autotrading.backtest.entity;
 
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.EntityListeners;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
@@ -16,15 +12,18 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 /**
  * 캔드 실세
  */
-@Entity(name = "CANDLE")
+@Entity(name = "WA_CANDLE")
 @Table(indexes = {
         @Index(name = "IDX_CANDLE_DATE_TIME_KST", columnList = "CANDLE_DATE_TIME_KST DESC"),
-        @Index(name = "IDX_CANDLE_DATE_TIME_UTC", columnList = "CANDLE_DATE_TIME_UTC DESC"),
+        @Index(name = "IDX_CANDLE_DATE_TIME_UTC", columnList = "CANDLE_DATE_TIME_UTC DESC")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "UC_CANDLE_ENTITY_MARKET", columnNames = {"MARKET", "CANDLE_DATE_TIME_KST", "PERIOD_TYPE"})
 })
 @Getter
 @Setter
@@ -56,6 +55,9 @@ public class CandleEntity {
     @Column(name = "LOW_PRICE", nullable = false)
     private double lowPrice;
 
+    /**
+     * 종가
+     */
     @Column(name = "TRADE_PRICE", nullable = false)
     private double tradePrice;
 }
