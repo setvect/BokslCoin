@@ -52,7 +52,7 @@ public class MakeBacktestReport {
     @Transactional
     public void analysis() throws IOException {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                .mabsConditionIdSet(new HashSet<>(Arrays.asList(12065151, 12123225, 12180056, 12234724, 12284727)))
+                .mabsConditionIdSet(new HashSet<>(Arrays.asList(27508376, 27458175, 27403421, 27346706, 27288611)))
                 .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), DateUtil.getLocalDateTime("2021-06-09T08:59:59")))
                 .investRatio(.99)
                 .cash(10_000_000)

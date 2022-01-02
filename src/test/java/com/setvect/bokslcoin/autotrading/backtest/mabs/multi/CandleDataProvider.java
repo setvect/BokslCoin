@@ -18,6 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * @deprecated "com.setvect.bokslcoin.autotrading.backtest.mabs.analysis" 패키지 사용
+ */
+@Deprecated
 @Slf4j
 public class CandleDataProvider {
     private final CandleRepository candleRepository;

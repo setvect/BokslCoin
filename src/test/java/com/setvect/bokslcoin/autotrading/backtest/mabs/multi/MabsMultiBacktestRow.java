@@ -8,7 +8,9 @@ import lombok.Setter;
 
 /**
  * 주기별 매매 정보
+ * @deprecated "com.setvect.bokslcoin.autotrading.backtest.mabs.analysis" 패키지 사용
  */
+@Deprecated
 @Setter
 @Getter
 public class MabsMultiBacktestRow {

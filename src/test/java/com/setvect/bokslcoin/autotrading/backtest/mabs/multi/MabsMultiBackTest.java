@@ -49,6 +49,10 @@ import java.util.stream.Collectors;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * @deprecated "com.setvect.bokslcoin.autotrading.backtest.mabs.analysis" 패키지 사용
+ */
+@Deprecated
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j

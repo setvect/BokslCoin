@@ -9,7 +9,9 @@ import java.util.List;
 
 /**
  * 이동평균 돌파 전략 조건
+ * @deprecated "com.setvect.bokslcoin.autotrading.backtest.mabs.analysis" 패키지 사용
  */
+@Deprecated
 @SuperBuilder
 @Getter
 @ToString

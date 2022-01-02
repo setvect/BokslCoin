@@ -8,6 +8,10 @@ import lombok.ToString;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @deprecated "com.setvect.bokslcoin.autotrading.backtest.mabs.analysis" 패키지 사용
+ */
+@Deprecated
 @Setter
 @Getter
 @ToString
