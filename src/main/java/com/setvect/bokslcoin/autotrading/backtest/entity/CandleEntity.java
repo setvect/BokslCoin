@@ -20,7 +20,8 @@ import java.time.LocalDateTime;
 @Entity(name = "WA_CANDLE")
 @Table(indexes = {
         @Index(name = "IDX_CANDLE_DATE_TIME_KST", columnList = "CANDLE_DATE_TIME_KST DESC"),
-        @Index(name = "IDX_CANDLE_DATE_TIME_UTC", columnList = "CANDLE_DATE_TIME_UTC DESC")
+        @Index(name = "IDX_CANDLE_DATE_TIME_UTC", columnList = "CANDLE_DATE_TIME_UTC DESC"),
+        @Index(name = "IDX_CANDLE_ENTITY_MARKET", columnList = "MARKET, CANDLE_DATE_TIME_UTC, PERIOD_TYPE")
 })
 @Getter
 @Setter

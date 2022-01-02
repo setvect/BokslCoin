@@ -467,7 +467,7 @@ public class VbsTrailingStopBacktest {
         }
 
         String reportFileName = String.format("%s(%s ~ %s)_%s.txt",
-                FilenameUtils.getBaseName(condition.getMarket()), condition.getRange().getFromString(), condition.getRange().getToString(), condition.getTradePeriod());
+                FilenameUtils.getBaseName(condition.getMarket()), condition.getRange().getFromDateFormat(), condition.getRange().getToDateFormat(), condition.getTradePeriod());
         report.append("\n\n-----------\n");
         report.append(String.format("실제 수익\t %,.2f%%", testAnalysis.getCoinYield() * 100)).append("\n");
         report.append(String.format("실제 MDD\t %,.2f%%", testAnalysis.getCoinMdd() * 100)).append("\n");

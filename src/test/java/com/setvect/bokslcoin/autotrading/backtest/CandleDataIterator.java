@@ -107,7 +107,7 @@ public class CandleDataIterator implements Iterator<CandleMinute> {
         CacheKey key = CacheKey.builder().market(current.getMarket()).count(count).base(base).period(periodType).build();
         List<Candle> periodData = cachePeriod.get(key);
         if (periodData == null) {
-            List<CandleEntity> candleList = candleRepository.findMarketPricePeriod(current.getMarket(), periodType, base, PageRequest.of(0, count - 1));
+            List<CandleEntity> candleList = candleRepository.findMarketPricePeriodBefore(current.getMarket(), periodType, base, PageRequest.of(0, count - 1));
             periodData = candleList.stream().map(v -> ApplicationUtil.getMapper().map(v, CandleDay.class)).collect(Collectors.toList());
             periodData.add(0, ApplicationUtil.getMapper().map(current, CandleDay.class));
             cachePeriod.put(key, periodData);

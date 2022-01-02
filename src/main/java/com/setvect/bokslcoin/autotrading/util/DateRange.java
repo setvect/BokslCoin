@@ -127,22 +127,36 @@ public class DateRange {
     /**
      * @return 종료날짜를 "yyyy-MM-dd" 형태로 리턴합니다.
      */
-    public String getToString() {
+    public String getToDateFormat() {
         return DateUtil.format(to, "yyyy-MM-dd");
     }
 
     /**
      * @return 시작날짜를 "yyyy-MM-dd" 형태로 리턴합니다.
      */
-    public String getFromString() {
+    public String getFromDateFormat() {
         return DateUtil.format(from, "yyyy-MM-dd");
+    }
+
+    /**
+     * @return 종료날짜를 "yyyy-MM-dd HH:mm:ss" 형태로 리턴합니다.
+     */
+    public String getToDateTimeFormat() {
+        return DateUtil.format(to, "yyyy-MM-dd HH:mm:ss");
+    }
+
+    /**
+     * @return 시작날짜를 "yyyy-MM-dd HH:mm:ss" 형태로 리턴합니다.
+     */
+    public String getFromDateTimeFormat() {
+        return DateUtil.format(from, "yyyy-MM-dd HH:mm:ss");
     }
 
     /**
      * @param format 날짜 패턴 "yyyy, MM, dd, HH, mm, ss and more"
      * @return 종료날짜를 포맷 형태로 리턴합니다.
      */
-    public String getToString(String format) {
+    public String getToDateTimeFormat(String format) {
         return DateUtil.format(to, format);
     }
 
@@ -150,14 +164,19 @@ public class DateRange {
      * @param format 날짜 패턴 "yyyy, MM, dd, HH, mm, ss and more"
      * @return 종료날짜를 포맷 형태로 리턴합니다.
      */
-    public String getFromString(String format) {
+    public String getFromDateTimeFormat(String format) {
         return DateUtil.format(from, format);
     }
 
 
-    // 두 날짜 사이에 있는지
+    /**
+     * 시작과 끝을 포함한 between 검사
+     *
+     * @param dateTime 검사할 날짜시간
+     * @return 두 날짜 사이에 있는지에 있으면 true
+     */
     public boolean isBetween(LocalDateTime dateTime) {
-        return from.isBefore(dateTime) && to.isAfter(dateTime) || from.equals(dateTime) || to.equals(dateTime);
+        return from.isBefore(dateTime) && to.isAfter(dateTime) || from.isEqual(dateTime) || to.isEqual(dateTime);
     }
 
     @Override

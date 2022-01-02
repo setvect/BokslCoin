@@ -661,7 +661,7 @@ public class MabsMultiBackTest {
 
         String coins = String.join(",", condition.getMarkets());
         String reportFileName = String.format("%s(%s ~ %s)_%s.txt",
-                FilenameUtils.getBaseName(coins), condition.getRange().getFromString(), condition.getRange().getToString(), condition.getTradePeriod());
+                FilenameUtils.getBaseName(coins), condition.getRange().getFromDateFormat(), condition.getRange().getToDateFormat(), condition.getTradePeriod());
         report.append("\n-----------\n");
         for (String market : condition.getMarkets()) {
             TestAnalysisMulti.YieldMdd coinYield = testAnalysis.getCoinTotalYield(market);

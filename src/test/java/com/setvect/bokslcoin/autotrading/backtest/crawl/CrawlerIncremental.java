@@ -55,52 +55,45 @@ public class CrawlerIncremental {
     private CandleRepository candleRepository;
 
     @Test
-    public void 증분클로링() throws IOException, InterruptedException {
-//        List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA");
-        List<String> marketList = Arrays.asList("KRW-BTC");
-        makeSaveDir(SAVE_DIR_MINUTE);
+    @SneakyThrows
+    public void 증분클로링() {
+        List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA");
+//        List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
+//        List<String> marketList = Arrays.asList("KRW-BTC");
+        makeSaveDir();
 
         for (String market : marketList) {
             List<File> candleByMonth = crawlCandle(market);
-            // TODO DB 등록
             log.info("캔들 임시저장 파일: {}", candleByMonth);
-            DateRange range = saveCandle(candleByMonth);
+            saveCandle(candleByMonth);
+            createCandleGroup(market);
         }
     }
 
+
     /**
      * @param candleFiles 1분봉 데이터
-     * @return 저장 데이터 시작 및 종료 범위(UTC)
      */
-    private DateRange saveCandle(List<File> candleFiles) throws IOException {
+    private void saveCandle(List<File> candleFiles) throws IOException {
         // 파일명(날짜) 기준 오름차순 정렬
         List<File> sortedFiles = candleFiles.stream().sorted(Comparator.comparing(File::getName)).collect(Collectors.toList());
-
-        LocalDateTime start = null;
-        LocalDateTime end = LocalDateTime.now();
 
         for (File file : sortedFiles) {
             List<CandleMinute> candles = GsonUtil.GSON.fromJson(FileUtils.readFileToString(file, "utf-8"), new TypeToken<List<CandleMinute>>() {
             }.getType());
             Collections.reverse(candles);
-
-            if (start == null && !candles.isEmpty()) {
-                start = candles.get(0).getCandleDateTimeUtc();
-            }
-
-            List<CandleEntity> entities = candles.stream().map(p -> getCandleEntity(p, PeriodType.PERIOD_1)).collect(Collectors.toList());
+            List<CandleEntity> entities = candles.stream().map(this::getCandleEntity).collect(Collectors.toList());
             candleRepository.saveAll(entities);
-            log.info("저장 {} - {}건", file.getName(), entities.size());
+            log.info("저장 {}, {}건", file.getName(), entities.size());
         }
-        return new DateRange(start, end);
     }
 
-    private CandleEntity getCandleEntity(Candle candle, PeriodType period) {
+    private CandleEntity getCandleEntity(Candle candle) {
         CandleEntity entity = new CandleEntity();
         entity.setMarket(candle.getMarket());
         entity.setCandleDateTimeUtc(candle.getCandleDateTimeUtc());
         entity.setCandleDateTimeKst(candle.getCandleDateTimeKst());
-        entity.setPeriodType(period);
+        entity.setPeriodType(PeriodType.PERIOD_1);
         entity.setOpeningPrice(candle.getOpeningPrice());
         entity.setLowPrice(candle.getLowPrice());
         entity.setHighPrice(candle.getHighPrice());
@@ -109,12 +102,131 @@ public class CrawlerIncremental {
     }
 
     /**
+     * 1분봉을 기준으로 15분, 30분, 60분, 240분(4시간), 1440분(하루) 캔들을 만듦<br>
+     * UTC 기준으로 만듦. 예를 들어 하루 분봉은 우리나라 시간으로 09:00:00 ~ 다음날 08:59:59을 의미
+     * 예)
+     * - 1분봉 -> 15분봉
+     * - 15분봉 -> 30분봉
+     * - 30분봉 -> 60분봉
+     * - 60분봉 -> 240분봉
+     * - 240분봉 -> 1440분봉
+     *
      * @param market 코인
+     */
+    private void createCandleGroup(String market) {
+        List<PeriodType> targetPeriodList = Arrays.asList(PeriodType.PERIOD_15, PeriodType.PERIOD_30, PeriodType.PERIOD_60, PeriodType.PERIOD_240, PeriodType.PERIOD_1440);
+        PeriodType basePeriod = PeriodType.PERIOD_1;
+
+        for (PeriodType targetPeriod : targetPeriodList) {
+            LocalDateTime startTime = getLocalDateTime(market, basePeriod, targetPeriod);
+            DateRange groupRange = new DateRange(startTime, LocalDateTime.now(ZoneOffset.UTC));
+            List<CandleEntity> last = candleRepository.findMarketPricePeriodBefore(market, targetPeriod, LocalDateTime.now(ZoneOffset.UTC), PageRequest.of(0, 1));
+            // 마지막 병합 결과는 완전하지 않을 수 있으니 일딴 지우고 시작 한다.
+            if (!last.isEmpty()) {
+                candleRepository.delete(last.get(0));
+            }
+
+            int count = 0;
+            while (true) {
+                LocalDateTime end = startTime.plusMinutes(targetPeriod.getDiffMinutes()).minusSeconds(1);
+                if (!groupRange.isBetween(end)) {
+                    break;
+                }
+
+                List<CandleEntity> smallCandle = candleRepository.findMarketPrice(market, basePeriod, startTime, end);
+                startTime = startTime.plusMinutes(targetPeriod.getDiffMinutes());
+                if (smallCandle.isEmpty()) {
+                    continue;
+                }
+                CandleEntity upperCandle = mergeCandle(smallCandle);
+                upperCandle.setMarket(market);
+                upperCandle.setPeriodType(targetPeriod);
+
+                candleRepository.save(upperCandle);
+                if (count % 100 == 0) {
+                    log.info("Count: {}, Period: {}, CandleDateTimeUtc: {}", count, upperCandle.getPeriodType(), upperCandle.getCandleDateTimeUtc());
+                }
+                count++;
+            }
+            log.info("저장. 코인:{}, 기간:{}-{} 병합 방식: {} -> {}, {}건",
+                    market, groupRange.getFromDateTimeFormat(), groupRange.getToDateTimeFormat(), basePeriod, targetPeriod, count);
+            basePeriod = targetPeriod;
+        }
+    }
+
+    /**
+     * basePeriod 분봉을 이용해  -> targetPeriod 분봉을 만듦기 위해 필요한 시작 시간을 제공
+     *
+     * @param market       코인
+     * @param basePeriod   병합을 하기 위해 미리 계산된 분봉 주기
+     * @param targetPeriod 병합 할 분봉 주기
+     * @return basePeriod 시작 시간을 제공
+     */
+    private LocalDateTime getLocalDateTime(String market, PeriodType basePeriod, PeriodType targetPeriod) {
+        List<CandleEntity> last = candleRepository.findMarketPricePeriodBefore(market, targetPeriod, LocalDateTime.now(ZoneOffset.UTC), PageRequest.of(0, 1));
+
+        if (!last.isEmpty()) {
+            return last.get(0).getCandleDateTimeUtc();
+        }
+
+        LocalDateTime lastCandleTime;
+        List<CandleEntity> afterList = candleRepository.findMarketPricePeriodAfter(market, basePeriod, MINIMUM_CANDLE_DATE, PageRequest.of(0, 1));
+        if (afterList.isEmpty()) {
+            throw new RuntimeException(String.format("시세 정보가 없습니다. market: %s, Base Period: %s, Target Period: %s", market, basePeriod, targetPeriod));
+        }
+
+        LocalDateTime temp = afterList.get(0).getCandleDateTimeUtc();
+        switch (targetPeriod) {
+            case PERIOD_15:
+                lastCandleTime = temp.minusMinutes(temp.getMinute() % 15).withSecond(0).withNano(0);
+                break;
+            case PERIOD_30:
+                lastCandleTime = temp.minusMinutes(temp.getMinute() % 30).withSecond(0).withNano(0);
+                break;
+            case PERIOD_60:
+                lastCandleTime = temp.withMinute(0).withSecond(0).withNano(0);
+                break;
+            case PERIOD_240:
+                lastCandleTime = temp.minusHours(temp.getHour() % 4).withMinute(0).withSecond(0).withNano(0);
+                break;
+            case PERIOD_1440:
+                lastCandleTime = temp.withHour(0).withMinute(0).withSecond(0).withNano(0);
+                break;
+            default:
+                lastCandleTime = temp;
+        }
+        return lastCandleTime;
+    }
+
+    /**
+     * 봉 데이터를 목록을 병합하여 병합된 봉 데이터를 만듦
+     *
+     * @param candleList 봉 데이터
+     * @return 병합된 봉 데이터
+     */
+    private CandleEntity mergeCandle(List<CandleEntity> candleList) {
+        CandleEntity period = new CandleEntity();
+        CandleEntity first = candleList.get(0);
+        CandleEntity last = candleList.get(candleList.size() - 1);
+        period.setOpeningPrice(first.getOpeningPrice());
+        period.setCandleDateTimeUtc(first.getCandleDateTimeUtc());
+        period.setCandleDateTimeKst(first.getCandleDateTimeKst());
+        period.setTradePrice(last.getTradePrice());
+        double low = candleList.stream().mapToDouble(CandleEntity::getLowPrice).min().orElse(0);
+        period.setLowPrice(low);
+        double high = candleList.stream().mapToDouble(CandleEntity::getHighPrice).max().orElse(0);
+        period.setHighPrice(high);
+        return period;
+    }
+
+    /**
+     * @param market 코인명
      * @return 1분봉 데이터 월단위 저장 파일
      */
     @SneakyThrows
     private List<File> crawlCandle(String market) {
-        List<CandleEntity> lastCandle = candleRepository.findMarketPricePeriod(market, PeriodType.PERIOD_1, LocalDateTime.now(ZoneOffset.UTC), PageRequest.of(0, 1));
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        List<CandleEntity> lastCandle = candleRepository.findMarketPricePeriodBefore(market, PeriodType.PERIOD_1, now, PageRequest.of(0, 1));
         LocalDateTime lastSaveCandle = lastCandle.isEmpty() ? MINIMUM_CANDLE_DATE : lastCandle.get(0).getCandleDateTimeUtc();
 
         LocalDateTime to = null;
@@ -154,9 +266,9 @@ public class CrawlerIncremental {
                 break;
             }
             to = data.get(data.size() - 1).getCandleDateTimeUtc();
-            log.info("{} 번째. last: {},  current: {}", i, lastCandle, to);
+            log.info("{} 번째. last: {},  current: {}", i, lastSaveCandle, to);
             // API 횟수 제한 때문에 딜레이 적용
-            TimeUnit.MILLISECONDS.sleep(150);
+            TimeUnit.MILLISECONDS.sleep(350);
         }
         if (!acc.isEmpty()) {
             File f = saveFileMinute(market, acc);
@@ -176,11 +288,11 @@ public class CrawlerIncremental {
         return saveFile;
     }
 
-    private void makeSaveDir(File dir) {
-        if (dir.exists()) {
+    private void makeSaveDir() {
+        if (SAVE_DIR_MINUTE.exists()) {
             return;
         }
-        dir.mkdirs();
+        SAVE_DIR_MINUTE.mkdirs();
     }
 }
 

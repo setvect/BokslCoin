@@ -10,7 +10,6 @@ import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
-import com.setvect.bokslcoin.autotrading.util.LapTimeChecker;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -457,7 +456,7 @@ public class MakeBacktestReport {
         }
 
         String coins = StringUtils.join(result.getMarkets(), ", ");
-        String reportFileName = String.format("[%s~%s]_[%s].txt", range.getFromString(), range.getToString(), coins);
+        String reportFileName = String.format("[%s~%s]_[%s].txt", range.getFromDateFormat(), range.getToDateFormat(), coins);
 
         File reportFile = new File("./backtest-result", reportFileName);
         FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
