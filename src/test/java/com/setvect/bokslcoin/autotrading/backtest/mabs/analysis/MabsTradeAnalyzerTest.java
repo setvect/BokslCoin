@@ -118,6 +118,7 @@ public class MabsTradeAnalyzerTest {
 //        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
+        periodList.add(new ImmutablePair<>(13, 64));
 //        periodList.add(new ImmutablePair<>(20, 70));
 //        periodList.add(new ImmutablePair<>(20, 75));
 //        periodList.add(new ImmutablePair<>(20, 80));
@@ -129,9 +130,9 @@ public class MabsTradeAnalyzerTest {
 //        periodList.add(new ImmutablePair<>(32, 120));
 //        periodList.add(new ImmutablePair<>(40, 160));
 //        periodList.add(new ImmutablePair<>(50, 180));
-        periodList.add(new ImmutablePair<>(10, 40));
-        periodList.add(new ImmutablePair<>(10, 50));
-        periodList.add(new ImmutablePair<>(15, 60));
+//        periodList.add(new ImmutablePair<>(10, 40));
+//        periodList.add(new ImmutablePair<>(10, 50));
+//        periodList.add(new ImmutablePair<>(15, 60));
 
         for (Pair<Integer, Integer> period : periodList) {
             for (String coin : coinList) {
@@ -139,12 +140,12 @@ public class MabsTradeAnalyzerTest {
                 DateRange range = new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-12-18T23:59:59"));
                 MabsConditionEntity condition = MabsConditionEntity.builder()
                         .market(coin)
-                        .tradePeriod(TradePeriod.P_15)
+                        .tradePeriod(TradePeriod.P_60)
                         .upBuyRate(0.01)
                         .downSellRate(0.01)
                         .shortPeriod(period.getLeft())
                         .longPeriod(period.getRight())
-                        .loseStopRate(0.3)
+                        .loseStopRate(0.5)
                         .comment(null)
                         .build();
                 mabsConditionEntityRepository.save(condition);

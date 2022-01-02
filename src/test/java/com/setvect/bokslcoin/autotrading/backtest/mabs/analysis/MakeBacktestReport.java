@@ -10,6 +10,7 @@ import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
+import com.setvect.bokslcoin.autotrading.util.LapTimeChecker;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -50,20 +51,17 @@ public class MakeBacktestReport {
     @Test
     @Transactional
     public void analysis() throws IOException {
-//        12065151, 12123225, 12180056, 12234724, 12284727
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                .mabsConditionIdSet(new HashSet<>(Arrays.asList(12065151)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2017-01-01T09:00:00"), DateUtil.getLocalDateTime("2021-12-18T08:59:59")))
+                .mabsConditionIdSet(new HashSet<>(Arrays.asList(12065151, 12123225, 12180056, 12234724, 12284727)))
+                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), DateUtil.getLocalDateTime("2021-06-09T08:59:59")))
                 .investRatio(.99)
                 .cash(10_000_000)
-                .feeSell(0.001)
-                .feeBuy(0.001)
+                .feeSell(0.0007)
+                .feeBuy(0.0007)
                 .build();
-
         List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
         AnalysisReportResult result = analysis(tradeReportItems, analysisMultiCondition);
         makeReport(result);
-
         System.out.println("끝");
     }
 

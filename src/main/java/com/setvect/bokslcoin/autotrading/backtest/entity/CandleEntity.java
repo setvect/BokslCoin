@@ -12,7 +12,6 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.Table;
-import javax.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 /**
@@ -22,8 +21,6 @@ import java.time.LocalDateTime;
 @Table(indexes = {
         @Index(name = "IDX_CANDLE_DATE_TIME_KST", columnList = "CANDLE_DATE_TIME_KST DESC"),
         @Index(name = "IDX_CANDLE_DATE_TIME_UTC", columnList = "CANDLE_DATE_TIME_UTC DESC")
-}, uniqueConstraints = {
-        @UniqueConstraint(name = "UC_CANDLE_ENTITY_MARKET", columnNames = {"MARKET", "CANDLE_DATE_TIME_KST", "PERIOD_TYPE"})
 })
 @Getter
 @Setter
