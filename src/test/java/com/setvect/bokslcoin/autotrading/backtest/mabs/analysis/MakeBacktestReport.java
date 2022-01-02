@@ -52,12 +52,12 @@ public class MakeBacktestReport {
     public void analysis() throws IOException {
 //        12065151, 12123225, 12180056, 12234724, 12284727
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                .mabsConditionIdSet(new HashSet<>(Arrays.asList(12065151, 12123225)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2021-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-12-18T23:59:59")))
+                .mabsConditionIdSet(new HashSet<>(Arrays.asList(12065151)))
+                .range(new DateRange(DateUtil.getLocalDateTime("2017-01-01T09:00:00"), DateUtil.getLocalDateTime("2021-12-18T08:59:59")))
                 .investRatio(.99)
                 .cash(10_000_000)
-                .feeSell(0.07)
-                .feeBuy(0.07)
+                .feeSell(0.001)
+                .feeBuy(0.001)
                 .build();
 
         List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
@@ -169,7 +169,7 @@ public class MakeBacktestReport {
         Set<String> markets = conditionByCoin.stream()
                 .map(MabsConditionEntity::getMarket)
                 .collect(Collectors.toSet());
-        MultiCoinHoldYield holdYield = calculateCoinHoldYield(conditionMulti.getRange(), markets);
+        AnalysisReportResult.MultiCoinHoldYield holdYield = calculateCoinHoldYield(conditionMulti.getRange(), markets);
 
         return AnalysisReportResult.builder()
                 .condition(conditionMulti)
@@ -213,16 +213,16 @@ public class MakeBacktestReport {
      * @param markets 대상 코인
      * @return 기간별 코인 수익률
      */
-    private MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
+    private AnalysisReportResult.MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
         Map<String, List<CandleEntity>> coinCandleListMap = markets.stream()
                 .collect(Collectors.toMap(Function.identity(),
                         p -> candleRepository.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
                 );
 
-        Map<String, YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);
-        YieldMdd sumYield = getYieldMdd(range, coinCandleListMap);
+        Map<String, AnalysisReportResult.YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);
+        AnalysisReportResult.YieldMdd sumYield = getYieldMdd(range, coinCandleListMap);
 
-        return MultiCoinHoldYield.builder()
+        return AnalysisReportResult.MultiCoinHoldYield.builder()
                 .coinByYield(coinByYield)
                 .sumYield(sumYield)
                 .build();
@@ -233,10 +233,10 @@ public class MakeBacktestReport {
      * @return 코인별 수익률
      * 코인명:수익률
      */
-    private Map<String, YieldMdd> getCoinByYield(Map<String, List<CandleEntity>> coinCandleListMap) {
+    private Map<String, AnalysisReportResult.YieldMdd> getCoinByYield(Map<String, List<CandleEntity>> coinCandleListMap) {
         return coinCandleListMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> {
             List<Double> priceList = e.getValue().stream().map(CandleEntity::getOpeningPrice).collect(Collectors.toList());
-            YieldMdd yieldMdd = new YieldMdd();
+            AnalysisReportResult.YieldMdd yieldMdd = new AnalysisReportResult.YieldMdd();
             yieldMdd.setYield(ApplicationUtil.getYield(priceList));
             yieldMdd.setMdd(ApplicationUtil.getMdd(priceList));
             return yieldMdd;
@@ -248,11 +248,11 @@ public class MakeBacktestReport {
      * @param coinCandleListMap 코인명:기간별 캔들 이력
      * @return 해당 기간 동안 동일 비중 투자 시 수익률
      */
-    private YieldMdd getYieldMdd(DateRange range, Map<String, List<CandleEntity>> coinCandleListMap) {
+    private AnalysisReportResult.YieldMdd getYieldMdd(DateRange range, Map<String, List<CandleEntity>> coinCandleListMap) {
         LocalDateTime start = range.getFrom();
 
-        // <코인명:직전가격>
-        Map<String, Double> coinBeforePrice = coinCandleListMap.entrySet().stream()
+        // 코인 시작 가격 <코인명:가격>
+        Map<String, Double> coinStartPrice = coinCandleListMap.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, p -> p.getValue().get(0).getOpeningPrice()));
 
         // <코인명:수익률>
@@ -267,12 +267,12 @@ public class MakeBacktestReport {
         Map<String, Map<LocalDate, CandleEntity>> coinCandleMapByDate = coinCandleListMap
                 .entrySet()
                 .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, p -> p.getValue().stream()
-                        .collect(Collectors.toMap(c -> c.getCandleDateTimeKst().toLocalDate(), Function.identity()))));
+                .collect(Collectors.toMap(Map.Entry::getKey,
+                        p -> p.getValue().stream().collect(Collectors.toMap(c -> c.getCandleDateTimeKst().toLocalDate(), Function.identity()))));
 
         while (start.isBefore(range.getTo()) || start.isEqual(range.getTo())) {
             LocalDate date = start.toLocalDate();
-            for (Map.Entry<String, Double> entity : coinBeforePrice.entrySet()) {
+            for (Map.Entry<String, Double> entity : coinStartPrice.entrySet()) {
                 String market = entity.getKey();
                 Double startPrice = entity.getValue();
                 CandleEntity candle = coinCandleMapByDate.get(market).get(date);
@@ -280,13 +280,13 @@ public class MakeBacktestReport {
                     continue;
                 }
 
-                double yield = ApplicationUtil.getYield(startPrice, candle.getTradePrice());
+                double yield = candle.getTradePrice() / startPrice;
                 coinYield.put(market, yield);
-                evaluationPrice.add((coinYield.values().stream().mapToDouble(p -> p).sum()));
             }
+            evaluationPrice.add((coinYield.values().stream().mapToDouble(p -> p).sum()));
             start = start.plusDays(1);
         }
-        YieldMdd sumYield = new TotalYield();
+        AnalysisReportResult.YieldMdd sumYield = new AnalysisReportResult.TotalYield();
         sumYield.setMdd(ApplicationUtil.getMdd(evaluationPrice));
         sumYield.setYield(ApplicationUtil.getYield(evaluationPrice));
         return sumYield;
@@ -298,11 +298,11 @@ public class MakeBacktestReport {
      * @return Key: 코인, Value: 수익
      * 코인별 수익 정보
      */
-    private Map<String, WinningRate> calculateCoinInvestment(List<MabsTradeReportItem> tradeReportItems, List<MabsConditionEntity> mabsConditionEntityList) {
-        Map<String, WinningRate> coinInvestmentMap = new TreeMap<>();
+    private Map<String, AnalysisReportResult.WinningRate> calculateCoinInvestment(List<MabsTradeReportItem> tradeReportItems, List<MabsConditionEntity> mabsConditionEntityList) {
+        Map<String, AnalysisReportResult.WinningRate> coinInvestmentMap = new TreeMap<>();
 
         for (MabsConditionEntity mabsConditionEntity : mabsConditionEntityList) {
-            WinningRate coinInvestment = calculateInvestment(mabsConditionEntity.getMarket(), tradeReportItems);
+            AnalysisReportResult.WinningRate coinInvestment = calculateInvestment(mabsConditionEntity.getMarket(), tradeReportItems);
             coinInvestmentMap.put(mabsConditionEntity.getMarket(), coinInvestment);
         }
         return coinInvestmentMap;
@@ -315,9 +315,9 @@ public class MakeBacktestReport {
      * @param analysisMultiCondition 분석 조건
      * @return 수익률 정보
      */
-    public TotalYield calculateTotalYield(List<MabsTradeReportItem> tradeReportItems, AnalysisMultiCondition analysisMultiCondition) {
+    public AnalysisReportResult.TotalYield calculateTotalYield(List<MabsTradeReportItem> tradeReportItems, AnalysisMultiCondition analysisMultiCondition) {
 
-        TotalYield totalYield = new TotalYield();
+        AnalysisReportResult.TotalYield totalYield = new AnalysisReportResult.TotalYield();
 
         double realYield = tradeReportItems.get(tradeReportItems.size() - 1).getFinalResult() / tradeReportItems.get(0).getFinalResult() - 1;
         List<Double> finalResultList = tradeReportItems.stream().map(MabsTradeReportItem::getFinalResult).collect(Collectors.toList());
@@ -327,7 +327,7 @@ public class MakeBacktestReport {
 
         // 승률 계산
         for (MabsTradeReportItem mabsTradeReportItem : tradeReportItems) {
-            if (mabsTradeReportItem.getMabsTradeEntity().getTradeType() != TradeType.BUY) {
+            if (mabsTradeReportItem.getMabsTradeEntity().getTradeType() == TradeType.BUY) {
                 continue;
             }
             if (mabsTradeReportItem.getGains() > 0) {
@@ -349,14 +349,14 @@ public class MakeBacktestReport {
      * @param tradeHistory 매매 기록
      * @return 코인별 투자전략 수익률
      */
-    private static WinningRate calculateInvestment(String market, List<MabsTradeReportItem> tradeHistory) {
+    private static AnalysisReportResult.WinningRate calculateInvestment(String market, List<MabsTradeReportItem> tradeHistory) {
         List<MabsTradeReportItem> filter = tradeHistory.stream()
                 .filter(p -> p.getMabsTradeEntity().getMabsConditionEntity().getMarket().equals(market))
                 .filter(p -> p.getMabsTradeEntity().getTradeType() == TradeType.SELL)
                 .collect(Collectors.toList());
         double totalInvest = filter.stream().mapToDouble(MabsTradeReportItem::getGains).sum();
         int gainCount = (int) filter.stream().filter(p -> p.getGains() > 0).count();
-        WinningRate coinInvestment = new WinningRate();
+        AnalysisReportResult.WinningRate coinInvestment = new AnalysisReportResult.WinningRate();
         coinInvestment.setInvest(totalInvest);
         coinInvestment.setGainCount(gainCount);
         coinInvestment.setLossCount(filter.size() - gainCount);
@@ -403,30 +403,30 @@ public class MakeBacktestReport {
         }
 
         report.append("\n-----------\n");
-        MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
-        for (Map.Entry<String, YieldMdd> coinHoldYield : multiCoinHoldYield.getCoinByYield().entrySet()) {
+        AnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
+        for (Map.Entry<String, AnalysisReportResult.YieldMdd> coinHoldYield : multiCoinHoldYield.getCoinByYield().entrySet()) {
             String market = coinHoldYield.getKey();
-            YieldMdd coinYield = coinHoldYield.getValue();
+            AnalysisReportResult.YieldMdd coinYield = coinHoldYield.getValue();
             report.append(String.format("[%s] 실제 수익\t %,.2f%%", market, coinYield.getYield() * 100)).append("\n");
             report.append(String.format("[%s] 실제 MDD\t %,.2f%%", market, coinYield.getMdd() * 100)).append("\n");
         }
-        YieldMdd sumYield = multiCoinHoldYield.getSumYield();
+        AnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
         report.append(String.format("동일비중 수익\t %,.2f%%", sumYield.getYield() * 100)).append("\n");
         report.append(String.format("동일비중 MDD\t %,.2f%%", sumYield.getMdd() * 100)).append("\n");
 
         report.append("\n-----------\n");
 
 
-        for (Map.Entry<String, WinningRate> entry : result.getCoinWinningRate().entrySet()) {
+        for (Map.Entry<String, AnalysisReportResult.WinningRate> entry : result.getCoinWinningRate().entrySet()) {
             String market = entry.getKey();
-            WinningRate coinInvestment = entry.getValue();
+            AnalysisReportResult.WinningRate coinInvestment = entry.getValue();
             report.append(String.format("[%s] 수익금액 합계\t %,.0f", market, coinInvestment.getInvest())).append("\n");
             report.append(String.format("[%s] 매매 횟수\t %d", market, coinInvestment.getTradeCount())).append("\n");
             report.append(String.format("[%s] 승률\t %,.2f%%", market, coinInvestment.getWinRate() * 100)).append("\n");
 
         }
         report.append("\n-----------\n");
-        TotalYield totalYield = result.getTotalYield();
+        AnalysisReportResult.TotalYield totalYield = result.getTotalYield();
         report.append(String.format("실현 수익\t %,.2f%%", totalYield.getYield() * 100)).append("\n");
         report.append(String.format("실현 MDD\t %,.2f%%", totalYield.getMdd() * 100)).append("\n");
         report.append(String.format("매매회수\t %d", totalYield.getTradeCount())).append("\n");

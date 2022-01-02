@@ -136,23 +136,32 @@ where BACKTEST_CONDITION_SEQ = 14283804
 
 -- ================ 2. 통합 통계 ================
 
-explain  select XMT.BACKTEST_CONDITION_SEQ,
-                XMC.MARKET,
-                XMC.TRADE_PERIOD,
-                XMC.SHORT_PERIOD,
-                XMC.LONG_PERIOD,
-                min(TRADE_TIME_KST),
-                max(TRADE_TIME_KST),
-                count(*)                                         as 매매회숫,
-                round(exp(avg(ln(yield + 1))) - 1, 5)            as 기하평균,
-                round(avg(yield), 5)                             as 산술평균,
-                round(exp(sum(ln(yield + 1))) - 1, 5)            as 누적수익률,
---        round((exp(sum(ln(yield + 1 - 0.0010))) - 1), 5) as `누적수익률(매매비용 0.10%적용)`,
+select sum(CASE WHEN YIELD > 0 THEN 1 ELSE 0 END)
+from XB_MABS_TRADE;
+
+
+
+select XMT.BACKTEST_CONDITION_SEQ,
+       XMC.MARKET,
+       XMC.TRADE_PERIOD,
+       XMC.SHORT_PERIOD,
+       XMC.LONG_PERIOD,
+       FORMATDATETIME(min(TRADE_TIME_KST), 'yyyyMMdd HHmmss')                  as 시작시간,
+       FORMATDATETIME(max(TRADE_TIME_KST), 'yyyyMMdd HHmmss')                  as 종료시간,
+       count(*)                                                                as 매매회숫,
+       round(exp(avg(ln(yield + 1))) - 1, 5)                                   as 기하평균,
+       round(avg(yield), 5)                                                    as 산술평균,
+       round(exp(sum(ln(yield + 1))) - 1, 5)                                   as 누적수익률,
+       round((exp(sum(ln(yield + 1 - 0.0010))) - 1), 5)                        as `누적수익률(매매비용 0.10%적용)`,
+       round(sum(CASE WHEN YIELD > 0 THEN 1 ELSE 0 END) * 100.0 / count(*), 2) as `승률(%)`,
+       sum(CASE WHEN YIELD > 0 THEN 1 ELSE 0 END)                              as `승리횟수`,
+       sum(CASE WHEN YIELD <= 0 THEN 1 ELSE 0 END)                              as `패배횟수`
+--        sum(casewhen(yield = 0, 1, 0))                  as '패배'
 --        round((exp(sum(ln(yield + 1 - 0.0012))) - 1), 5) as `누적수익률(매매비용 0.12%적용)`,
 --        round((exp(sum(ln(yield + 1 - 0.0015))) - 1), 5) as `누적수익률(매매비용 0.15%적용)`
-         from XB_MABS_TRADE XMT
-                  join XA_MABS_CONDITION XMC on XMC.BACKTEST_CONDITION_SEQ = XMT.BACKTEST_CONDITION_SEQ
-         where TRADE_TYPE = 'SELL'
+from XB_MABS_TRADE XMT
+         join XA_MABS_CONDITION XMC on XMC.BACKTEST_CONDITION_SEQ = XMT.BACKTEST_CONDITION_SEQ
+where TRADE_TYPE = 'SELL'
 --   and TRADE_TIME_KST between '2020-11-01T00:00:00' and '2021-04-14T23:59:59' -- 상승장
 --   and TRADE_TIME_KST between '2021-01-01T00:00:00' and '2021-06-08T23:59:59' -- 상승장 후 하락장
 --   and TRADE_TIME_KST between '2020-05-07T00:00:00' and '2020-10-20T23:59:59' -- 횡보장1
@@ -167,14 +176,23 @@ explain  select XMT.BACKTEST_CONDITION_SEQ,
 --   and TRADE_TIME_KST between '2019-06-27T00:00:00' and '2020-03-17T23:59:59' -- 하락장5
 --   and TRADE_TIME_KST between '2018-01-06T00:00:00' and '2019-08-15T23:59:59' -- 하락장 이후 약간의 상승장
 --   and TRADE_TIME_KST between '2017-10-01T00:00:00' and '2021-06-08T23:59:59' -- 전체기간
---   and TRADE_TIME_KST between '2017-10-01T00:00:00' and '2021-12-31T23:59:59' -- 전체기간(2)
+  and TRADE_TIME_KST between '2017-01-01T00:00:00' and '2021-12-31T23:59:59' -- 전체기간(2)
 --   and TRADE_TIME_KST between '2021-07-01T00:00:00' and '2021-12-31T23:59:59' --
 --   and TRADE_TIME_KST between '2017-01-01T00:00:00' and '2017-12-31T23:59:59' --
 --   and TRADE_TIME_KST between '2018-01-01T00:00:00' and '2018-12-31T23:59:59' --
 --   and TRADE_TIME_KST between '2019-01-01T00:00:00' and '2019-12-31T23:59:59' --
 --   and TRADE_TIME_KST between '2020-01-01T00:00:00' and '2020-12-31T23:59:59' --
-           and TRADE_TIME_KST between '2021-01-01T00:00:00' and '2021-12-31T23:59:59' --
---   and MARKET = 'KRW-XRP'
-         group by XMT.BACKTEST_CONDITION_SEQ
-         order by MARKET, XMT.BACKTEST_CONDITION_SEQ
+--   and TRADE_TIME_KST between '2021-01-01T00:00:00' and '2021-12-31T23:59:59' --
+--   and MARKET = 'KRW-ETH'
+group by XMT.BACKTEST_CONDITION_SEQ
+order by MARKET, TRADE_PERIOD desc, SHORT_PERIOD desc, LONG_PERIOD, XMT.BACKTEST_CONDITION_SEQ
 ;
+
+
+delete
+from XB_MABS_TRADE
+where BACKTEST_CONDITION_SEQ in (21058013, 21285095);
+
+delete
+from XA_MABS_CONDITION
+where BACKTEST_CONDITION_SEQ in (21058013, 21285095);
