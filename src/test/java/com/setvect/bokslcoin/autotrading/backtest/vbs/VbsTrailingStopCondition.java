@@ -23,14 +23,14 @@ public class VbsTrailingStopCondition extends BaseCondition {
     private final int ma;
 
     /**
-     * 손절 손실율<br>
-     * 예를 들어 0.05이면 수익율이 -5%가 되면 손절 매도
+     * 손절 손실률<br>
+     * 예를 들어 0.05이면 수익률이 -5%가 되면 손절 매도
      */
     private final double loseStopRate;
 
     /**
-     * 익절 수익율<br>
-     * 예를 들어 0.1이면 수익율이 10%가 되면 익절 매도
+     * 익절 수익률<br>
+     * 예를 들어 0.1이면 수익률이 10%가 되면 익절 매도
      */
     private final double gainStopRate;
     /**

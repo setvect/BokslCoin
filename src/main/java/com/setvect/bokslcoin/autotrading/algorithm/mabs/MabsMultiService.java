@@ -342,7 +342,7 @@ public class MabsMultiService implements CoinTrading {
         double maLong = CommonTradeHelper.getMa(candleList, longPeriod);
         double sellTargetPrice = maShort + maShort * downSellRate;
 
-        String message1 = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익율: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
+        String message1 = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익률: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
                 candle.getMarket(),
                 candle.getTradePrice(),
                 account.getAvgBuyPriceValue(),
