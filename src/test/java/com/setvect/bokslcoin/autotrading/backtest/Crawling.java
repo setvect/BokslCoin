@@ -23,7 +23,9 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 크롤링
+ * @deprecated CrawlerIncremental 이거 사용
  */
+@Deprecated
 @SpringBootTest
 @ActiveProfiles("local")
 public class Crawling {

@@ -21,12 +21,14 @@ import org.springframework.test.context.ActiveProfiles;
 import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -51,7 +53,7 @@ public class MakeBacktestReport {
     @Transactional
     public void analysis() throws IOException {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                .mabsConditionIdSet(new HashSet<>(Arrays.asList(27508376, 27458175, 27403421, 27346706, 27288611)))
+                .mabsConditionIdSet(new HashSet<>(Arrays.asList(27508376, 27458175, 27403421, 27346706, 27288611, 29794493, 29794493)))
                 .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), DateUtil.getLocalDateTime("2021-06-09T08:59:59")))
                 .investRatio(.99)
                 .cash(10_000_000)
@@ -60,7 +62,57 @@ public class MakeBacktestReport {
                 .build();
         List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
         AnalysisReportResult result = analysis(tradeReportItems, analysisMultiCondition);
+        printSummary(result);
         makeReport(result);
+        System.out.println("끝");
+    }
+
+    @Test
+    @Transactional
+    public void multiBacktest() throws IOException {
+        List<Integer> conditionSeqList = Arrays.asList(27508376, 27458175, 27403421, 27346706, 27288611, 29794493);
+        List<DateRange> rangeList = Arrays.asList(
+                new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
+                new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
+                new DateRange("2020-05-07T00:00:00", "2020-10-20T23:59:59"), // 횡보장1
+                new DateRange("2020-05-08T00:00:00", "2020-07-26T23:59:59"), // 횡보장2
+                new DateRange("2019-06-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장1
+                new DateRange("2017-12-24T00:00:00", "2020-03-31T23:59:59"), // 횡보+하락장2
+                new DateRange("2018-01-01T00:00:00", "2020-11-19T23:59:59"), // 횡보장3
+                new DateRange("2021-04-14T00:00:00", "2021-06-08T23:59:59"), // 하락장1
+                new DateRange("2017-12-07T00:00:00", "2018-02-06T23:59:59"), // 하락장2
+                new DateRange("2018-01-06T00:00:00", "2018-02-06T23:59:59"), // 하락장3
+                new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
+                new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
+                new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
+                new DateRange("2021-06-14T00:00:00", "2021-12-18T23:59:59"), // 최근
+                new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59"), // 전체 기간1
+                new DateRange("2017-10-01T00:00:00", "2021-12-18T23:59:59")  // 전체 기간2
+        );
+
+        List<AnalysisReportResult> accResult = new ArrayList<>();
+        int count = 0;
+        int total = rangeList.size() * conditionSeqList.size();
+        for (Integer conditionSeq : conditionSeqList) {
+            for (DateRange dateRange : rangeList) {
+                AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
+                        .mabsConditionIdSet(new HashSet<>(Collections.singletonList(conditionSeq)))
+                        .range(dateRange)
+                        .investRatio(.99)
+                        .cash(10_000_000)
+                        .feeSell(0.0007)
+                        .feeBuy(0.0007)
+                        .build();
+                List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
+                AnalysisReportResult result = analysis(tradeReportItems, analysisMultiCondition);
+                accResult.add(result);
+                count++;
+
+                log.info("{}/{}, {} - {}", count, total, dateRange, conditionSeq);
+            }
+        }
+
+        makeReportMulti(accResult);
         System.out.println("끝");
     }
 
@@ -247,10 +299,14 @@ public class MakeBacktestReport {
      */
     private AnalysisReportResult.YieldMdd getYieldMdd(DateRange range, Map<String, List<CandleEntity>> coinCandleListMap) {
         LocalDateTime start = range.getFrom();
-
         // 코인 시작 가격 <코인명:가격>
         Map<String, Double> coinStartPrice = coinCandleListMap.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, p -> p.getValue().get(0).getOpeningPrice()));
+                .collect(Collectors.toMap(Map.Entry::getKey, p -> {
+                    if (p.getValue().isEmpty()) {
+                        return 0.0;
+                    }
+                    return p.getValue().get(0).getOpeningPrice();
+                }));
 
         // <코인명:수익률>
         Map<String, Double> coinYield = coinCandleListMap.entrySet().stream()
@@ -312,9 +368,17 @@ public class MakeBacktestReport {
      * @param analysisMultiCondition 분석 조건
      * @return 수익률 정보
      */
-    public AnalysisReportResult.TotalYield calculateTotalYield(List<MabsTradeReportItem> tradeReportItems, AnalysisMultiCondition analysisMultiCondition) {
+    private AnalysisReportResult.TotalYield calculateTotalYield(List<MabsTradeReportItem> tradeReportItems, AnalysisMultiCondition analysisMultiCondition) {
 
         AnalysisReportResult.TotalYield totalYield = new AnalysisReportResult.TotalYield();
+        long dayCount = analysisMultiCondition.getRange().getDiffDays();
+        totalYield.setDayCount((int) dayCount);
+
+        if (tradeReportItems.isEmpty()) {
+            totalYield.setYield(0);
+            totalYield.setMdd(0);
+            return totalYield;
+        }
 
         double realYield = tradeReportItems.get(tradeReportItems.size() - 1).getFinalResult() / tradeReportItems.get(0).getFinalResult() - 1;
         List<Double> finalResultList = tradeReportItems.stream().map(MabsTradeReportItem::getFinalResult).collect(Collectors.toList());
@@ -333,9 +397,6 @@ public class MakeBacktestReport {
                 totalYield.incrementLossCount();
             }
         }
-
-        long dayCount = analysisMultiCondition.getRange().getDiffDays();
-        totalYield.setDayCount((int) dayCount);
         return totalYield;
     }
 
@@ -360,13 +421,46 @@ public class MakeBacktestReport {
         return coinInvestment;
     }
 
+
+    /**
+     * 분석 요약결과
+     *
+     * @param result
+     */
+    private void printSummary(AnalysisReportResult result) {
+        StringBuilder report = new StringBuilder();
+        AnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
+        AnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
+        report.append(String.format("동일비중 수익\t %,.2f%%", sumYield.getYield() * 100)).append("\n");
+        report.append(String.format("동일비중 MDD\t %,.2f%%", sumYield.getMdd() * 100)).append("\n");
+        report.append("\n-----------\n");
+
+        for (Map.Entry<String, AnalysisReportResult.WinningRate> entry : result.getCoinWinningRate().entrySet()) {
+            String market = entry.getKey();
+            AnalysisReportResult.WinningRate coinInvestment = entry.getValue();
+            report.append(String.format("[%s] 수익금액 합계\t %,.0f", market, coinInvestment.getInvest())).append("\n");
+            report.append(String.format("[%s] 매매 횟수\t %d", market, coinInvestment.getTradeCount())).append("\n");
+            report.append(String.format("[%s] 승률\t %,.2f%%", market, coinInvestment.getWinRate() * 100)).append("\n");
+        }
+
+        report.append("\n-----------\n");
+        AnalysisReportResult.TotalYield totalYield = result.getTotalYield();
+        report.append(String.format("실현 수익\t %,.2f%%", totalYield.getYield() * 100)).append("\n");
+        report.append(String.format("실현 MDD\t %,.2f%%", totalYield.getMdd() * 100)).append("\n");
+        report.append(String.format("매매회수\t %d", totalYield.getTradeCount())).append("\n");
+        report.append(String.format("승률\t %,.2f%%", totalYield.getWinRate() * 100)).append("\n");
+        report.append(String.format("CAGR\t %,.2f%%", totalYield.getCagr() * 100)).append("\n");
+
+        System.out.println(report);
+    }
+
     /**
      * 분석결과 리포트 만듦
      *
-     * @param result 문석결과
+     * @param result 분석결과
      * @throws IOException .
      */
-    public void makeReport(AnalysisReportResult result) throws IOException {
+    private void makeReport(AnalysisReportResult result) throws IOException {
         String header = "날짜(KST),날짜(UTC),코인,이벤트 유형,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
         StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
         for (MabsTradeReportItem row : result.getTradeHistory()) {
@@ -439,9 +533,6 @@ public class MakeBacktestReport {
         report.append(String.format("최초 투자금액\t %,f", condition.getCash())).append("\n");
         report.append(String.format("매수 수수료\t %,.2f%%", condition.getFeeBuy() * 100)).append("\n");
         report.append(String.format("매도 수수료\t %,.2f%%", condition.getFeeSell() * 100)).append("\n");
-        // TODO 없엘까 고민중
-        report.append(String.format("최대 코인 매매 갯수\t %d", condition.getMabsConditionIdSet().size())).append("\n");
-
 
         for (MabsConditionEntity mabsConditionEntity : result.getConditionList()) {
             report.append("\n---\n");
@@ -463,6 +554,77 @@ public class MakeBacktestReport {
         System.out.println("결과 파일:" + reportFile.getName());
     }
 
+
+    /**
+     * 복수개의 분석 결과 요약 리포트
+     *
+     * @param accResult 분석결과
+     * @throws IOException
+     */
+    private void makeReportMulti(List<AnalysisReportResult> accResult) throws IOException {
+        String header = "분석기간,분석 아이디,대상 코인,투자비율,최초 투자금액,매수 수수료,매도 수수료,조건 설명," +
+                "매수 후 보유 수익,매수 후 보유 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
+        StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
+
+        // 1. 각 매매 결과
+        for (AnalysisReportResult result : accResult) {
+            AnalysisMultiCondition multiCondition = result.getCondition();
+
+            StringBuilder reportRow = new StringBuilder();
+            reportRow.append(String.format("%s\t", multiCondition.getRange()));
+            reportRow.append(String.format("%s\t", StringUtils.join(result.getMabsConditionIds(), ", ")));
+            reportRow.append(String.format("%s\t", StringUtils.join(result.getMarkets(), ", ")));
+            reportRow.append(String.format("%,.2f%%\t", multiCondition.getInvestRatio() * 100));
+            reportRow.append(String.format("%,.0f\t", multiCondition.getCash()));
+            reportRow.append(String.format("%,.2f%%\t", multiCondition.getFeeBuy() * 100));
+            reportRow.append(String.format("%,.2f%%\t", multiCondition.getFeeSell() * 100));
+            reportRow.append(String.format("%s\t", multiCondition.getComment()));
+            AnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
+            AnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
+
+            reportRow.append(String.format("%,.2f%%\t", sumYield.getYield() * 100));
+            reportRow.append(String.format("%,.2f%%\t", sumYield.getMdd() * 100));
+
+            AnalysisReportResult.TotalYield totalYield = result.getTotalYield();
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getYield() * 100));
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getMdd() * 100));
+            reportRow.append(String.format("%d\t", totalYield.getTradeCount()));
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getWinRate() * 100));
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getCagr() * 100));
+
+            report.append(reportRow).append("\n");
+        }
+
+        // 2. 사용한 매매 조건 정보
+        report.append("\n----------------\n");
+        report.append("조건들\n");
+        String condHeader = "조건 아이디,분석주기,대상 코인,상승 매수률,하락 매도률,단기 이동평균,장기 이동평균,손절률";
+        report.append(condHeader.replace(",", "\t")).append("\n");
+        List<MabsConditionEntity> conditionAll = accResult.stream()
+                .flatMap(p -> p.getConditionList().stream())
+                .distinct()
+                .sorted(Comparator.comparingInt(MabsConditionEntity::getMabsConditionSeq))
+                .collect(Collectors.toList());
+
+        for (MabsConditionEntity condition : conditionAll) {
+            StringBuilder reportRow = new StringBuilder();
+            reportRow.append(String.format("%s\t", condition.getMabsConditionSeq()));
+            reportRow.append(String.format("%s\t", condition.getTradePeriod()));
+            reportRow.append(String.format("%s\t", condition.getMarket()));
+            reportRow.append(String.format("%,.2f%%\t", condition.getUpBuyRate() * 100));
+            reportRow.append(String.format("%,.2f%%\t", condition.getDownSellRate() * 100));
+            reportRow.append(String.format("%d\t", condition.getShortPeriod()));
+            reportRow.append(String.format("%d\t", condition.getLongPeriod()));
+            reportRow.append(String.format("%,.2f%%\t", condition.getLoseStopRate() * 100));
+            report.append(reportRow).append("\n");
+        }
+
+        // 3. 결과 저장
+        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + Timestamp.valueOf(LocalDateTime.now()).getTime() + ".txt");
+        FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
+        System.out.println("결과 파일:" + reportFile.getName());
+
+    }
 
     private static LocalDateTime convertUtc(LocalDateTime datetime) {
         return datetime.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();

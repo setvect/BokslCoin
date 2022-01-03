@@ -52,6 +52,13 @@ public class AnalysisReportResult {
         return conditionList.stream().map(MabsConditionEntity::getMarket).collect(Collectors.toSet());
     }
 
+    /**
+     * @return 분석 아이디
+     */
+    public Set<Integer> getMabsConditionIds() {
+        return conditionList.stream().map(MabsConditionEntity::getMabsConditionSeq).collect(Collectors.toSet());
+    }
+
 
     /**
      * 수익률과 MDD

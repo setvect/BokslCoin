@@ -114,8 +114,8 @@ public class MabsTradeAnalyzerTest {
 
     @Test
     public void backtest() {
-        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
-//        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH");
+//        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
+        List<String> coinList = Arrays.asList("KRW-ADA");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
         periodList.add(new ImmutablePair<>(13, 64));

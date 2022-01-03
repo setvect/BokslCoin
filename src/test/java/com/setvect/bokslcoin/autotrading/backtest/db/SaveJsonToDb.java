@@ -23,6 +23,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * @deprecated CrawlerIncremental 이거 사용
+ */
+@Deprecated
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
