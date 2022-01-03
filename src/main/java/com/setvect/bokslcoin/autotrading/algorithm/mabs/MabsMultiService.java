@@ -136,13 +136,13 @@ public class MabsMultiService implements CoinTrading {
      * 해당 기간에 매매 여부 완료 여부
      * value: 코인 예) KRW-BTC, KRW-ETH, ...
      */
-    private Set<String> tradeCompleteOfPeriod = new HashSet<>();
+    private final Set<String> tradeCompleteOfPeriod = new HashSet<>();
 
     /**
      * 코인별 일일 메시지 전달 여부
      * value: 코인 예) KRW-BTC, KRW-ETH, ...
      */
-    private Set<String> messageSend = new HashSet<>();
+    private final Set<String> messageSend = new HashSet<>();
 
     /**
      * 가격 저장
@@ -155,12 +155,12 @@ public class MabsMultiService implements CoinTrading {
      * 매수 이후 최고 수익률
      */
     @Getter
-    private Map<String, Double> highYield = new HashMap<>();
+    private final Map<String, Double> highYield = new HashMap<>();
     /**
      * 매수 이후 최저 수익률
      */
     @Getter
-    private Map<String, Double> lowYield = new HashMap<>();
+    private final Map<String, Double> lowYield = new HashMap<>();
 
     @Override
     public void apply() {
@@ -197,15 +197,14 @@ public class MabsMultiService implements CoinTrading {
         Map<String, Candle> lastCandle = new HashMap<>();
 
         for (String market : markets) {
-            candleCheck = candleService.getMinute(1, market);
-            if (candleCheck == null) {
+            List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, tradePeriod, longPeriod + 1);
+            if (candleList.isEmpty()) {
                 log.debug("[{}] 현재 시세 데이터가 없습니다.", market);
                 continue;
             }
-            log.debug(String.format("[%s] 현재 가격:%,.2f", candleCheck.getMarket(), candleCheck.getTradePrice()));
-
+            Candle currentCandle = candleList.get(0);
+            log.debug(String.format("[%s] 현재 가격:%,.2f", currentCandle.getMarket(), currentCandle.getTradePrice()));
             Account account = coinAccount.get(market);
-            List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, tradePeriod, longPeriod + 1);
 
             if (candleList.size() < longPeriod + 1) {
                 log.debug("[{}] 이동평균계산을 위한 시세 데이터가 부족합니다.", market);
@@ -220,16 +219,12 @@ public class MabsMultiService implements CoinTrading {
             } else if (account != null) {
                 sellCheck(account, candleList);
             } else {
-                log.debug(String.format("[%s] 현재 가격:%,.2f", candleCheck.getMarket(), candleCheck.getTradePrice()));
+                log.debug(String.format("[%s] 현재 가격:%,.2f", currentCandle.getMarket(), currentCandle.getTradePrice()));
             }
         }
 
         if (!assetCoinSave) {
-            if (candleCheck != null) {
-                writeAccount(coinAccount, lastCandle, candleCheck.getCandleDateTimeKst());
-            } else {
-                log.warn("candleCheck is null");
-            }
+            writeAccount(coinAccount, lastCandle, candleCheck.getCandleDateTimeKst());
         }
         assetCoinSave = true;
     }
