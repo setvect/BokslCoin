@@ -68,7 +68,7 @@ public class MakeBacktestReport {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
                 .mabsConditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), DateUtil.getLocalDateTime("2021-12-19T08:59:59")))
+                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), DateUtil.getLocalDateTime("2022-01-31T08:59:59")))
                 .investRatio(.99)
                 .cash(10_000_000)
                 .feeSell(0.0007)
@@ -110,9 +110,9 @@ public class MakeBacktestReport {
                 new DateRange("2018-01-06T00:00:00", "2018-12-15T23:59:59"), // 하락장4(찐하락장)
                 new DateRange("2019-06-27T00:00:00", "2020-03-17T23:59:59"), // 하락장5
                 new DateRange("2018-01-06T00:00:00", "2019-08-15T23:59:59"), // 하락장 이후 약간의 상승장
-                new DateRange("2021-06-14T00:00:00", "2021-12-18T23:59:59"), // 최근
+                new DateRange("2021-06-14T00:00:00", "2022-12-31T23:59:59"), // 최근
                 new DateRange("2017-10-01T00:00:00", "2021-06-08T23:59:59"), // 전체 기간1
-                new DateRange("2017-10-01T00:00:00", "2021-12-18T23:59:59")  // 전체 기간2
+                new DateRange("2017-10-01T00:00:00", "2022-12-31T23:59:59")  // 전체 기간2
         );
 
         List<AnalysisReportResult> accResult = new ArrayList<>();

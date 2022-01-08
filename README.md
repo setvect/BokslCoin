@@ -39,7 +39,7 @@ gradle makeInstallFile
 
 - conf/BokslCoin.yml: 설정 파일
 - conf/logback-spring.xml: logback 설정
-- lib/BokslCoin-0.3.0.jar: 복슬코인 프로그램
+- lib/BokslCoin-0.5.0.jar: 복슬코인 프로그램
 - bin/BokslCoin.sh: Linux 실행 스크립트
 - bin/BokslCoin.bat: Windows에서 실행 스크립트
 
