@@ -52,9 +52,23 @@ public class MakeBacktestReport {
     @Test
     @Transactional
     public void analysis() throws IOException {
+        List<Integer> conditionSeqList = Arrays.asList(
+                27288611,// KRW-BTC(2017-10-16)
+                27346706,// KRW-ETH(2017-10-10)
+                27403421,// KRW-XRP(2017-10-10)
+                27458175,// KRW-EOS(2018-03-30)
+                27508376,// KRW-ETC(2017-10-09)
+                29794493,// KRW-ADA(2017-10-16)
+                36879612,// KRW-MANA(2019-04-09)
+                36915333,// KRW-BAT(2018-07-30)
+                44399001,// KRW-BCH(2017-10-08)
+                44544109// KRW-DOT(2020-10-15)
+        );
+
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                .mabsConditionIdSet(new HashSet<>(Arrays.asList(27508376, 27458175, 27403421, 27346706, 27288611, 29794493, 29794493)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), DateUtil.getLocalDateTime("2021-06-09T08:59:59")))
+                .mabsConditionIdSet(new HashSet<>(conditionSeqList))
+//                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
+                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), DateUtil.getLocalDateTime("2021-12-19T08:59:59")))
                 .investRatio(.99)
                 .cash(10_000_000)
                 .feeSell(0.0007)
@@ -70,7 +84,18 @@ public class MakeBacktestReport {
     @Test
     @Transactional
     public void multiBacktest() throws IOException {
-        List<Integer> conditionSeqList = Arrays.asList(27508376, 27458175, 27403421, 27346706, 27288611, 29794493);
+        List<Integer> conditionSeqList = Arrays.asList(
+                27288611,// KRW-BTC(2017-10-16)
+                27346706,// KRW-ETH(2017-10-10)
+                27403421,// KRW-XRP(2017-10-10)
+                27458175,// KRW-EOS(2018-03-30)
+                27508376,// KRW-ETC(2017-10-09)
+                29794493,// KRW-ADA(2017-10-16)
+                36879612,// KRW-MANA(2019-04-09)
+                36915333,// KRW-BAT(2018-07-30)
+                44399001,// KRW-BCH(2017-10-08)
+                44544109//  KRW-DOT(2020-10-15)
+        );
         List<DateRange> rangeList = Arrays.asList(
                 new DateRange("2020-11-01T00:00:00", "2021-04-14T23:59:59"), // 상승장
                 new DateRange("2021-01-01T00:00:00", "2021-06-08T23:59:59"), // 상승장 후 하락장
@@ -93,10 +118,21 @@ public class MakeBacktestReport {
         List<AnalysisReportResult> accResult = new ArrayList<>();
         int count = 0;
         int total = rangeList.size() * conditionSeqList.size();
-        for (Integer conditionSeq : conditionSeqList) {
+//        for (Integer conditionSeq : conditionSeqList) {
             for (DateRange dateRange : rangeList) {
                 AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                        .mabsConditionIdSet(new HashSet<>(Collections.singletonList(conditionSeq)))
+                        .mabsConditionIdSet(new HashSet<>(Arrays.asList(
+                                27288611,// KRW-BTC(2017-10-16)
+                                27346706,// KRW-ETH(2017-10-10)
+                                27403421,// KRW-XRP(2017-10-10)
+                                27458175,// KRW-EOS(2018-03-30)
+                                27508376,// KRW-ETC(2017-10-09)
+                                29794493,// KRW-ADA(2017-10-16)
+                                36879612,// KRW-MANA(2019-04-09)
+                                36915333,// KRW-BAT(2018-07-30)
+                                44399001,// KRW-BCH(2017-10-08)
+                                44544109// KRW-DOT(2020-10-15)
+                        )))
                         .range(dateRange)
                         .investRatio(.99)
                         .cash(10_000_000)
@@ -108,9 +144,9 @@ public class MakeBacktestReport {
                 accResult.add(result);
                 count++;
 
-                log.info("{}/{}, {} - {}", count, total, dateRange, conditionSeq);
+                log.info("{}/{}, {} - {}", count, total, dateRange);
             }
-        }
+//        }
 
         makeReportMulti(accResult);
         System.out.println("끝");

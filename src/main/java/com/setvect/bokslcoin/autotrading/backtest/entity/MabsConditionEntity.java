@@ -31,6 +31,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity(name = "XA_MABS_CONDITION")
 @EntityListeners(AuditingEntityListener.class)
+@ToString(exclude = {"mabsTradeEntityList"})
 public class MabsConditionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

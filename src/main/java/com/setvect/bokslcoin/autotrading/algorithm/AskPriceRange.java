@@ -22,7 +22,9 @@ public class AskPriceRange {
         RANGE_LIST.add(new RangeItem(1_000, 5.0));
         RANGE_LIST.add(new RangeItem(100, 1.0));
         RANGE_LIST.add(new RangeItem(10, 0.1));
-        RANGE_LIST.add(new RangeItem(0, 0.01));
+        RANGE_LIST.add(new RangeItem(1, 0.01));
+        RANGE_LIST.add(new RangeItem(0.1, 0.001));
+        RANGE_LIST.add(new RangeItem(0, 0.0001));
     }
 
     /**
@@ -50,7 +52,7 @@ public class AskPriceRange {
     @AllArgsConstructor
     @ToString
     static class RangeItem {
-        private int upperValue;
+        private double upperValue;
         private double unit;
     }
 }

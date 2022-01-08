@@ -16,5 +16,6 @@ public class AskPriceRangeTest {
         Assertions.assertEquals(200050, AskPriceRange.askPrice(200080));
         Assertions.assertEquals(15.2, AskPriceRange.askPrice(15.29), 0.000001);
         Assertions.assertEquals(9.22, AskPriceRange.askPrice(9.225), 0.000001);
+        Assertions.assertEquals(0.000609, AskPriceRange.askPrice(0.000609), 0.00000001);
     }
 }

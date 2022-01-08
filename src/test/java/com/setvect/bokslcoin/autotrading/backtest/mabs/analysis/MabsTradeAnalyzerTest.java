@@ -37,9 +37,11 @@ import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -65,6 +67,10 @@ public class MabsTradeAnalyzerTest {
      * 투자금
      */
     public static final double CASH = 10_000_000;
+    /**
+     * 최소 거래 날자(UTC)
+     */
+    public static final LocalDateTime BASE_START = DateUtil.getLocalDateTime("2017-10-01T00:00:00");
 
     @Autowired
     private MabsConditionEntityRepository mabsConditionEntityRepository;
@@ -114,8 +120,7 @@ public class MabsTradeAnalyzerTest {
 
     @Test
     public void backtest() {
-//        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC");
-        List<String> coinList = Arrays.asList("KRW-ADA");
+        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
         periodList.add(new ImmutablePair<>(13, 64));
@@ -137,7 +142,7 @@ public class MabsTradeAnalyzerTest {
         for (Pair<Integer, Integer> period : periodList) {
             for (String coin : coinList) {
                 log.info("{} - {} start", period, coin);
-                DateRange range = new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-12-18T23:59:59"));
+                DateRange range = new DateRange(BASE_START, LocalDateTime.now());
                 MabsConditionEntity condition = MabsConditionEntity.builder()
                         .market(coin)
                         .tradePeriod(TradePeriod.P_60)
@@ -157,6 +162,80 @@ public class MabsTradeAnalyzerTest {
         }
         System.out.println("끝");
     }
+
+    /**
+     * 특정 조건에 대해 증분 분석 수행
+     */
+    @Test
+    @Rollback(false)
+    @Transactional
+    public void analysisIncremental() {
+        List<Integer> conditionSeqList = Arrays.asList(
+                27288611,// KRW-BTC(2017-10-16)
+                27346706,// KRW-ETH(2017-10-10)
+                27403421,// KRW-XRP(2017-10-10)
+                27458175,// KRW-EOS(2018-03-30)
+                27508376,// KRW-ETC(2017-10-09)
+                29794493,// KRW-ADA(2017-10-16)
+                36879612,// KRW-MANA(2019-04-09)
+                36915333,// KRW-BAT(2018-07-30)
+                44399001,// KRW-BCH(2017-10-08)
+                44544109//  KRW-DOT(2020-10-15)
+        );
+
+        // 완전한 거래(매수-매도 쌍)를 만들기 위해 마지막 거래가 매수인경우 거래 내역 삭제
+        deleteLastBuy(conditionSeqList);
+
+        List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
+
+        for (MabsConditionEntity condition : conditionEntityList) {
+            log.info("{}, {}, {}_{} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod(), condition.getShortPeriod());
+            List<MabsTradeEntity> tradeList = condition.getMabsTradeEntityList();
+
+            LocalDateTime start = BASE_START;
+            if (!tradeList.isEmpty()) {
+                MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
+                checkLastSell(lastTrade);
+                start = lastTrade.getTradeTimeKst();
+            }
+            DateRange range = new DateRange(start, LocalDateTime.now());
+            List<MabsMultiBacktestRow> tradeHistory = backtest(condition, range);
+
+            List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
+            log.info("[{}] save. range: {}, trade Count: {}", condition.getMarket(), range, mabsTradeEntities.size());
+            mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+        }
+        log.info("끝.");
+    }
+
+    private void checkLastSell(MabsTradeEntity lastTrade) {
+        if (lastTrade.getTradeType() == TradeType.BUY) {
+            throw new RuntimeException(String.format("마지막 거래가 BUY인 항목이 있음. tradeSeq: %s", lastTrade.getTradeSeq()));
+        }
+    }
+
+    /**
+     * 거래 내역의 마지막이 매수인경우 해당 거래를 삭제
+     *
+     * @param conditionSeqList 거래 조건 일련번호
+     */
+    private void deleteLastBuy(List<Integer> conditionSeqList) {
+        List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
+
+        for (MabsConditionEntity condition : conditionEntityList) {
+            List<MabsTradeEntity> tradeList = condition.getMabsTradeEntityList();
+
+            if (!tradeList.isEmpty()) {
+                MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
+                log.info("count: {}, last: {} -> {} ", tradeList.size(), lastTrade.getTradeType(), lastTrade.getTradeTimeKst());
+                if (lastTrade.getTradeType() == TradeType.BUY) {
+                    log.info("Delete Last Buy: {} {}", lastTrade.getTradeSeq(), lastTrade.getMabsConditionEntity().getMarket());
+                    mabsTradeEntityRepository.deleteById(lastTrade.getTradeSeq());
+                }
+            }
+        }
+    }
+
 
     /**
      * @param condition    거래 조건
@@ -179,6 +258,11 @@ public class MabsTradeAnalyzerTest {
     }
 
 
+    /**
+     * @param condition 조건
+     * @param range     백테스트 범위(UTC 기준)
+     * @return 거래 내역
+     */
     private List<MabsMultiBacktestRow> backtest(MabsConditionEntity condition, DateRange range) {
         // key: market, value: 자산
         accountMap = new HashMap<>();
@@ -210,6 +294,9 @@ public class MabsTradeAnalyzerTest {
 
         int count = 0;
         while (current.isBefore(to) || current.equals(to)) {
+            if (count % 1440 == 0) {
+                log.info("running: {}", current);
+            }
             if (count == 1440 * 50) {
                 log.info("clear...");
                 Mockito.reset(candleService, orderService, accountService, tradeEvent);
