@@ -7,7 +7,6 @@ import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.multi.CandleDataProvider;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityRepository;
@@ -167,8 +166,6 @@ public class MabsTradeAnalyzerTest {
      * 특정 조건에 대해 증분 분석 수행
      */
     @Test
-    @Rollback(false)
-    @Transactional
     public void analysisIncremental() {
         List<Integer> conditionSeqList = Arrays.asList(
                 27288611,// KRW-BTC(2017-10-16)
@@ -190,7 +187,7 @@ public class MabsTradeAnalyzerTest {
 
         for (MabsConditionEntity condition : conditionEntityList) {
             log.info("{}, {}, {}_{} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod(), condition.getShortPeriod());
-            List<MabsTradeEntity> tradeList = condition.getMabsTradeEntityList();
+            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getMabsConditionSeq());
 
             LocalDateTime start = BASE_START;
             if (!tradeList.isEmpty()) {
@@ -223,16 +220,18 @@ public class MabsTradeAnalyzerTest {
         List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
 
         for (MabsConditionEntity condition : conditionEntityList) {
-            List<MabsTradeEntity> tradeList = condition.getMabsTradeEntityList();
-
-            if (!tradeList.isEmpty()) {
-                MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
-                log.info("count: {}, last: {} -> {} ", tradeList.size(), lastTrade.getTradeType(), lastTrade.getTradeTimeKst());
-                if (lastTrade.getTradeType() == TradeType.BUY) {
-                    log.info("Delete Last Buy: {} {}", lastTrade.getTradeSeq(), lastTrade.getMabsConditionEntity().getMarket());
-                    mabsTradeEntityRepository.deleteById(lastTrade.getTradeSeq());
-                }
+            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getMabsConditionSeq());
+            if (tradeList.isEmpty()) {
+                continue;
             }
+            MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
+            log.info("count: {}, last: {} -> {} ", tradeList.size(), lastTrade.getTradeType(), lastTrade.getTradeTimeKst());
+            if (lastTrade.getTradeType() == TradeType.SELL) {
+                continue;
+            }
+
+            log.info("Delete Last Buy: {} {}", lastTrade.getTradeSeq(), lastTrade.getTradeTimeKst());
+            mabsTradeEntityRepository.deleteById(lastTrade.getTradeSeq());
         }
     }
 
@@ -294,11 +293,8 @@ public class MabsTradeAnalyzerTest {
 
         int count = 0;
         while (current.isBefore(to) || current.equals(to)) {
-            if (count % 1440 == 0) {
-                log.info("running: {}", current);
-            }
-            if (count == 1440 * 50) {
-                log.info("clear...");
+            if (count == 1440) {
+                log.info("clear: {}, {}, {}", condition.getMarket(), current, count);
                 Mockito.reset(candleService, orderService, accountService, tradeEvent);
                 initMock(candleDataProvider);
                 count = 0;

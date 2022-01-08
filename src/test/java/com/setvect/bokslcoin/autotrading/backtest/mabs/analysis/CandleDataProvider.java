@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.multi;
+package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
@@ -7,6 +7,7 @@ import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
+import com.setvect.bokslcoin.autotrading.util.LapTimeChecker;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
@@ -18,10 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * @deprecated "com.setvect.bokslcoin.autotrading.backtest.mabs.analysis" 패키지 사용
- */
-@Deprecated
 @Slf4j
 public class CandleDataProvider {
     private final CandleRepository candleRepository;
@@ -31,6 +28,7 @@ public class CandleDataProvider {
     private LocalDateTime currentDateTime;
 
     private CandleMinute currentCandle;
+    private LapTimeChecker ck = new LapTimeChecker("start");
 
 
     private Map<CacheKey, List<Candle>> cachePeriod = new HashMap();

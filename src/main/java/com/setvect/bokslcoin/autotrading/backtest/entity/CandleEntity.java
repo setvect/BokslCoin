@@ -18,11 +18,10 @@ import java.time.LocalDateTime;
  * 캔드 실세
  */
 @Entity(name = "WA_CANDLE")
-//@Table(indexes = {
-//        @Index(name = "IDX_CANDLE_DATE_TIME_KST", columnList = "CANDLE_DATE_TIME_KST DESC"),
-//        @Index(name = "IDX_CANDLE_DATE_TIME_UTC", columnList = "CANDLE_DATE_TIME_UTC DESC"),
-//        @Index(name = "IDX_CANDLE_ENTITY_MARKET", columnList = "MARKET, CANDLE_DATE_TIME_UTC, PERIOD_TYPE")
-//})
+@Table(indexes = {
+        @Index(name = "IDX_CANDLE_DATE_TIME_UTC_ASC", columnList = "CANDLE_DATE_TIME_UTC ASC"),
+        @Index(name = "IDX_CANDLE_DATE_TIME_UTC_DESC", columnList = "CANDLE_DATE_TIME_UTC DESC"),
+})
 @Getter
 @Setter
 public class CandleEntity {
