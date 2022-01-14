@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
@@ -31,6 +32,11 @@ public class ApplicationUtil {
     private static final ModelMapper modelMapper = new ModelMapper();
 
     public static final NumberFormat NUMBER_FORMAT = new DecimalFormat("#.############");
+    /**
+     * API 타임 아웃
+     * connection, socket 둘다 적용
+     */
+    public static final int TIMEOUT_MS = 2000;
 
     /**
      * askPrice가 100,521
@@ -156,6 +162,12 @@ public class ApplicationUtil {
 
     public static String request(String url, HttpRequestBase request) throws IOException {
         HttpClient client = HttpClientBuilder.create().build();
+
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(TIMEOUT_MS)
+                .setConnectionRequestTimeout(TIMEOUT_MS)
+                .setSocketTimeout(TIMEOUT_MS).build();
+        request.setConfig(config);
 
         HttpResponse response = client.execute(request);
 
