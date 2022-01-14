@@ -112,4 +112,5 @@ restart)
 *)
     echo "Usage: $0 {status|start|console|stop|restart}"
     exit 1
+
 esac
