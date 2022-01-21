@@ -12,6 +12,9 @@ import javax.persistence.Index;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
 
+/**
+ * 자산 기록
+ */
 @Entity(name = "BA_ASSET_HISTORY")
 @Table(indexes = {
         @Index(name = "IDX_REG_DATE_BA", columnList = "REG_DATE DESC"),
@@ -21,7 +24,7 @@ import java.time.LocalDateTime;
 public class AssetHistoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "ASSET_HISTORY_SEQ", nullable = true)
+    @Column(name = "ASSET_HISTORY_SEQ")
     private int assetHistorySeq;
 
     /**
@@ -41,7 +44,7 @@ public class AssetHistoryEntity {
      * 수익률
      * 소수로 표현, 1->100%, -0.02 -> -2%
      */
-    @Column(name = "YIELD", nullable = true)
+    @Column(name = "YIELD")
     private Double yield;
 
     /**
