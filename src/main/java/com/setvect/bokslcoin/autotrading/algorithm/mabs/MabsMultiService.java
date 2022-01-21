@@ -200,7 +200,6 @@ public class MabsMultiService implements CoinTrading {
             }
 
             String checkMessage = checkMa(candleList);
-            log.debug(checkMessage);
             priceCheckMessageList.add(checkMessage);
 
             lastCandle.put(market, candleList.get(0));
@@ -213,7 +212,6 @@ public class MabsMultiService implements CoinTrading {
 
         if (!assetCoinSave) {
             List<AssetHistoryEntity> rateByCoin = writeCurrentAssetRate(coinAccount, lastCandle, candleCheck.getCandleDateTimeKst());
-
             sendCurrentStatus(priceCheckMessageList, rateByCoin);
         }
         assetCoinSave = true;
@@ -274,13 +272,19 @@ public class MabsMultiService implements CoinTrading {
         double maLong = CommonTradeHelper.getMa(candleList, longPeriod);
         Candle candle = candleList.get(0);
         tradeEvent.check(candle, maShort, maLong);
-        return String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
+        String message = String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
                 candle.getMarket(),
                 maShort - maLong,
                 MathUtil.getYield(maShort, maLong) * 100,
                 candle.getTradePrice(),
                 shortPeriod, maShort,
                 longPeriod, maLong
+        );
+        log.debug(message);
+        return String.format("[%s] %.2f%%, %,.0f",
+                candle.getMarket(),
+                MathUtil.getYield(maShort, maLong) * 100,
+                candle.getTradePrice()
         );
     }
 
