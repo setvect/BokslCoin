@@ -36,11 +36,9 @@ import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import javax.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -293,7 +291,7 @@ public class MabsTradeAnalyzerTest {
 
         int count = 0;
         while (current.isBefore(to) || current.equals(to)) {
-            if (count == 1440) {
+            if (count == 1440 * 7) {
                 log.info("clear: {}, {}, {}", condition.getMarket(), current, count);
                 Mockito.reset(candleService, orderService, accountService, tradeEvent);
                 initMock(candleDataProvider);
