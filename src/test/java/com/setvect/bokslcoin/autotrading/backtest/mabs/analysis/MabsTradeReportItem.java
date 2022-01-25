@@ -29,7 +29,7 @@ public class MabsTradeReportItem {
     private double feePrice;
 
     /**
-     * 투자 수익
+     * 투자 수익(수수료 포함)
      */
     private double gains;
 

@@ -40,6 +40,7 @@ public class SlackMessageService {
         Map<String, String> param = new HashMap<>();
         param.put("channel", channelId);
         param.put("text", message);
+        param.put("link_names", "true");
 
         String url = MESSAGE_POST + "?" + ApplicationUtil.getQueryString(param);
         HttpPost request = new HttpPost(url);

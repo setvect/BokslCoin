@@ -15,7 +15,7 @@ public class SlackSendMessageTest {
 
     @Test
     public void sendMessage() {
-        slackMessageService.sendMessage("안녕하세요.");
+        slackMessageService.sendMessage("@channel 안녕하세요.");
         System.out.println("끝.");
     }
 }

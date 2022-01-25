@@ -19,7 +19,6 @@ import com.setvect.bokslcoin.autotrading.record.repository.AssetHistoryRepositor
 import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
-import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -227,10 +226,10 @@ public class MabsMultiService implements CoinTrading {
         String priceMessage = StringUtils.join(currentPriceMessage, "\n");
         String rateMessage = rateByCoin.stream()
                 .filter(p -> !p.getCurrency().equals("KRW"))
-                .map(p -> String.format("[%s] 수익률: %,.2f", p.getCurrency(), p.getYield()))
+                .map(p -> String.format("[%s] 수익률: %,.2f%%", p.getCurrency(), p.getYield() * 100))
                 .collect(Collectors.joining("\n"));
 
-        slackMessageService.sendMessage(StringUtils.join("\n-----------\n", priceMessage, rateMessage));
+        slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n", priceMessage, rateMessage));
     }
 
     /**

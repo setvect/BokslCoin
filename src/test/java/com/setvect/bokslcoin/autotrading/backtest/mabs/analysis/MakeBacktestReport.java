@@ -516,7 +516,7 @@ public class MakeBacktestReport {
      * @throws IOException .
      */
     private void makeReport(AnalysisReportResult result) throws IOException {
-        String header = "날짜(KST),날짜(UTC),코인,이벤트 유형,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
+        String header = "날짜(KST),날짜(UTC),코인,매매구분,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
         StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
         for (MabsTradeReportItem row : result.getTradeHistory()) {
             MabsTradeEntity mabsTradeEntity = row.getMabsTradeEntity();
