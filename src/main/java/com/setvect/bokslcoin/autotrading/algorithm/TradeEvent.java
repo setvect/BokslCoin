@@ -39,7 +39,8 @@ public interface TradeEvent {
 
     /**
      * 이동평균 체크
-     *  @param candle    분봉
+     *
+     * @param candle    분봉
      * @param currentMa 단기 이동평균
      * @param maxMa     직전 이동 평균에서 연속된 최대값
      * @param minMa     직전 이동 평균에서 연속된 최소값
@@ -62,14 +63,14 @@ public interface TradeEvent {
     void ask(String market, double balance, double tradePrice, AskReason reason);
 
     /**
-     * @param market     코인
-     * @param highYield    최고 수익률
+     * @param market    코인
+     * @param highYield 최고 수익률
      */
     void highYield(String market, double highYield);
 
     /**
-     * @param market     코인
-     * @param lowYield    최저 수익률
+     * @param market   코인
+     * @param lowYield 최저 수익률
      */
     void lowYield(String market, double lowYield);
 

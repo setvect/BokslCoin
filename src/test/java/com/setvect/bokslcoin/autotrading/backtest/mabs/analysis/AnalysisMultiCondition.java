@@ -27,7 +27,7 @@ public class AnalysisMultiCondition {
     /**
      * 최초 투자 금액
      */
-    private final double  cash;
+    private final double cash;
     /**
      * 매수 수수료
      */

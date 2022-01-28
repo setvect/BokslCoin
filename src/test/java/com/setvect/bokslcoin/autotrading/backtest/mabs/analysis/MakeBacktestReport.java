@@ -28,7 +28,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -68,9 +67,9 @@ public class MakeBacktestReport {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
                 .mabsConditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T09:00:00"), LocalDateTime.now()))
+                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-01T00:00:00"), LocalDateTime.now()))
                 .investRatio(.99)
-                .cash(10_000_000)
+                .cash(14_727_812)
                 .feeSell(0.0007)
                 .feeBuy(0.0007)
                 .build();
@@ -662,15 +661,14 @@ public class MakeBacktestReport {
                 .collect(Collectors.toList());
 
         for (MabsConditionEntity condition : conditionAll) {
-            StringBuilder reportRow = new StringBuilder();
-            reportRow.append(String.format("%s\t", condition.getMabsConditionSeq()));
-            reportRow.append(String.format("%s\t", condition.getTradePeriod()));
-            reportRow.append(String.format("%s\t", condition.getMarket()));
-            reportRow.append(String.format("%,.2f%%\t", condition.getUpBuyRate() * 100));
-            reportRow.append(String.format("%,.2f%%\t", condition.getDownSellRate() * 100));
-            reportRow.append(String.format("%d\t", condition.getShortPeriod()));
-            reportRow.append(String.format("%d\t", condition.getLongPeriod()));
-            reportRow.append(String.format("%,.2f%%\t", condition.getLoseStopRate() * 100));
+            String reportRow = String.format("%s\t", condition.getMabsConditionSeq()) +
+                    String.format("%s\t", condition.getTradePeriod()) +
+                    String.format("%s\t", condition.getMarket()) +
+                    String.format("%,.2f%%\t", condition.getUpBuyRate() * 100) +
+                    String.format("%,.2f%%\t", condition.getDownSellRate() * 100) +
+                    String.format("%d\t", condition.getShortPeriod()) +
+                    String.format("%d\t", condition.getLongPeriod()) +
+                    String.format("%,.2f%%\t", condition.getLoseStopRate() * 100);
             report.append(reportRow).append("\n");
         }
 

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Getter
 public class ConnectionInfo {
-    private String baseUrl;
+    private final String baseUrl;
 
     public ConnectionInfo(@Value("${com.setvect.bokslcoin.autotrading.api.url}") String baseUrl) {
         this.baseUrl = baseUrl;

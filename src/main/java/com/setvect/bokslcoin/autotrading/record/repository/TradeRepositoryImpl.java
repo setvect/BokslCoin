@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 
-import static com.setvect.bokslcoin.autotrading.record.entity.QTradeEntity.*;
+import static com.setvect.bokslcoin.autotrading.record.entity.QTradeEntity.tradeEntity;
 
 
 @Repository
@@ -46,9 +46,9 @@ public class TradeRepositoryImpl implements TradeRepositoryCustom {
                 .limit(pageable.getPageSize())
                 .fetchResults();
 
-        Page<TradeDto> pageResult = new PageImpl<>(result.getResults(), pageable, result.getTotal());
-        return pageResult;
+        return new PageImpl<>(result.getResults(), pageable, result.getTotal());
     }
+
     private BooleanExpression eqMarket(String market) {
         if (StringUtils.isEmpty(market)) {
             return null;

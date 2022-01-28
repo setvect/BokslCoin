@@ -6,7 +6,7 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 
 public class DateTest {
-    public static void main(String[] args){
+    public static void main(String[] args) {
         LocalDateTime from = LocalDateTime.now();
         LocalDateTime to = from.plusDays(30);
         long dayCount = ChronoUnit.DAYS.between(from, to);

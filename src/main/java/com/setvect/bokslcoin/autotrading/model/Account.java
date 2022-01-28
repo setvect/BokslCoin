@@ -41,15 +41,15 @@ public class Account {
         return getUnitCurrency() + "-" + getCurrency();
     }
 
-    public double getAvgBuyPriceValue(){
-        if(avgBuyPrice == null){
+    public double getAvgBuyPriceValue() {
+        if (avgBuyPrice == null) {
             return 0;
         }
         return Double.parseDouble(avgBuyPrice);
     }
 
     public double getBalanceValue() {
-        if(balance == null){
+        if (balance == null) {
             return 0;
         }
         return Double.parseDouble(balance);

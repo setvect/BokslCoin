@@ -24,8 +24,9 @@ public class Ticker {
         /**
          * 하락
          */
-        FAILL;
+        FAILL
     }
+
     /**
      * 종목 구분 코드
      */

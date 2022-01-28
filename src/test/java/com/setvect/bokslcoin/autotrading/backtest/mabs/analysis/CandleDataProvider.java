@@ -28,10 +28,10 @@ public class CandleDataProvider {
     private LocalDateTime currentDateTime;
 
     private CandleMinute currentCandle;
-    private LapTimeChecker ck = new LapTimeChecker("start");
+    private final LapTimeChecker ck = new LapTimeChecker("start");
 
 
-    private Map<CacheKey, List<Candle>> cachePeriod = new HashMap();
+    private final Map<CacheKey, List<Candle>> cachePeriod = new HashMap();
 
     public CandleDataProvider(CandleRepository candleRepository) {
         this.candleRepository = candleRepository;

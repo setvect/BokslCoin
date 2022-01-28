@@ -3,7 +3,7 @@
 
     <property name="LOG_PATH" value="./logs/"/>
     <property name="LOG_FILE_MAX_HISTORY" value="20"/>
-    <property name="LOG_PATH_NAME" value="${LOG_PATH}/bokslcoin.log" />
+    <property name="LOG_PATH_NAME" value="${LOG_PATH}/bokslcoin.log"/>
     <property name="LOG_PATTERN" value="%-5level %d{yy-MM-dd HH:mm:ss}[%thread] [%logger{20}:%line] - %msg%n"/>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
@@ -28,22 +28,22 @@
 
     <springProfile name="local">
         <root level="INFO">
-            <appender-ref ref="FILE" />
-            <appender-ref ref="STDOUT" />
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="STDOUT"/>
         </root>
         <!--apache http client 상세 로그를 보고 싶으면 DEBUG로 변경-->
         <logger name="org.apache.http" level="INFO" additivity="false">
-            <appender-ref ref="STDOUT" />
+            <appender-ref ref="STDOUT"/>
         </logger>
         <logger name="com.setvect.bokslcoin" level="INFO" additivity="false">
-            <appender-ref ref="FILE" />
-            <appender-ref ref="STDOUT" />
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="STDOUT"/>
         </logger>
     </springProfile>
     <springProfile name="!local">
         <root level="INFO">
-            <appender-ref ref="FILE" />
-            <appender-ref ref="STDOUT" />
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="STDOUT"/>
         </root>
     </springProfile>
 </configuration>

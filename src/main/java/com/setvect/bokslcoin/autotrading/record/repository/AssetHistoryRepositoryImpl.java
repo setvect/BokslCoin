@@ -20,7 +20,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 
-import static com.setvect.bokslcoin.autotrading.record.entity.QAssetHistoryEntity.*;
+import static com.setvect.bokslcoin.autotrading.record.entity.QAssetHistoryEntity.assetHistoryEntity;
 
 
 @Repository
@@ -48,8 +48,7 @@ public class AssetHistoryRepositoryImpl implements AssetHistoryRepositoryCustom 
                 .limit(pageable.getPageSize())
                 .fetchResults();
 
-        Page<AssetHistoryDto> pageResult = new PageImpl<>(result.getResults(), pageable, result.getTotal());
-        return pageResult;
+        return new PageImpl<>(result.getResults(), pageable, result.getTotal());
     }
 
     @Override

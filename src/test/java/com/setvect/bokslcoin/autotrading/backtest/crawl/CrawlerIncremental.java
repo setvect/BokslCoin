@@ -57,9 +57,8 @@ public class CrawlerIncremental {
     @Test
     @SneakyThrows
     public void 증분클로링() {
-        List<String> marketList = Arrays.asList("KRW-BTC","KRW-ETH","KRW-XRP","KRW-EOS","KRW-ETC","KRW-ADA","KRW-MANA","KRW-BAT","KRW-BCH","KRW-DOT");
+        List<String> marketList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
         makeSaveDir();
-
         for (String market : marketList) {
             List<File> candleByMonth = crawlCandle(market);
             log.info("캔들 임시저장 파일: {}", candleByMonth);
@@ -264,7 +263,7 @@ public class CrawlerIncremental {
                 break;
             }
             to = data.get(data.size() - 1).getCandleDateTimeUtc();
-            log.info("{} 번째. last: {},  current: {}", i, lastSaveCandle, to);
+            log.info("{} - {} 번째. last: {},  current: {}", market, i, lastSaveCandle, to);
             // API 횟수 제한 때문에 딜레이 적용
             TimeUnit.MILLISECONDS.sleep(500);
         }

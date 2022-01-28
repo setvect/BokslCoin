@@ -12,6 +12,7 @@ import org.apache.http.util.EntityUtils;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -29,14 +30,14 @@ public class GetOrdersChance {
         params.put("market", "KRW-BTC");
 
         ArrayList<String> queryElements = new ArrayList<>();
-        for(Map.Entry<String, String> entity : params.entrySet()) {
+        for (Map.Entry<String, String> entity : params.entrySet()) {
             queryElements.add(entity.getKey() + "=" + entity.getValue());
         }
 
         String queryString = String.join("&", queryElements.toArray(new String[0]));
 
         MessageDigest md = MessageDigest.getInstance("SHA-512");
-        md.update(queryString.getBytes("UTF-8"));
+        md.update(queryString.getBytes(StandardCharsets.UTF_8));
 
         String queryHash = String.format("%0128x", new BigInteger(1, md.digest()));
 

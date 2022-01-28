@@ -27,5 +27,5 @@ public enum AskReason {
     /**
      * 분할 매도
      */
-    SPLIT;
+    SPLIT
 }

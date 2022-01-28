@@ -133,6 +133,7 @@ public class AnalysisReportResult {
             lossCount++;
         }
     }
+
     /**
      * 동일 비중 보유  수익률
      */
@@ -148,6 +149,7 @@ public class AnalysisReportResult {
          */
         private YieldMdd sumYield;
     }
+
     /**
      * 단위 수익 정보
      */

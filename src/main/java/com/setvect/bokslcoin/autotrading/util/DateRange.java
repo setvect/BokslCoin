@@ -18,7 +18,7 @@ public class DateRange {
     /**
      * 종료 날짜
      */
-    private LocalDateTime to;
+    private final LocalDateTime to;
 
     /**
      * 기간 제한 없는 날짜 시작일

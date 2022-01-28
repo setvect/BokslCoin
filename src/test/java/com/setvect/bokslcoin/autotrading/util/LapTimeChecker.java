@@ -21,12 +21,12 @@ public class LapTimeChecker {
     /**
      * 체크 시작 시간
      */
-    private long startTime;
+    private final long startTime;
 
     /**
      * 출력 스트림
      */
-    private PrintStream out;
+    private final PrintStream out;
 
     /**
      * 체크 카운트
@@ -36,7 +36,7 @@ public class LapTimeChecker {
     /**
      * 이름
      */
-    private String name;
+    private final String name;
 
     /**
      * 전체 카운트

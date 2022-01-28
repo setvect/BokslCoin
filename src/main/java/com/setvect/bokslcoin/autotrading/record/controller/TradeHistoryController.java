@@ -25,37 +25,34 @@ public class TradeHistoryController {
     private final TradeRepository tradeRepository;
 
     /**
-     *
      * @param searchForm 검색조건
-     * @param pageable 페이징
+     * @param pageable   페이징
      * @return 종목별 자산 내역
      */
     @GetMapping("/assetHistory/page")
-    public CommonResponse<Page<AssetHistoryDto>> pageAssetHistory(AssetHistorySearchForm searchForm, Pageable pageable){
+    public CommonResponse<Page<AssetHistoryDto>> pageAssetHistory(AssetHistorySearchForm searchForm, Pageable pageable) {
         Page<AssetHistoryDto> result = assetHistoryRepository.pageAssetHistory(searchForm, pageable);
         return new CommonResponse<>(result);
     }
 
     /**
-     *
      * @param searchForm 검색조건
-     * @param pageable 페이징
+     * @param pageable   페이징
      * @return 거래주기별 자산 합산 내역
      */
     @GetMapping("/assetPeriodHistory/page")
-    public CommonResponse<Page<AssetPeriodHistoryDto>> pageAssetHistory(AssetPeriodHistorySearchForm searchForm, Pageable pageable){
+    public CommonResponse<Page<AssetPeriodHistoryDto>> pageAssetHistory(AssetPeriodHistorySearchForm searchForm, Pageable pageable) {
         Page<AssetPeriodHistoryDto> result = assetHistoryRepository.pageAssetPeriodHistory(searchForm, pageable);
         return new CommonResponse<>(result);
     }
 
     /**
-     *
      * @param searchForm 검색 조건
-     * @param pageable 페이징
+     * @param pageable   페이징
      * @return 거래내역
      */
     @GetMapping("/trade/page")
-    public CommonResponse<Page<TradeDto>> pageTradeList(TradeSearchForm searchForm, Pageable pageable){
+    public CommonResponse<Page<TradeDto>> pageTradeList(TradeSearchForm searchForm, Pageable pageable) {
         Page<TradeDto> result = tradeRepository.pageTrade(searchForm, pageable);
         return new CommonResponse<>(result);
     }

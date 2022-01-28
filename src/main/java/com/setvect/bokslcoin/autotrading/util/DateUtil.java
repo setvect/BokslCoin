@@ -30,14 +30,13 @@ public class DateUtil {
     }
 
     /**
-     *
      * @param dateStr yyyy-MM-dd 형태
      * @return LocalDAte
      */
     public static LocalDate getLocalDate(String dateStr) {
         return getLocalDate(dateStr, yyyy_MM_dd);
     }
-    
+
     public static LocalDate getLocalDate(String dateStr, String pattern) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return LocalDate.parse(dateStr, formatter);

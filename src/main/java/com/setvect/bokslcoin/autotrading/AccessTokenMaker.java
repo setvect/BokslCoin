@@ -9,15 +9,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.UUID;
 
 @Component
 @Getter
 public class AccessTokenMaker {
-    private String accessKey;
+    private final String accessKey;
 
-    private String secretKey;
+    private final String secretKey;
 
     public AccessTokenMaker(
             @Value("${com.setvect.bokslcoin.autotrading.api.accessKey}") String accessKey,
@@ -32,7 +33,7 @@ public class AccessTokenMaker {
         String queryHash = null;
         if (StringUtils.isNotEmpty(queryString)) {
             MessageDigest md = MessageDigest.getInstance("SHA-512");
-            md.update(queryString.getBytes("UTF-8"));
+            md.update(queryString.getBytes(StandardCharsets.UTF_8));
             queryHash = String.format("%0128x", new BigInteger(1, md.digest()));
         }
         String jwtToken = JWT.create()

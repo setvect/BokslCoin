@@ -332,8 +332,7 @@ from wa_candle candleenti0_
 where candleenti0_.market = 'KRW-BTC'
   and candleenti0_.period_type = 'PERIOD_60'
   and candleenti0_.candle_date_time_utc < '2021-12-26T16:00:00'
-order by candleenti0_.candle_date_time_utc desc
-    limit 64;
+order by candleenti0_.candle_date_time_utc desc limit 64;
 
 
 explain
@@ -350,8 +349,7 @@ from wa_candle candleenti0_
 where candleenti0_.MARKET = 'KRW-BTC'
   and candleenti0_.candle_date_time_utc < '2021-12-28T17:00:00'
   and candleenti0_.period_type = 'PERIOD_60'
-order by candleenti0_.candle_date_time_utc desc
-    limit 64;
+order by candleenti0_.candle_date_time_utc desc limit 64;
 
 explain
 select candleenti0_.candle_seq           as candle_s1_2_,
@@ -367,8 +365,7 @@ from wa_candle candleenti0_
 where candleenti0_.MARKET = 'KRW-BTC'
   and candleenti0_.candle_date_time_utc > '2020-01-28T17:00:00'
   and candleenti0_.period_type = 'PERIOD_1'
-order by candleenti0_.candle_date_time_utc
-    limit 1;
+order by candleenti0_.candle_date_time_utc limit 1;
 
 create index IDX_CANDLE_DATE_TIME_UTC_ASC
     on WA_CANDLE (CANDLE_DATE_TIME_UTC ASC);

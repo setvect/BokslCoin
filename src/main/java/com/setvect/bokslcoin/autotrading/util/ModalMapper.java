@@ -5,7 +5,7 @@ import org.modelmapper.config.Configuration;
 import org.modelmapper.convention.MatchingStrategies;
 
 public class ModalMapper {
-    private static ModelMapper modelMapper = new ModelMapper();
+    private static final ModelMapper modelMapper = new ModelMapper();
 
     public static ModelMapper getMapper() {
         modelMapper.getConfiguration()
