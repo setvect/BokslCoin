@@ -328,7 +328,6 @@ public class MabsTradeAnalyzerTest {
         ReflectionTestUtils.setField(mabsMultiService, "shortPeriod", condition.getShortPeriod());
         ReflectionTestUtils.setField(mabsMultiService, "longPeriod", condition.getLongPeriod());
         ReflectionTestUtils.setField(mabsMultiService, "periodIdx", -1);
-        ReflectionTestUtils.setField(mabsMultiService, "slackTime", "08:00");
         ReflectionTestUtils.setField(mabsMultiService, "newMasBuy", true);
     }
 
