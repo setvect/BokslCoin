@@ -52,6 +52,7 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
     implementation group: 'commons-io', name: 'commons-io', version: '2.9.0'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
+    implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '4.9.3'
     implementation 'org.modelmapper:modelmapper:2.4.0'
     implementation 'com.h2database:h2:1.4.199'
     implementation 'org.projectlombok:lombok'
