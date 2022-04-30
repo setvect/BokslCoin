@@ -18,16 +18,13 @@ public class GsonUtil {
     public static final Gson GSON;
 
     static {
-        GsonBuilder gsonBuilder = new GsonBuilder().setFieldNamingStrategy(new FieldNamingStrategy() {
-            @Override
-            public String translateName(Field f) {
-                // 숫자로 구분된 필드명도 변환 가능하도록 이름을 변경
-                // 예)
-                // accTradePrice24h => accTradePrice_24h
-                // highest52WeekDate => highest_52WeekDate
-                String name = f.getName().replaceAll("(\\d+)", "_$1");
-                return separateCamelCase(name, "_").toLowerCase(Locale.ENGLISH);
-            }
+        GsonBuilder gsonBuilder = new GsonBuilder().setFieldNamingStrategy(f -> {
+            // 숫자로 구분된 필드명도 변환 가능하도록 이름을 변경
+            // 예)
+            // accTradePrice24h => accTradePrice_24h
+            // highest52WeekDate => highest_52WeekDate
+            String name = f.getName().replaceAll("(\\d+)", "_$1");
+            return separateCamelCase(name, "_").toLowerCase(Locale.ENGLISH);
         });
         gsonBuilder.registerTypeAdapter(LocalDateTime.class, (JsonDeserializer<LocalDateTime>) (json, type, jsonDeserializationContext) -> {
                     String dateTimeString = getString(json);
@@ -46,8 +43,13 @@ public class GsonUtil {
                     return DateUtil.getLocalDate(dateString, DateUtil.yyyyMMdd);
                 }
         );
-        gsonBuilder.registerTypeAdapter(LocalTime.class, (JsonDeserializer<LocalTime>) (json, type, jsonDeserializationContext) ->
-                DateUtil.getLocalTime(getString(json), DateUtil.HHmmss)
+        gsonBuilder.registerTypeAdapter(LocalTime.class, (JsonDeserializer<LocalTime>) (json, type, jsonDeserializationContext) -> {
+                    String timeStr = getString(json);
+                    if (timeStr.length() == "12:00:00".length()) {
+                        return DateUtil.getLocalTime(timeStr, DateUtil.HH_mm_ss);
+                    }
+                    return DateUtil.getLocalTime(timeStr, DateUtil.HHmmss);
+                }
         );
         GSON = gsonBuilder.create();
     }

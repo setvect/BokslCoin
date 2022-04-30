@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.websocket;
+package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Getter;
@@ -18,6 +18,10 @@ import java.util.UUID;
 public class UpbitWebSocketListener extends WebSocketListener {
 
     private static final int NORMAL_CLOSURE_STATUS = 1000;
+    /**
+     * TRADE 타입으로 고정
+     */
+    private static final UpbitType TYPE_TRADE = UpbitType.TRADE;
     private String json;
 
     @Override
@@ -39,14 +43,13 @@ public class UpbitWebSocketListener extends WebSocketListener {
 
     @Override
     public void onMessage(@NotNull WebSocket webSocket, @NotNull String text) {
-        Object jsonNode = GsonUtil.GSON.fromJson(text, Object.class);
-        System.out.println(jsonNode.toString());
     }
 
     @Override
     public void onMessage(@NotNull WebSocket webSocket, @NotNull ByteString bytes) {
-        Object jsonNode = GsonUtil.GSON.fromJson(bytes.string(StandardCharsets.UTF_8), Object.class);
-        System.out.println(jsonNode.toString());
+        TradeResult tradeResult = GsonUtil.GSON.fromJson(bytes.string(StandardCharsets.UTF_8), TradeResult.class);
+        System.out.println(tradeResult);
+        System.out.println(tradeResult.getTradeDateTimeKst());
     }
 
     @Override
@@ -54,10 +57,8 @@ public class UpbitWebSocketListener extends WebSocketListener {
         webSocket.send(getParameter());
     }
 
-    public void setParameter(UpbitType upbitType, List<String> codes) {
-        // [{"ticket":"e4c9e90e-d07a-4494-8147-b5d36b596fb0"},{"type":"TRADE","codes":["KRW-XRP"]}]
-        // [{"ticket":"test"},{"type":"ticker","codes":["KRW-BTC"]}]
-        this.json = GsonUtil.GSON.toJson(Arrays.asList(Ticket.of(UUID.randomUUID().toString()), Type.of(upbitType, codes)));
+    public void setParameter(List<String> codes) {
+        this.json = GsonUtil.GSON.toJson(Arrays.asList(Ticket.of(UUID.randomUUID().toString()), Type.of(TYPE_TRADE, codes)));
     }
 
     private String getParameter() {
@@ -74,6 +75,6 @@ public class UpbitWebSocketListener extends WebSocketListener {
     @RequiredArgsConstructor(staticName = "of")
     private static class Type {
         private final UpbitType type;
-        private final List<String> codes; // market
+        private final List<String> codes;
     }
 }

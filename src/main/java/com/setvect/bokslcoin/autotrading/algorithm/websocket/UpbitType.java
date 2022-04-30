@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.websocket;
+package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
