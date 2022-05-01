@@ -22,5 +22,9 @@ public class TradeResult {
     public LocalDateTime getTradeDateTimeKst() {
         return LocalDateTime.of(tradeDate, tradeTime).plusHours(9);
     }
+
+    public double getPrice(){
+        return tradePrice * tradeVolume;
+    }
 }
 

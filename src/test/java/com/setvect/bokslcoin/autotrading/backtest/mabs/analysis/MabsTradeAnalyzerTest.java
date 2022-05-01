@@ -3,6 +3,7 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
+import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
@@ -318,17 +319,20 @@ public class MabsTradeAnalyzerTest {
     private void injectionFieldValue(MabsConditionEntity condition) {
         ReflectionTestUtils.setField(mabsMultiService, "assetHistoryRepository", this.assetHistoryRepository);
         ReflectionTestUtils.setField(mabsMultiService, "tradeRepository", this.tradeRepository);
-        ReflectionTestUtils.setField(mabsMultiService, "markets", Collections.singletonList(condition.getMarket()));
-        ReflectionTestUtils.setField(mabsMultiService, "maxBuyCount", 1);
-        ReflectionTestUtils.setField(mabsMultiService, "investRatio", 0.99);
-        ReflectionTestUtils.setField(mabsMultiService, "upBuyRate", condition.getUpBuyRate());
-        ReflectionTestUtils.setField(mabsMultiService, "loseStopRate", condition.getLoseStopRate());
-        ReflectionTestUtils.setField(mabsMultiService, "downSellRate", condition.getDownSellRate());
-        ReflectionTestUtils.setField(mabsMultiService, "tradePeriod", condition.getTradePeriod());
-        ReflectionTestUtils.setField(mabsMultiService, "shortPeriod", condition.getShortPeriod());
-        ReflectionTestUtils.setField(mabsMultiService, "longPeriod", condition.getLongPeriod());
         ReflectionTestUtils.setField(mabsMultiService, "periodIdx", -1);
-        ReflectionTestUtils.setField(mabsMultiService, "newMasBuy", true);
+
+        MabsMultiProperties properties = new MabsMultiProperties();
+        properties.setMarkets(Collections.singletonList(condition.getMarket()));
+        properties.setMaxBuyCount(1);
+        properties.setInvestRatio(0.99);
+        properties.setUpBuyRate(condition.getUpBuyRate());
+        properties.setLoseStopRate(condition.getLoseStopRate());
+        properties.setDownSellRate(condition.getDownSellRate());
+        properties.setTradePeriod(condition.getTradePeriod());
+        properties.setShortPeriod(condition.getShortPeriod());
+        properties.setLongPeriod(condition.getLongPeriod());
+        properties.setNewMasBuy(true);
+        ReflectionTestUtils.setField(mabsMultiService, "properties", properties);
     }
 
     private void initMock(CandleDataProvider candleDataProvider) {

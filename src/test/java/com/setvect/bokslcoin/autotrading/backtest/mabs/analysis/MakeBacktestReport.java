@@ -67,10 +67,10 @@ public class MakeBacktestReport {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
                 .mabsConditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
-                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
+                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
                 .investRatio(.99)
-                .cash(14_727_812)
+                .cash(14_223_714)
                 .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
                 .feeBuy(0.002)
                 .build();

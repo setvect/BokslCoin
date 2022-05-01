@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
+import com.google.gson.annotations.SerializedName;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,24 @@ import java.util.List;
 import java.util.UUID;
 
 public class UpbitWebSocketListener extends WebSocketListener {
+    @Getter
+    public enum UpbitType {
+        /**
+         * 현재가
+         */
+        @SerializedName("ticker")
+        TICKER,
+        /**
+         * 체결
+         */
+        @SerializedName("trade")
+        TRADE,
+        /**
+         * 호가
+         */
+        @SerializedName("orderbook")
+        ORDERBOOK
+    }
 
     private static final int NORMAL_CLOSURE_STATUS = 1000;
     /**

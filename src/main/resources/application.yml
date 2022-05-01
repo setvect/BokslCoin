@@ -44,6 +44,8 @@ com:
           # 보안 키: 환경 변수 또는 직접 입력
           secretKey: ${SECRET_KEY}
           url: https://api.upbit.com
+        ws:
+          url: wss://api.upbit.com/websocket/v1
         schedule:
           # 시세 체크 주기
           fixedDelay: 5000
