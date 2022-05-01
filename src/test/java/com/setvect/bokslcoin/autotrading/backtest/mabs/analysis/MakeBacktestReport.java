@@ -67,11 +67,12 @@ public class MakeBacktestReport {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
                 .mabsConditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-01T00:00:00"), LocalDateTime.now()))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
+                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
                 .investRatio(.99)
                 .cash(14_727_812)
-                .feeSell(0.0007)
-                .feeBuy(0.0007)
+                .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
+                .feeBuy(0.002)
                 .build();
         List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
         AnalysisReportResult result = analysis(tradeReportItems, analysisMultiCondition);
@@ -96,6 +97,19 @@ public class MakeBacktestReport {
                 44399001,// KRW-BCH(2017-10-08)
                 44544109//  KRW-DOT(2020-10-15)
         );
+//         60, 1, 64 +- 0.03%
+//        List<Integer> conditionSeqList = Arrays.asList(
+//                45962518,// KRW-BTC(2017-10-16)
+//                46019888,// KRW-ETH(2017-10-10)
+//                46077434,// KRW-XRP(2017-10-10)
+//                46134607,// KRW-EOS(2018-03-30)
+//                46185678,// KRW-ETC(2017-10-09)
+//                46242164,// KRW-ADA(2017-10-16)
+//                46299027,// KRW-MANA(2019-04-09)
+//                46336499,// KRW-BAT(2018-07-30)
+//                46382919,// KRW-BCH(2017-10-08)
+//                46440134//  KRW-DOT(2020-10-15)
+//        );
 
         //30, 24, 90
 //        List<Integer> conditionSeqList = Arrays.asList(
