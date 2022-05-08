@@ -10,6 +10,7 @@ import com.setvect.bokslcoin.autotrading.model.OrderResult;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -27,6 +28,8 @@ public class OrderService {
     private final AccessTokenMaker accessInfo;
 
     private final ConnectionInfo connectionInfo;
+    @Value("${com.setvect.bokslcoin.autotrading.slack.enable}")
+    private boolean enable;
 
     /**
      * @param market Market ID<br>
@@ -141,6 +144,10 @@ public class OrderService {
      * @return 주문 정보
      */
     private OrderResult callOrder(String market, String volume, String price, OrderResult.OrdType ordType, OrderResult.Side side) {
+        if (!enable) {
+            log.info("NO DEAL");
+            return null;
+        }
         Map<String, String> params = new HashMap<>();
         params.put("market", market);
         params.put("side", side.name());

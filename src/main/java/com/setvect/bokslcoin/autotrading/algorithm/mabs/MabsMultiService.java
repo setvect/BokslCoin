@@ -377,7 +377,7 @@ public class MabsMultiService implements CoinTrading {
                 log.info("{} 매도 주문요청  상태임: {}", market, orderHistory);
                 return;
             }
-            
+
             slackMessageService.sendMessage(message1);
             doAsk(market, candle.getTradePrice(), account.getBalanceValue(), rate);
         }
