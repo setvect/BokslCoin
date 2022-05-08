@@ -1,5 +1,7 @@
 package com.setvect.bokslcoin.autotrading.model;
 
+import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -25,19 +27,19 @@ public class Candle {
     /**
      * 시가
      */
-    private Double openingPrice = Double.valueOf(0);
+    private Double openingPrice;
     /**
      * 고가
      */
-    private Double highPrice = Double.valueOf(0);
+    private Double highPrice;
     /**
      * 저가
      */
-    private Double lowPrice = Double.valueOf(0);
+    private Double lowPrice;
     /**
      * 종가
      */
-    private Double tradePrice = Double.valueOf(0);
+    private Double tradePrice;
 
     /**
      * 해당 캔들에서 마지막 틱이 저장된 시각
@@ -46,9 +48,49 @@ public class Candle {
     /**
      * 누적 거래 금액
      */
-    private Double candleAccTradePrice = Double.valueOf(0);
+    private Double candleAccTradePrice;
     /**
      * 누적 거래량
      */
-    private Double candleAccTradeVolume = Double.valueOf(0);
+    private Double candleAccTradeVolume;
+
+    public Candle(TradeResult tradeResult, PeriodType periodType) {
+        market = tradeResult.getCode();
+        candleDateTimeUtc = periodType.fitDateTime(tradeResult.getTradeDateTimeUtc());
+        candleDateTimeKst = periodType.fitDateTime(tradeResult.getTradeDateTimeKst());
+        openingPrice = tradeResult.getTradePrice();
+        highPrice = tradeResult.getTotalPrice();
+        lowPrice = 0.0;
+        lowPrice = tradeResult.getTotalPrice();
+        tradePrice = 0.0;
+        tradePrice = tradeResult.getTotalPrice();
+        timestamp = tradeResult.getTimestamp();
+        candleAccTradeVolume = tradeResult.getTradeVolume();
+        candleAccTradePrice = tradeResult.getTotalPrice();
+    }
+
+    public void change(TradeResult tradeResult) {
+        timestamp = tradeResult.getTimestamp();
+        changePrice(tradeResult.getTradePrice());
+        candleAccTradeVolume += tradeResult.getTradeVolume();
+        candleAccTradePrice += tradeResult.getTotalPrice();
+    }
+
+    /**
+     * - 현재가격 변경
+     * - 입력값이 고가보다 높으면 고가 변경
+     * - 저가 보다 낮으면 저가 변경
+     *
+     * @param price 가격
+     */
+    private void changePrice(double price) {
+        tradePrice = price;
+        if (highPrice < price) {
+            highPrice = price;
+        }
+        if (lowPrice > price) {
+            lowPrice = price;
+        }
+    }
+
 }

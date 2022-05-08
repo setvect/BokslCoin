@@ -1,6 +1,5 @@
 package com.setvect.bokslcoin.autotrading.backtest.entity;
 
-import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -54,7 +53,7 @@ public class MabsConditionEntity {
      */
     @Column(name = "TRADE_PERIOD", length = 20, nullable = false)
     @Enumerated(EnumType.STRING)
-    private TradePeriod tradePeriod;
+    private PeriodType tradePeriod;
 
     /**
      * 상승 매수률

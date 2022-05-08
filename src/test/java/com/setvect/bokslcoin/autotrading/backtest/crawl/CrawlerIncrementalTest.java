@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
-public class CrawlerIncremental {
+public class CrawlerIncrementalTest {
     /**
      * 캔들 수집 최소 날짜. 해당 날짜 이전에는 캔들 데이터가 없다고 가정
      */
@@ -90,7 +90,7 @@ public class CrawlerIncremental {
         entity.setMarket(candle.getMarket());
         entity.setCandleDateTimeUtc(candle.getCandleDateTimeUtc());
         entity.setCandleDateTimeKst(candle.getCandleDateTimeKst());
-        entity.setPeriodType(PeriodType.PERIOD_1);
+        entity.setPeriodType(PeriodType.P_1);
         entity.setOpeningPrice(candle.getOpeningPrice());
         entity.setLowPrice(candle.getLowPrice());
         entity.setHighPrice(candle.getHighPrice());
@@ -111,11 +111,11 @@ public class CrawlerIncremental {
      * @param market 코인
      */
     private void createCandleGroup(String market) {
-        List<PeriodType> targetPeriodList = Arrays.asList(PeriodType.PERIOD_15, PeriodType.PERIOD_30, PeriodType.PERIOD_60, PeriodType.PERIOD_240, PeriodType.PERIOD_1440);
-        PeriodType basePeriod = PeriodType.PERIOD_1;
+        List<PeriodType> targetPeriodList = Arrays.asList(PeriodType.P_15, PeriodType.P_30, PeriodType.P_60, PeriodType.P_240, PeriodType.P_1440);
+        PeriodType basePeriod = PeriodType.P_1;
 
         for (PeriodType targetPeriod : targetPeriodList) {
-            LocalDateTime startTime = getLocalDateTime(market, basePeriod, targetPeriod);
+            LocalDateTime startTime = fitDateTime(market, basePeriod, targetPeriod);
             DateRange groupRange = new DateRange(startTime, LocalDateTime.now(ZoneOffset.UTC));
             List<CandleEntity> last = candleRepository.findMarketPricePeriodBefore(market, targetPeriod, LocalDateTime.now(ZoneOffset.UTC), PageRequest.of(0, 1));
             // 마지막 병합 결과는 완전하지 않을 수 있으니 일딴 지우고 시작 한다.
@@ -159,7 +159,7 @@ public class CrawlerIncremental {
      * @param targetPeriod 병합 할 분봉 주기
      * @return basePeriod 시작 시간을 제공
      */
-    private LocalDateTime getLocalDateTime(String market, PeriodType basePeriod, PeriodType targetPeriod) {
+    private LocalDateTime fitDateTime(String market, PeriodType basePeriod, PeriodType targetPeriod) {
         List<CandleEntity> last = candleRepository.findMarketPricePeriodBefore(market, targetPeriod, LocalDateTime.now(ZoneOffset.UTC), PageRequest.of(0, 1));
 
         if (!last.isEmpty()) {
@@ -172,28 +172,10 @@ public class CrawlerIncremental {
             throw new RuntimeException(String.format("시세 정보가 없습니다. market: %s, Base Period: %s, Target Period: %s", market, basePeriod, targetPeriod));
         }
 
-        LocalDateTime temp = afterList.get(0).getCandleDateTimeUtc();
-        switch (targetPeriod) {
-            case PERIOD_15:
-                lastCandleTime = temp.minusMinutes(temp.getMinute() % 15).withSecond(0).withNano(0);
-                break;
-            case PERIOD_30:
-                lastCandleTime = temp.minusMinutes(temp.getMinute() % 30).withSecond(0).withNano(0);
-                break;
-            case PERIOD_60:
-                lastCandleTime = temp.withMinute(0).withSecond(0).withNano(0);
-                break;
-            case PERIOD_240:
-                lastCandleTime = temp.minusHours(temp.getHour() % 4).withMinute(0).withSecond(0).withNano(0);
-                break;
-            case PERIOD_1440:
-                lastCandleTime = temp.withHour(0).withMinute(0).withSecond(0).withNano(0);
-                break;
-            default:
-                lastCandleTime = temp;
-        }
-        return lastCandleTime;
+        LocalDateTime timeUtc = afterList.get(0).getCandleDateTimeUtc();
+        return targetPeriod.fitDateTime(timeUtc);
     }
+
 
     /**
      * 봉 데이터를 목록을 병합하여 병합된 봉 데이터를 만듦
@@ -223,7 +205,7 @@ public class CrawlerIncremental {
     @SneakyThrows
     private List<File> crawlCandle(String market) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        List<CandleEntity> lastCandle = candleRepository.findMarketPricePeriodBefore(market, PeriodType.PERIOD_1, now, PageRequest.of(0, 1));
+        List<CandleEntity> lastCandle = candleRepository.findMarketPricePeriodBefore(market, PeriodType.P_1, now, PageRequest.of(0, 1));
         LocalDateTime lastSaveCandle = lastCandle.isEmpty() ? MINIMUM_CANDLE_DATE : lastCandle.get(0).getCandleDateTimeUtc();
 
         LocalDateTime to = null;

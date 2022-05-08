@@ -1,6 +1,6 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
-import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.Getter;
 import lombok.ToString;
@@ -21,7 +21,7 @@ public class AnalysisCoinCondition {
     /**
      * 매매 주기
      */
-    private final TradePeriod tradePeriod;
+    private final PeriodType tradePeriod;
 
     /**
      * 상승 매수률

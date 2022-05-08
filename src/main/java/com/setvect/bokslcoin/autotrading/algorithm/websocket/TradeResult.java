@@ -19,11 +19,18 @@ public class TradeResult {
     private LocalTime tradeTime;
     private double prevClosingPrice;
 
-    public LocalDateTime getTradeDateTimeKst() {
-        return LocalDateTime.of(tradeDate, tradeTime).plusHours(9);
+    public LocalDateTime getTradeDateTimeUtc() {
+        return LocalDateTime.of(tradeDate, tradeTime);
     }
 
-    public double getPrice(){
+    public LocalDateTime getTradeDateTimeKst() {
+        return getTradeDateTimeUtc().plusHours(9);
+    }
+
+    /**
+     * @return 거래량 * 금액
+     */
+    public double getTotalPrice() {
         return tradePrice * tradeVolume;
     }
 }

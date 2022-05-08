@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
+import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 
 /**
@@ -12,7 +13,7 @@ public interface TradeEvent {
      *
      * @param candle 분봉
      */
-    void newPeriod(Candle candle);
+    void newPeriod(TradeResult candle);
 
     /**
      * 시세 체크

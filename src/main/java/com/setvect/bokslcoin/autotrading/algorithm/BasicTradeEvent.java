@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
+import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
@@ -19,8 +20,8 @@ public class BasicTradeEvent implements TradeEvent {
     private final SlackMessageService slackMessageService;
 
     @Override
-    public void newPeriod(Candle candle) {
-        LocalDateTime localDateTime = candle.getCandleDateTimeUtc();
+    public void newPeriod(TradeResult candle) {
+        LocalDateTime localDateTime = candle.getTradeDateTimeUtc();
         log.debug("새로운 매매주기: {}", DateUtil.formatDateTime(localDateTime));
     }
 

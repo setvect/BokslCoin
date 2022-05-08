@@ -1,20 +1,25 @@
 package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
-import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
-import lombok.RequiredArgsConstructor;
+import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@RequiredArgsConstructor
 @Component
 public class ChargeRequestHandler implements ApplicationListener<ChangeTrade> {
 
-    private final MabsMultiService mabsMultiService;
+    private final CoinTrading conCoinTrading;
+
+    public ChargeRequestHandler(ApplicationContext context, @Value("${com.setvect.bokslcoin.autotrading.algorithm.name}") String name) {
+        this.conCoinTrading = (CoinTrading) context.getBean(name);
+    }
+
 
     @Override
     public void onApplicationEvent(ChangeTrade event) {
-        mabsMultiService.tradeEvent(event.getTradeResult());
+        conCoinTrading.tradeEvent(event.getTradeResult());
     }
 }

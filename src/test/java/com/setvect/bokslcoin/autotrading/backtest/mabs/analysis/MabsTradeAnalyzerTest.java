@@ -2,7 +2,6 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
-import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
@@ -143,7 +142,7 @@ public class MabsTradeAnalyzerTest {
                 DateRange range = new DateRange(BASE_START, LocalDateTime.now());
                 MabsConditionEntity condition = MabsConditionEntity.builder()
                         .market(coin)
-                        .tradePeriod(TradePeriod.P_60)
+                        .tradePeriod(PeriodType.P_60)
                         .upBuyRate(0.01)
                         .downSellRate(0.01)
                         .shortPeriod(period.getLeft())
@@ -328,7 +327,7 @@ public class MabsTradeAnalyzerTest {
         properties.setUpBuyRate(condition.getUpBuyRate());
         properties.setLoseStopRate(condition.getLoseStopRate());
         properties.setDownSellRate(condition.getDownSellRate());
-        properties.setTradePeriod(condition.getTradePeriod());
+        properties.setPeriodType(condition.getTradePeriod());
         properties.setShortPeriod(condition.getShortPeriod());
         properties.setLongPeriod(condition.getLongPeriod());
         properties.setNewMasBuy(true);
@@ -340,13 +339,13 @@ public class MabsTradeAnalyzerTest {
                 .then((invocation) -> candleDataProvider.getCurrentCandle(invocation.getArgument(1)));
 
         when(candleService.getMinute(eq(15), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_15, invocation.getArgument(2, Integer.class)));
+                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.P_15, invocation.getArgument(2, Integer.class)));
         when(candleService.getMinute(eq(30), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_30, invocation.getArgument(2, Integer.class)));
+                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.P_30, invocation.getArgument(2, Integer.class)));
         when(candleService.getMinute(eq(60), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_60, invocation.getArgument(2, Integer.class)));
+                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.P_60, invocation.getArgument(2, Integer.class)));
         when(candleService.getMinute(eq(240), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_240, invocation.getArgument(2, Integer.class)));
+                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.P_240, invocation.getArgument(2, Integer.class)));
 
         when(candleService.getDay(anyString(), anyInt()))
                 .then((invocation) -> candleDataProvider.beforeDayCandle(invocation.getArgument(0, String.class), invocation.getArgument(1, Integer.class)));

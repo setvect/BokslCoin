@@ -333,7 +333,7 @@ public class MakeBacktestReport {
     private AnalysisReportResult.MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
         Map<String, List<CandleEntity>> coinCandleListMap = markets.stream()
                 .collect(Collectors.toMap(Function.identity(),
-                        p -> candleRepository.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
+                        p -> candleRepository.findMarketPrice(p, PeriodType.P_1440, range.getFrom(), range.getTo()))
                 );
 
         Map<String, AnalysisReportResult.YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);
@@ -493,7 +493,7 @@ public class MakeBacktestReport {
     /**
      * 분석 요약결과
      *
-     * @param result
+     * @param result ..
      */
     private void printSummary(AnalysisReportResult result) {
         StringBuilder report = new StringBuilder();
@@ -627,7 +627,7 @@ public class MakeBacktestReport {
      * 복수개의 분석 결과 요약 리포트
      *
      * @param accResult 분석결과
-     * @throws IOException
+     * @throws IOException ..
      */
     private void makeReportMulti(List<AnalysisReportResult> accResult) throws IOException {
         String header = "분석기간,분석 아이디,대상 코인,투자비율,최초 투자금액,매수 수수료,매도 수수료,조건 설명," +

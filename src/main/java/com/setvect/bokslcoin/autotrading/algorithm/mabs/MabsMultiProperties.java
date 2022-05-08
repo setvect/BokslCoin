@@ -1,6 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.mabs;
 
-import com.setvect.bokslcoin.autotrading.algorithm.TradePeriod;
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -38,7 +38,7 @@ public class MabsMultiProperties {
     /**
      * 매매 주기
      */
-    private TradePeriod tradePeriod;
+    private PeriodType periodType;
     /**
      * 상승 매수률
      */

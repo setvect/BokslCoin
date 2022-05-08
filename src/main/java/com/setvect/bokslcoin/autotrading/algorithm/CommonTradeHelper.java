@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm;
 
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
@@ -20,7 +21,7 @@ public class CommonTradeHelper {
         if (moveListCandle.size() < range) {
             return 0;
         }
-        List<Double> values = moveListCandle.stream().map(c -> c.getTradePrice()).collect(Collectors.toList());
+        List<Double> values = moveListCandle.stream().map(Candle::getTradePrice).collect(Collectors.toList());
         return MathUtil.getAverage(values, 0, range);
     }
 
@@ -33,39 +34,30 @@ public class CommonTradeHelper {
         if (moveListCandle.size() < range) {
             return 0;
         }
-        List<Double> values = moveListCandle.stream().map(c -> c.getTradePrice()).collect(Collectors.toList());
+        List<Double> values = moveListCandle.stream().map(Candle::getTradePrice).collect(Collectors.toList());
         return MathUtil.getAverageWeight(values, 0, range);
     }
 
     /**
-     * @param candleService
+     * @param candleService ...
      * @param market        코인(KRW-BTC, KRW-ETH, ...)
      * @param tradePeriod   매매 주기
      * @param periodCount   주기
      * @return 캔들(최근 순서대로)
      */
-    public static List<Candle> getCandles(CandleService candleService, String market, TradePeriod tradePeriod, int periodCount) {
+    public static List<Candle> getCandles(CandleService candleService, String market, PeriodType tradePeriod, int periodCount) {
         List<Candle> moveListCandle = new ArrayList<>();
         switch (tradePeriod) {
             case P_15:
-                List<CandleMinute> t1 = candleService.getMinute(15, market, periodCount);
-                moveListCandle.addAll(t1);
-                break;
             case P_30:
-                List<CandleMinute> t2 = candleService.getMinute(30, market, periodCount);
-                moveListCandle.addAll(t2);
-                break;
             case P_60:
-                List<CandleMinute> t3 = candleService.getMinute(60, market, periodCount);
-                moveListCandle.addAll(t3);
-                break;
             case P_240:
-                List<CandleMinute> t4 = candleService.getMinute(240, market, periodCount);
-                moveListCandle.addAll(t4);
+                List<CandleMinute> candles = candleService.getMinute(tradePeriod.getDiffMinutes(), market, periodCount);
+                moveListCandle.addAll(candles);
                 break;
             case P_1440:
-                List<CandleDay> t5 = candleService.getDay(market, periodCount);
-                moveListCandle.addAll(t5);
+                List<CandleDay> candlesDay = candleService.getDay(market, periodCount);
+                moveListCandle.addAll(candlesDay);
                 break;
         }
         return moveListCandle;
