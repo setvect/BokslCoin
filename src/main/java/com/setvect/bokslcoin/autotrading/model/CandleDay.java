@@ -28,6 +28,9 @@ public class CandleDay extends Candle {
      * @return 전일 종가대비 수익률
      */
     public double getYield() {
+        if (prevClosingPrice == null) {
+            return 0;
+        }
         return ApplicationUtil.getYield(prevClosingPrice, getTradePrice());
     }
 }

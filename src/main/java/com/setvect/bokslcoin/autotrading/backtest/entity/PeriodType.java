@@ -9,12 +9,12 @@ import java.time.LocalDateTime;
  */
 @Getter
 public enum PeriodType {
-    P_1(1),
-    P_15(15),
-    P_30(30),
-    P_60(60),
-    P_240(240),
-    P_1440(1440);
+    PERIOD_1(1),
+    PERIOD_15(15),
+    PERIOD_30(30),
+    PERIOD_60(60),
+    PERIOD_240(240),
+    PERIOD_1440(1440);
 
     private final int diffMinutes;
 
@@ -33,19 +33,19 @@ public enum PeriodType {
     public LocalDateTime fitDateTime(LocalDateTime timeUtc) {
         LocalDateTime lastCandleTime;
         switch (this) {
-            case P_15:
+            case PERIOD_15:
                 lastCandleTime = timeUtc.minusMinutes(timeUtc.getMinute() % 15).withSecond(0).withNano(0);
                 break;
-            case P_30:
+            case PERIOD_30:
                 lastCandleTime = timeUtc.minusMinutes(timeUtc.getMinute() % 30).withSecond(0).withNano(0);
                 break;
-            case P_60:
+            case PERIOD_60:
                 lastCandleTime = timeUtc.withMinute(0).withSecond(0).withNano(0);
                 break;
-            case P_240:
+            case PERIOD_240:
                 lastCandleTime = timeUtc.minusHours(timeUtc.getHour() % 4).withMinute(0).withSecond(0).withNano(0);
                 break;
-            case P_1440:
+            case PERIOD_1440:
                 lastCandleTime = timeUtc.withHour(0).withMinute(0).withSecond(0).withNano(0);
                 break;
             default:

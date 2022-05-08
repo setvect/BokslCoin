@@ -48,14 +48,14 @@ public class CommonTradeHelper {
     public static List<Candle> getCandles(CandleService candleService, String market, PeriodType tradePeriod, int periodCount) {
         List<Candle> moveListCandle = new ArrayList<>();
         switch (tradePeriod) {
-            case P_15:
-            case P_30:
-            case P_60:
-            case P_240:
+            case PERIOD_15:
+            case PERIOD_30:
+            case PERIOD_60:
+            case PERIOD_240:
                 List<CandleMinute> candles = candleService.getMinute(tradePeriod.getDiffMinutes(), market, periodCount);
                 moveListCandle.addAll(candles);
                 break;
-            case P_1440:
+            case PERIOD_1440:
                 List<CandleDay> candlesDay = candleService.getDay(market, periodCount);
                 moveListCandle.addAll(candlesDay);
                 break;

@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -8,6 +9,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
+@Builder
 @ToString
 public class TradeResult {
     private String type;

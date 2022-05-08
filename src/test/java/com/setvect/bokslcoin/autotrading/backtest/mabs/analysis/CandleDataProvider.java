@@ -31,7 +31,7 @@ public class CandleDataProvider {
     private final LapTimeChecker ck = new LapTimeChecker("start");
 
 
-    private final Map<CacheKey, List<Candle>> cachePeriod = new HashMap();
+    private final Map<CacheKey, List<Candle>> cachePeriod = new HashMap<>();
 
     public CandleDataProvider(CandleRepository candleRepository) {
         this.candleRepository = candleRepository;
@@ -45,7 +45,7 @@ public class CandleDataProvider {
     }
 
     public CandleMinute getCurrentCandle(String market) {
-        List<CandleEntity> minuteOfDay = candleRepository.findMarketPrice(market, PeriodType.P_1, currentDateTime, currentDateTime);
+        List<CandleEntity> minuteOfDay = candleRepository.findMarketPrice(market, PeriodType.PERIOD_1, currentDateTime, currentDateTime);
         if (minuteOfDay.size() == 0) {
             currentCandle = null;
         } else {
@@ -55,7 +55,7 @@ public class CandleDataProvider {
     }
 
     public List<CandleDay> beforeDayCandle(String market, int count) {
-        List<Candle> r = beforeData(market, PeriodType.P_1440, count);
+        List<Candle> r = beforeData(market, PeriodType.PERIOD_1440, count);
         return r.stream().map(p -> ApplicationUtil.getMapper().map(p, CandleDay.class)).collect(Collectors.toList());
     }
 
@@ -70,17 +70,17 @@ public class CandleDataProvider {
             cachePeriod.clear();
         }
         LocalDateTime base = null;
-        if (periodType == PeriodType.P_1440) {
+        if (periodType == PeriodType.PERIOD_1440) {
             base = currentDateTime.withHour(0).withMinute(0).withSecond(0).withNano(0);
-        } else if (periodType == PeriodType.P_240) {
+        } else if (periodType == PeriodType.PERIOD_240) {
             int hour = (currentDateTime.getHour() / 4) * 4;
             base = currentDateTime.withHour(hour).withMinute(0).withSecond(0).withNano(0);
-        } else if (periodType == PeriodType.P_60) {
+        } else if (periodType == PeriodType.PERIOD_60) {
             base = currentDateTime.withMinute(0).withSecond(0).withNano(0);
-        } else if (periodType == PeriodType.P_30) {
+        } else if (periodType == PeriodType.PERIOD_30) {
             int minute = (currentDateTime.getMinute() / 30) * 30;
             base = currentDateTime.withMinute(minute).withSecond(0).withNano(0);
-        } else if (periodType == PeriodType.P_15) {
+        } else if (periodType == PeriodType.PERIOD_15) {
             int minute = (currentDateTime.getMinute() / 15) * 15;
             base = currentDateTime.withMinute(minute).withSecond(0).withNano(0);
         }

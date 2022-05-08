@@ -375,3 +375,10 @@ create unique index IDX_CANDLE_ENTITY_MARKET
     on WA_CANDLE (MARKET, CANDLE_DATE_TIME_UTC desc, PERIOD_TYPE);
 
 drop index IDX_CANDLE_DATE_TIME_UTC_DESC;
+
+-- ===============
+select TRADE_PERIOD, replace(TRADE_PERIOD, 'P_', 'PERIOD_')
+from XA_MABS_CONDITION;
+
+update XA_MABS_CONDITION
+set TRADE_PERIOD = replace(TRADE_PERIOD, 'P_', 'PERIOD_');

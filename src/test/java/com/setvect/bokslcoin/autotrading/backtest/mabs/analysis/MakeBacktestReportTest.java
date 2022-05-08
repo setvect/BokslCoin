@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 @SpringBootTest
 @ActiveProfiles("local")
 @Slf4j
-public class MakeBacktestReport {
+public class MakeBacktestReportTest {
 
     @Autowired
     private MabsConditionEntityRepository mabsConditionEntityRepository;
@@ -176,7 +176,7 @@ public class MakeBacktestReport {
             accResult.add(result);
             count++;
 
-            log.info("{}/{}, {} - {}", count, total, dateRange);
+            log.info("{}/{} - {}", count, total, dateRange);
         }
 //        }
 
@@ -333,7 +333,7 @@ public class MakeBacktestReport {
     private AnalysisReportResult.MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
         Map<String, List<CandleEntity>> coinCandleListMap = markets.stream()
                 .collect(Collectors.toMap(Function.identity(),
-                        p -> candleRepository.findMarketPrice(p, PeriodType.P_1440, range.getFrom(), range.getTo()))
+                        p -> candleRepository.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
                 );
 
         Map<String, AnalysisReportResult.YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);

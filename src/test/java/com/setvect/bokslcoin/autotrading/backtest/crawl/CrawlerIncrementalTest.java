@@ -90,7 +90,7 @@ public class CrawlerIncrementalTest {
         entity.setMarket(candle.getMarket());
         entity.setCandleDateTimeUtc(candle.getCandleDateTimeUtc());
         entity.setCandleDateTimeKst(candle.getCandleDateTimeKst());
-        entity.setPeriodType(PeriodType.P_1);
+        entity.setPeriodType(PeriodType.PERIOD_1);
         entity.setOpeningPrice(candle.getOpeningPrice());
         entity.setLowPrice(candle.getLowPrice());
         entity.setHighPrice(candle.getHighPrice());
@@ -111,8 +111,8 @@ public class CrawlerIncrementalTest {
      * @param market 코인
      */
     private void createCandleGroup(String market) {
-        List<PeriodType> targetPeriodList = Arrays.asList(PeriodType.P_15, PeriodType.P_30, PeriodType.P_60, PeriodType.P_240, PeriodType.P_1440);
-        PeriodType basePeriod = PeriodType.P_1;
+        List<PeriodType> targetPeriodList = Arrays.asList(PeriodType.PERIOD_15, PeriodType.PERIOD_30, PeriodType.PERIOD_60, PeriodType.PERIOD_240, PeriodType.PERIOD_1440);
+        PeriodType basePeriod = PeriodType.PERIOD_1;
 
         for (PeriodType targetPeriod : targetPeriodList) {
             LocalDateTime startTime = fitDateTime(market, basePeriod, targetPeriod);
@@ -205,7 +205,7 @@ public class CrawlerIncrementalTest {
     @SneakyThrows
     private List<File> crawlCandle(String market) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        List<CandleEntity> lastCandle = candleRepository.findMarketPricePeriodBefore(market, PeriodType.P_1, now, PageRequest.of(0, 1));
+        List<CandleEntity> lastCandle = candleRepository.findMarketPricePeriodBefore(market, PeriodType.PERIOD_1, now, PageRequest.of(0, 1));
         LocalDateTime lastSaveCandle = lastCandle.isEmpty() ? MINIMUM_CANDLE_DATE : lastCandle.get(0).getCandleDateTimeUtc();
 
         LocalDateTime to = null;

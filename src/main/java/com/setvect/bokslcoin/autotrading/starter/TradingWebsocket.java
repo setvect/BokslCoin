@@ -7,8 +7,6 @@ import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,8 +22,7 @@ public class TradingWebsocket {
     private final MabsMultiProperties properties;
 
 
-    @EventListener
-    public void onApplicationEvent(ContextRefreshedEvent event) {
+    public void onApplicationEvent() {
         UpbitWebSocketListener webSocketListener = new UpbitWebSocketListener(publisher, slackMessageService);
         webSocketListener.setParameter(properties.getMarkets());
 
