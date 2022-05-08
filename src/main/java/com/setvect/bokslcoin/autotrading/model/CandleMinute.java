@@ -9,5 +9,5 @@ public class CandleMinute extends Candle {
     /**
      * 분 단위(유닛)
      */
-    private Integer unit;
+    private int unit;
 }

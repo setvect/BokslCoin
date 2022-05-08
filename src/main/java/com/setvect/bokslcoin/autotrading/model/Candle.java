@@ -29,32 +29,32 @@ public class Candle {
     /**
      * 시가
      */
-    private Double openingPrice;
+    private double openingPrice;
     /**
      * 고가
      */
-    private Double highPrice;
+    private double highPrice;
     /**
      * 저가
      */
-    private Double lowPrice;
+    private double lowPrice;
     /**
      * 종가
      */
-    private Double tradePrice;
+    private double tradePrice;
 
     /**
      * 해당 캔들에서 마지막 틱이 저장된 시각
      */
-    private Long timestamp;
+    private long timestamp;
     /**
      * 누적 거래 금액
      */
-    private Double candleAccTradePrice;
+    private double candleAccTradePrice;
     /**
      * 누적 거래량
      */
-    private Double candleAccTradeVolume;
+    private double candleAccTradeVolume;
 
     public Candle(TradeResult tradeResult, PeriodType periodType) {
         market = tradeResult.getCode();
