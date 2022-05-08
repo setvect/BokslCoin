@@ -10,6 +10,7 @@ import okhttp3.WebSocketListener;
 import okio.ByteString;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -17,6 +18,13 @@ import java.util.List;
 import java.util.UUID;
 
 public class UpbitWebSocketListener extends WebSocketListener {
+    private final ApplicationEventPublisher publisher;
+
+    public UpbitWebSocketListener(ApplicationEventPublisher publisher) {
+        super();
+        this.publisher = publisher;
+    }
+
     @Getter
     public enum UpbitType {
         /**
@@ -67,8 +75,7 @@ public class UpbitWebSocketListener extends WebSocketListener {
     @Override
     public void onMessage(@NotNull WebSocket webSocket, @NotNull ByteString bytes) {
         TradeResult tradeResult = GsonUtil.GSON.fromJson(bytes.string(StandardCharsets.UTF_8), TradeResult.class);
-        System.out.println(tradeResult);
-        System.out.println(tradeResult.getTradeDateTimeKst());
+        publisher.publishEvent(new ChangeTrade(tradeResult));
     }
 
     @Override

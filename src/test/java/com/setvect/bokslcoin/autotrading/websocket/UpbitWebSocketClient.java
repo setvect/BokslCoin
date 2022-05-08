@@ -14,7 +14,7 @@ public class UpbitWebSocketClient {
                 .url("wss://api.upbit.com/websocket/v1")
                 .build();
 
-        UpbitWebSocketListener webSocketListener = new UpbitWebSocketListener();
+        UpbitWebSocketListener webSocketListener = new UpbitWebSocketListener(System.out::println);
         webSocketListener.setParameter(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT"));
 //        webSocketListener.setParameter(Arrays.asList("KRW-XRP"));
 

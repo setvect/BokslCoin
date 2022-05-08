@@ -5,6 +5,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
 import com.setvect.bokslcoin.autotrading.algorithm.CommonTradeHelper;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
@@ -151,6 +152,10 @@ public class MabsMultiService implements CoinTrading {
             sendCurrentStatus(priceCheckMessageList, rateByCoin);
         }
         assetCoinSave = true;
+    }
+
+    public void tradeEvent(TradeResult tradeResult) {
+        System.out.println(tradeResult);
     }
 
     /**
