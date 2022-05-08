@@ -3,6 +3,7 @@ package com.setvect.bokslcoin.autotrading.model;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -11,6 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor
 public class Candle {
     /**
      * 마켓명
@@ -92,5 +94,4 @@ public class Candle {
             lowPrice = price;
         }
     }
-
 }

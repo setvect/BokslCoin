@@ -1,9 +1,11 @@
 package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
 import com.google.gson.annotations.SerializedName;
+import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
@@ -17,12 +19,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 public class UpbitWebSocketListener extends WebSocketListener {
     private final ApplicationEventPublisher publisher;
+    private final SlackMessageService slackMessageService;
 
-    public UpbitWebSocketListener(ApplicationEventPublisher publisher) {
+    public UpbitWebSocketListener(ApplicationEventPublisher publisher, SlackMessageService slackMessageService) {
         super();
         this.publisher = publisher;
+        this.slackMessageService = slackMessageService;
     }
 
     @Getter
@@ -53,19 +58,26 @@ public class UpbitWebSocketListener extends WebSocketListener {
 
     @Override
     public void onClosed(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-        System.out.printf("Socket Closed : %s / %s\r\n", code, reason);
+        String message = String.format("Socket Closed : %s / %s", code, reason);
+        log.info(message);
+        slack(message);
     }
+
 
     @Override
     public void onClosing(@NotNull WebSocket webSocket, int code, @NotNull String reason) {
-        System.out.printf("Socket Closing : %s / %s\n", code, reason);
+        String message = String.format("Socket Closing : %s / %s\n", code, reason);
+        log.info(message);
+        slack(message);
         webSocket.close(NORMAL_CLOSURE_STATUS, null);
         webSocket.cancel();
     }
 
     @Override
     public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @Nullable Response response) {
-        System.out.println("Socket Error : " + t.getMessage());
+        String message = "Socket Error : " + t.getMessage();
+        log.error(message);
+        slack(message);
     }
 
     @Override
@@ -103,4 +115,12 @@ public class UpbitWebSocketListener extends WebSocketListener {
         private final UpbitType type;
         private final List<String> codes;
     }
+
+    private void slack(String message) {
+        if (slackMessageService == null) {
+            return;
+        }
+        slackMessageService.sendMessage(message);
+    }
+
 }

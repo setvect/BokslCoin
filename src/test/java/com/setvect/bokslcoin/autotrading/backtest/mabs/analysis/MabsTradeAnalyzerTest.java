@@ -305,7 +305,8 @@ public class MabsTradeAnalyzerTest {
                 continue;
             }
 
-            mabsMultiService.apply();
+            // TODO 구현
+            mabsMultiService.tradeEvent(null);
             current = current.plusMinutes(1);
             count++;
         }
@@ -363,6 +364,7 @@ public class MabsTradeAnalyzerTest {
             double maLong = invocation.getArgument(2, Double.class);
             priceMap.put(currentCandle.getMarket(), new CurrentPrice(currentCandle, maShort, maLong));
             return null;
+            // TODO check 사용할수 있게 이벤트 적용
         }).when(tradeEvent).check(notNull(), anyDouble(), anyDouble());
 
 

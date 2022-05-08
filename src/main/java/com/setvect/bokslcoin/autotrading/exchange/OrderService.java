@@ -38,27 +38,29 @@ public class OrderService {
         params.put("market", market);
 
         String jsonResult = ApiCaller.requestApi(URL_ORDERS_CHANCE, params, connectionInfo, accessInfo);
-        OrderChance orderChange = GsonUtil.GSON.fromJson(jsonResult, OrderChance.class);
 
-        return orderChange;
+        return GsonUtil.GSON.fromJson(jsonResult, OrderChance.class);
     }
 
     /**
      * @param page  페이지 1부터 시작
      * @param limit 페이지당 가져올 항목 수 100 이하
-     * @return 주문 내역
+     * @return 주문 내역(완전 체결이 안된 주문만 조회)
      */
     public List<OrderHistory> getHistory(int page, int limit) {
         Map<String, String> params = new HashMap<>();
         params.put("page", String.valueOf(page));
         params.put("limit", String.valueOf(limit));
+        // - wait : 체결 대기 (default)
+        // - watch : 예약주문 대기
+        // - done : 전체 체결 완료
+        // - cancel : 주문 취소
+        params.put("state", "wait");
 
         String jsonResult = ApiCaller.requestApi(URL_ORDERS, params, connectionInfo, accessInfo);
 
-        List<OrderHistory> orderHistoryList = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<OrderHistory>>() {
+        return GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<OrderHistory>>() {
         }.getType());
-
-        return orderHistoryList;
     }
 
 
@@ -73,8 +75,7 @@ public class OrderService {
         params.put("uuid", String.valueOf(uuid));
 
         String jsonResult = ApiCaller.requestApiByDelete(URL_ORDER, params, connectionInfo, accessInfo);
-        OrderHistory orderHistory = GsonUtil.GSON.fromJson(jsonResult, OrderHistory.class);
-        return orderHistory;
+        return GsonUtil.GSON.fromJson(jsonResult, OrderHistory.class);
     }
 
 
@@ -148,7 +149,6 @@ public class OrderService {
         params.put("ord_type", ordType.name());
 
         String jsonResult = ApiCaller.requestApiByPost(URL_ORDERS, params, connectionInfo, accessInfo);
-        OrderResult order = GsonUtil.GSON.fromJson(jsonResult, OrderResult.class);
-        return order;
+        return GsonUtil.GSON.fromJson(jsonResult, OrderResult.class);
     }
 }

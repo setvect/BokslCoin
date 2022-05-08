@@ -1,6 +1,7 @@
 package com.setvect.bokslcoin.autotrading.websocket;
 
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.UpbitWebSocketListener;
+import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 
@@ -14,7 +15,7 @@ public class UpbitWebSocketClient {
                 .url("wss://api.upbit.com/websocket/v1")
                 .build();
 
-        UpbitWebSocketListener webSocketListener = new UpbitWebSocketListener(System.out::println);
+        UpbitWebSocketListener webSocketListener = new UpbitWebSocketListener(System.out::println, null);
         webSocketListener.setParameter(Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT"));
 //        webSocketListener.setParameter(Arrays.asList("KRW-XRP"));
 

@@ -69,9 +69,18 @@ public class CandleService {
         }
 
         String jsonResult = ApiCaller.requestApi(url, params, connectionInfo);
-        List<CandleMinute> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleMinute>>() {
+        return GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleMinute>>() {
         }.getType());
-        return candles;
+    }
+
+    /**
+     * 현재 시간 기준으로 일(Day) 캔들
+     *
+     * @param market 마켓 코드 (ex. KRW-BTC)
+     * @return 일단위 캔들(최근 순서대로)
+     */
+    public CandleDay getDay(String market) {
+        return getDay(market, 1, null).get(0);
     }
 
     /**
@@ -103,8 +112,7 @@ public class CandleService {
         }
 
         String jsonResult = ApiCaller.requestApi(URL_DAYS, params, connectionInfo);
-        List<CandleDay> candles = GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleDay>>() {
+        return GsonUtil.GSON.fromJson(jsonResult, new TypeToken<List<CandleDay>>() {
         }.getType());
-        return candles;
     }
 }
