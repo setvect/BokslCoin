@@ -30,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -162,22 +163,20 @@ public class MabsTradeAnalyzerTest {
         System.out.println("끝");
     }
 
-    /**
-     * 특정 조건에 대해 증분 분석 수행
-     */
+    @DisplayName("★★★ 특정 조건에 대해 증분 분석 수행")
     @Test
     public void analysisIncremental() {
         List<Integer> conditionSeqList = Arrays.asList(
-                27288611// KRW-BTC(2017-10-16)
-//                27346706,// KRW-ETH(2017-10-10)
-//                27403421// KRW-XRP(2017-10-10)
-//                27458175,// KRW-EOS(2018-03-30)
-//                27508376,// KRW-ETC(2017-10-09)
-//                29794493,// KRW-ADA(2017-10-16)
-//                36879612,// KRW-MANA(2019-04-09)
-//                36915333,// KRW-BAT(2018-07-30)
-//                44399001,// KRW-BCH(2017-10-08)
-//                44544109//  KRW-DOT(2020-10-15)
+                27288611, // KRW-BTC(2017-10-16)
+                27346706, // KRW-ETH(2017-10-10)
+                27403421, // KRW-XRP(2017-10-10)
+                27458175, // KRW-EOS(2018-03-30)
+                27508376, // KRW-ETC(2017-10-09)
+                29794493, // KRW-ADA(2017-10-16)
+                36879612, // KRW-MANA(2019-04-09)
+                36915333, // KRW-BAT(2018-07-30)
+                44399001, // KRW-BCH(2017-10-08)
+                44544109  //  KRW-DOT(2020-10-15)
         );
 
         // 완전한 거래(매수-매도 쌍)를 만들기 위해 마지막 거래가 매수인경우 거래 내역 삭제

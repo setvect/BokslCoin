@@ -56,22 +56,22 @@ public class Candle {
      */
     private double candleAccTradeVolume;
 
-    public Candle(TradeResult tradeResult, PeriodType periodType) {
+    public Candle(TradeResult tradeResult) {
         market = tradeResult.getCode();
-        candleDateTimeUtc = periodType.fitDateTime(tradeResult.getTradeDateTimeUtc());
-        candleDateTimeKst = periodType.fitDateTime(tradeResult.getTradeDateTimeKst());
+        candleDateTimeUtc = tradeResult.getTradeDateTimeUtc();
+        candleDateTimeKst = tradeResult.getTradeDateTimeKst();
         openingPrice = tradeResult.getTradePrice();
-        highPrice = tradeResult.getTotalPrice();
-        lowPrice = 0.0;
-        lowPrice = tradeResult.getTotalPrice();
-        tradePrice = 0.0;
-        tradePrice = tradeResult.getTotalPrice();
+        highPrice = tradeResult.getTradePrice();
+        lowPrice = tradeResult.getTradePrice();
+        tradePrice = tradeResult.getTradePrice();
         timestamp = tradeResult.getTimestamp();
         candleAccTradeVolume = tradeResult.getTradeVolume();
         candleAccTradePrice = tradeResult.getTotalPrice();
     }
 
     public void change(TradeResult tradeResult) {
+        candleDateTimeUtc = tradeResult.getTradeDateTimeUtc();
+        candleDateTimeKst = tradeResult.getTradeDateTimeKst();
         timestamp = tradeResult.getTimestamp();
         changePrice(tradeResult.getTradePrice());
         candleAccTradeVolume += tradeResult.getTradeVolume();

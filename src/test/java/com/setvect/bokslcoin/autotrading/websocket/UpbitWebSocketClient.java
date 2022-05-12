@@ -1,7 +1,6 @@
 package com.setvect.bokslcoin.autotrading.websocket;
 
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.UpbitWebSocketListener;
-import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 

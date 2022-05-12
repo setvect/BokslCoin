@@ -138,10 +138,11 @@ public class MabsMultiService implements CoinTrading {
         Candle newestCandle = candles.get(0);
         LocalDateTime tradeDateTimeKst = properties.getPeriodType().fitDateTime(tradeResult.getTradeDateTimeKst());
         LocalDateTime candleDateTimeKst = properties.getPeriodType().fitDateTime(newestCandle.getCandleDateTimeKst());
+        // TODO 시간이 분단위 까지 잘 들어가지는 확인 
         if (candleDateTimeKst.equals(tradeDateTimeKst)) {
             newestCandle.change(tradeResult);
         } else {
-            newestCandle = new Candle(tradeResult, properties.getPeriodType());
+            newestCandle = new Candle(tradeResult);
             // 최근 캔들이 맨 앞에 있기 때문에 index 0에 넣음
             candles.add(0, newestCandle);
         }
@@ -150,12 +151,177 @@ public class MabsMultiService implements CoinTrading {
         double maLong = CommonTradeHelper.getMa(candles, properties.getLongPeriod());
         tradeEvent.check(newestCandle, maShort, maLong);
 
-        if (!tradeCompleteOfPeriod.contains(market) && getCash() != 0) {
-            buyCheck(market);
-        } else {
-            // TODO 매도가 안됨
-            sellCheck(market);
+        if (isBuyable(market)) {
+            doBid(market);
+        } else if (isSellable(market)) {
+            doAsk(market);
         }
+    }
+
+    /**
+     * @param market 매수 대상 코인
+     * @return true 매수 조건 만족
+     */
+    private boolean isBuyable(String market) {
+        if (tradeCompleteOfPeriod.contains(market)) {
+            return false;
+        }
+
+        List<Candle> candleList = coinByCandles.get(market);
+        double maShort = CommonTradeHelper.getMa(candleList, properties.getShortPeriod());
+        double maLong = CommonTradeHelper.getMa(candleList, properties.getLongPeriod());
+
+        double buyTargetPrice = maLong + maLong * properties.getUpBuyRate();
+
+        //(장기이평 + 장기이평 * 상승매수률) <= 단기이평
+        boolean isBuy = buyTargetPrice <= maShort;
+        double cash = getBuyCash();
+        if (!isBuy || !(cash >= MINIMUM_BUY_CASH)) {
+            return false;
+        }
+        // 매수 직전 주문 요청 이력 확인
+        loadOrderWait();
+        OrderHistory orderHistory = coinOrderWait.get(market);
+        if (orderHistory != null) {
+            log.info("{} 매수 주문요청  상태임: {}", market, orderHistory);
+            return false;
+        }
+        // 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
+        boolean isBeforeBuy = isBeforeBuy(candleList);
+        Candle candle = candleList.get(0);
+        if (isBeforeBuy && properties.isNewMasBuy()) {
+            log.debug("[{}] 매수 안함. 새롭게 이동평균을 돌파할 때만 매수합니다.", candle.getMarket());
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 코인 매수
+     *
+     * @param market 코인 종류
+     */
+    private void doBid(String market) {
+        List<Candle> candleList = coinByCandles.get(market);
+        Candle candle = candleList.get(0);
+        double tradePrice = candle.getTradePrice();
+
+        double bidPrice = getBuyCash();
+        // 매수 가격, 높은 가격으로 매수(시장가 효과)
+        double fitPrice = AskPriceRange.askPrice(tradePrice + tradePrice * DIFF_RATE_BUY);
+
+        // 매수 수량
+        String volume = ApplicationUtil.toNumberString(bidPrice / fitPrice);
+
+        String price = ApplicationUtil.toNumberString(fitPrice);
+        orderService.callOrderBid(market, volume, price);
+
+        TradeEntity trade = new TradeEntity();
+        trade.setMarket(market);
+        trade.setTradeType(TradeType.BUY);
+        // 매수 호가 보다 높게 체결 될 가능성이 있기 때문에 오차가 있음
+        double amount = tradePrice * Double.parseDouble(volume);
+        trade.setAmount(amount);
+        trade.setUnitPrice(tradePrice);
+        trade.setRegDate(LocalDateTime.now());
+        tradeRepository.save(trade);
+
+        tradeEvent.bid(market, tradePrice, bidPrice);
+        loadAccount();
+        loadOrderWait();
+    }
+
+
+    /**
+     * @param market 매도 대상 코인
+     * @return true 매도 조건 만족
+     */
+    private boolean isSellable(String market) {
+        Account account = coinAccount.get(market);
+        if (account == null) {
+            return false;
+        }
+        List<Candle> candleList = coinByCandles.get(market);
+
+        Candle candle = candleList.get(0);
+        double yield = getYield(candle, account);
+
+        double maxHighYield = Math.max(highYield.getOrDefault(market, 0.0), yield);
+        highYield.put(market, maxHighYield);
+        tradeEvent.highYield(candle.getMarket(), maxHighYield);
+
+        double minLowYield = Math.min(lowYield.getOrDefault(market, 0.0), yield);
+        lowYield.put(market, minLowYield);
+        tradeEvent.lowYield(candle.getMarket(), minLowYield);
+
+        double maShort = CommonTradeHelper.getMa(candleList, properties.getShortPeriod());
+        double maLong = CommonTradeHelper.getMa(candleList, properties.getLongPeriod());
+
+        // 장기이평 >= (단기이평 + 단기이평 * 하락매도률)
+        double sellTargetPrice = maShort + maShort * properties.getDownSellRate();
+        boolean isSell = maLong >= sellTargetPrice;
+        boolean isLossStop = properties.getLoseStopRate() < -yield;
+        if (!(isSell || isLossStop)) {
+            // 매도 하지 않음
+            return false;
+        }
+
+        // 매도 직전 주문 요청 이력 확인
+        loadOrderWait();
+        OrderHistory orderHistory = coinOrderWait.get(market);
+        if (orderHistory != null) {
+            log.info("{} 매도 주문요청  상태임: {}", market, orderHistory);
+            return false;
+        }
+        return true;
+
+    }
+
+    /**
+     * 매도
+     *
+     * @param market 코인 종류
+     */
+    private void doAsk(String market) {
+        Account account = coinAccount.get(market);
+        List<Candle> candleList = coinByCandles.get(market);
+        Candle candle = candleList.get(0);
+        double yield = getYield(candle, account);
+
+        String message = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익률: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
+                candle.getMarket(),
+                candle.getTradePrice(),
+                account.getAvgBuyPriceValue(),
+                account.getInvestCash(),
+                yield * 100,
+                highYield.get(market) * 100,
+                lowYield.get(market) * 100
+        );
+        log.info(message);
+        slackMessageService.sendMessage(message);
+
+        // 매도 가격, 낮은 가격으로 매도(시장가 효과)
+        double currentPrice = candle.getTradePrice();
+        double balance = account.getBalanceValue();
+        double fitPrice = AskPriceRange.askPrice(currentPrice - currentPrice * DIFF_RATE_SELL);
+        orderService.callOrderAsk(market, ApplicationUtil.toNumberString(balance), ApplicationUtil.toNumberString(fitPrice));
+
+        TradeEntity trade = new TradeEntity();
+        trade.setMarket(market);
+        trade.setTradeType(TradeType.SELL);
+        // 매도 호가 보다 낮게 체결 될 가능성이 있기 때문에 오차가 있음
+        trade.setAmount(currentPrice * balance);
+        trade.setUnitPrice(currentPrice);
+        trade.setRegDate(LocalDateTime.now());
+        trade.setYield(yield);
+        tradeRepository.save(trade);
+
+        tradeEvent.ask(market, balance, currentPrice, AskReason.MA_DOWN);
+        highYield.put(market, 0.0);
+        lowYield.put(market, 0.0);
+        tradeCompleteOfPeriod.add(market);
+        loadAccount();
+        loadOrderWait();
     }
 
     /**
@@ -236,7 +402,7 @@ public class MabsMultiService implements CoinTrading {
     /**
      * 현재 시세정보와 투자 수익률 슬렉으로 전달
      *
-     * @param rateByCoin       코인 투자 수익률
+     * @param rateByCoin 코인 투자 수익률
      */
     private void sendCurrentStatus(List<AssetHistoryEntity> rateByCoin) {
 
@@ -292,164 +458,11 @@ public class MabsMultiService implements CoinTrading {
         return accountHistoryList;
     }
 
-    /**
-     * 조건이 만족하면 매수 수행
-     *
-     * @param market 매수 코인
-     */
-    private void buyCheck(String market) {
-        List<Candle> candleList = coinByCandles.get(market);
-        double maShort = CommonTradeHelper.getMa(candleList, properties.getShortPeriod());
-        double maLong = CommonTradeHelper.getMa(candleList, properties.getLongPeriod());
-
-        double buyTargetPrice = maLong + maLong * properties.getUpBuyRate();
-
-        //(장기이평 + 장기이평 * 상승매수률) <= 단기이평
-        boolean isBuy = buyTargetPrice <= maShort;
-        double cash = getBuyCash();
-        if (isBuy && cash >= MINIMUM_BUY_CASH) {
-            // 매수 직전 주문 요청 이력 확인
-            loadOrderWait();
-            OrderHistory orderHistory = coinOrderWait.get(market);
-            if (orderHistory != null) {
-                log.info("{} 매수 주문요청  상태임: {}", market, orderHistory);
-                return;
-            }
-            // 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
-            boolean isBeforeBuy = isBeforeBuy(candleList);
-            Candle candle = candleList.get(0);
-            if (isBeforeBuy && properties.isNewMasBuy()) {
-                log.debug("[{}] 매수 안함. 새롭게 이동평균을 돌파할 때만 매수합니다.", candle.getMarket());
-                return;
-            }
-            doBid(market, candle.getTradePrice(), cash);
-        }
-    }
-
-    /**
-     * 조건이 만족하면 매도
-     *
-     * @param market 매도 코인
-     */
-    private void sellCheck(String market) {
-        Account account = coinAccount.get(market);
-        if (account == null) {
-            return;
-        }
-        List<Candle> candleList = coinByCandles.get(market);
-
-        Candle candle = candleList.get(0);
-        double rate = getYield(candle, account);
-
-        double maxHighYield = Math.max(highYield.getOrDefault(market, 0.0), rate);
-        highYield.put(market, maxHighYield);
-        tradeEvent.highYield(candle.getMarket(), maxHighYield);
-
-        double minLowYield = Math.min(lowYield.getOrDefault(market, 0.0), rate);
-        lowYield.put(market, minLowYield);
-        tradeEvent.lowYield(candle.getMarket(), minLowYield);
-
-        double maShort = CommonTradeHelper.getMa(candleList, properties.getShortPeriod());
-        double maLong = CommonTradeHelper.getMa(candleList, properties.getLongPeriod());
-
-        String message1 = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익률: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
-                candle.getMarket(),
-                candle.getTradePrice(),
-                account.getAvgBuyPriceValue(),
-                account.getInvestCash(),
-                rate * 100,
-                highYield.get(market) * 100,
-                lowYield.get(market) * 100
-        );
-        log.debug(message1);
-
-        // 장기이평 >= (단기이평 + 단기이평 * 하락매도률)
-        double sellTargetPrice = maShort + maShort * properties.getDownSellRate();
-        boolean isSell = maLong >= sellTargetPrice;
-
-        if (isSell || properties.getLoseStopRate() < -rate) {
-            // 매도 직전 주문 요청 이력 확인
-            loadOrderWait();
-            OrderHistory orderHistory = coinOrderWait.get(market);
-            if (orderHistory != null) {
-                log.info("{} 매도 주문요청  상태임: {}", market, orderHistory);
-                return;
-            }
-
-            slackMessageService.sendMessage(message1);
-            doAsk(market, candle.getTradePrice(), account.getBalanceValue(), rate);
-        }
-    }
 
     private int getCurrentPeriod(LocalDateTime nowUtc) {
         int dayHourMinuteSum = nowUtc.getDayOfMonth() * 1440 + nowUtc.getHour() * 60 + nowUtc.getMinute();
         return dayHourMinuteSum / properties.getPeriodType().getDiffMinutes();
     }
-
-    /**
-     * 매수
-     *
-     * @param market     코인 종류
-     * @param tradePrice 코인 가격
-     * @param bidPrice   매수 금액
-     */
-    private void doBid(String market, double tradePrice, double bidPrice) {
-        // 매수 가격, 높은 가격으로 매수(시장가 효과)
-        double fitPrice = AskPriceRange.askPrice(tradePrice + tradePrice * DIFF_RATE_BUY);
-
-        // 매수 수량
-        String volume = ApplicationUtil.toNumberString(bidPrice / fitPrice);
-
-        String price = ApplicationUtil.toNumberString(fitPrice);
-        orderService.callOrderBid(market, volume, price);
-
-        TradeEntity trade = new TradeEntity();
-        trade.setMarket(market);
-        trade.setTradeType(TradeType.BUY);
-        // 매수 호가 보다 높게 체결 될 가능성이 있기 때문에 오차가 있음
-        double amount = tradePrice * Double.parseDouble(volume);
-        trade.setAmount(amount);
-        trade.setUnitPrice(tradePrice);
-        trade.setRegDate(LocalDateTime.now());
-        tradeRepository.save(trade);
-
-        tradeEvent.bid(market, tradePrice, bidPrice);
-        loadAccount();
-        loadOrderWait();
-    }
-
-
-    /**
-     * 매도
-     *
-     * @param market       코인 종류
-     * @param currentPrice 코인 가격
-     * @param balance      코인 주문량
-     * @param yield        수익률
-     */
-    private void doAsk(String market, double currentPrice, double balance, double yield) {
-        // 매도 가격, 낮은 가격으로 매도(시장가 효과)
-        double fitPrice = AskPriceRange.askPrice(currentPrice - currentPrice * DIFF_RATE_SELL);
-        orderService.callOrderAsk(market, ApplicationUtil.toNumberString(balance), ApplicationUtil.toNumberString(fitPrice));
-
-        TradeEntity trade = new TradeEntity();
-        trade.setMarket(market);
-        trade.setTradeType(TradeType.SELL);
-        // 매도 호가 보다 낮게 체결 될 가능성이 있기 때문에 오차가 있음
-        trade.setAmount(currentPrice * balance);
-        trade.setUnitPrice(currentPrice);
-        trade.setRegDate(LocalDateTime.now());
-        trade.setYield(yield);
-        tradeRepository.save(trade);
-
-        tradeEvent.ask(market, balance, currentPrice, AskReason.MA_DOWN);
-        highYield.put(market, 0.0);
-        lowYield.put(market, 0.0);
-        tradeCompleteOfPeriod.add(market);
-        loadAccount();
-        loadOrderWait();
-    }
-
 
     /**
      * @param candleList 캔들

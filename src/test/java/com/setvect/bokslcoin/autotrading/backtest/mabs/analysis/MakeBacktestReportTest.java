@@ -13,6 +13,7 @@ import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,6 +51,7 @@ public class MakeBacktestReportTest {
 
     @Test
     @Transactional
+    @DisplayName("★★★ 실제 코인 매매 평가")
     public void analysis() throws IOException {
         List<Integer> conditionSeqList = Arrays.asList(
                 27288611,// KRW-BTC(2017-10-16)
