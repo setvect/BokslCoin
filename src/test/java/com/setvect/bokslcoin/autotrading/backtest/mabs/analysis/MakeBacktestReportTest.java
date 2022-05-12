@@ -51,8 +51,7 @@ public class MakeBacktestReportTest {
 
     @Test
     @Transactional
-    @DisplayName("★★★ 실제 코인 매매 평가")
-    public void analysis() throws IOException {
+    public void 실제_코인_매매_평가() throws IOException {
         List<Integer> conditionSeqList = Arrays.asList(
                 27288611,// KRW-BTC(2017-10-16)
                 27346706,// KRW-ETH(2017-10-10)

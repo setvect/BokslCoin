@@ -112,8 +112,6 @@ public class MabsMultiService implements CoinTrading {
             loadOrderWait();
             loadCandle();
         }
-        // TODO 아래 코드 삭제
-//        log.info("{}: {}", tradeResult.getTradeDateTimeUtc(), tradeResult.getTradePrice());
 
         LocalDateTime nowUtc = tradeResult.getTradeDateTimeUtc();
         int currentPeriod = getCurrentPeriod(nowUtc);
@@ -138,7 +136,7 @@ public class MabsMultiService implements CoinTrading {
         Candle newestCandle = candles.get(0);
         LocalDateTime tradeDateTimeKst = properties.getPeriodType().fitDateTime(tradeResult.getTradeDateTimeKst());
         LocalDateTime candleDateTimeKst = properties.getPeriodType().fitDateTime(newestCandle.getCandleDateTimeKst());
-        // TODO 시간이 분단위 까지 잘 들어가지는 확인 
+        // TODO 시간이 분단위 까지 잘 들어가지는 확인
         if (candleDateTimeKst.equals(tradeDateTimeKst)) {
             newestCandle.change(tradeResult);
         } else {

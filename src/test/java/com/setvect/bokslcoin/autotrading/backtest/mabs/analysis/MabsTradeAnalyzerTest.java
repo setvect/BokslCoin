@@ -163,9 +163,8 @@ public class MabsTradeAnalyzerTest {
         System.out.println("끝");
     }
 
-    @DisplayName("★★★ 특정 조건에 대해 증분 분석 수행")
     @Test
-    public void analysisIncremental() {
+    public void 특정_조건에_대해_증분_분석_수행() {
         List<Integer> conditionSeqList = Arrays.asList(
                 27288611, // KRW-BTC(2017-10-16)
                 27346706, // KRW-ETH(2017-10-10)
