@@ -25,12 +25,12 @@ import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
+import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -391,8 +391,7 @@ public class MabsTradeAnalyzerTest {
             String market = invocation.getArgument(0, String.class);
             CurrentPrice currentPrice = priceMap.get(market);
             Candle candle = currentPrice.getCandle();
-            MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(candle);
-
+            MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(depthCopy(candle));
             double tradePrice = invocation.getArgument(1);
 
             Account coinAccount = accountMap.get(market);
@@ -434,7 +433,7 @@ public class MabsTradeAnalyzerTest {
             CurrentPrice currentPrice = priceMap.get(market);
             Candle candle = currentPrice.getCandle();
 
-            MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(candle);
+            MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(depthCopy(candle));
 
             Account coinAccount = accountMap.get(market);
             backtestRow.setBidPrice(coinAccount.getAvgBuyPriceValue());
@@ -463,6 +462,11 @@ public class MabsTradeAnalyzerTest {
             tradeHistory.add(backtestRow);
             return null;
         }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
+    }
+
+    private static Candle depthCopy(Candle candle) {
+        String json = GsonUtil.GSON.toJson(candle);
+        return GsonUtil.GSON.fromJson(json, Candle.class);
     }
 
     /**

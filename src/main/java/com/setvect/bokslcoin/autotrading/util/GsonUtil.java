@@ -1,13 +1,12 @@
 package com.setvect.bokslcoin.autotrading.util;
 
-import com.google.gson.FieldNamingStrategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializer;
 
-import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -51,6 +50,10 @@ public class GsonUtil {
                     return DateUtil.getLocalTime(timeStr, DateUtil.HHmmss);
                 }
         );
+        gsonBuilder.registerTypeAdapter(LocalDateTime.class, (JsonSerializer<LocalDateTime>) (localDateTime, type, jsonDeserializationContext)
+                -> new JsonPrimitive(DateUtil.format(localDateTime, DateUtil.yyyy_MM_ddTHH_mm_ss))
+        );
+
         GSON = gsonBuilder.create();
     }
 
