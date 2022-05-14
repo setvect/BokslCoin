@@ -52,4 +52,11 @@ public class AssetHistoryEntity {
      */
     @Column(name = "REG_DATE", nullable = false)
     private LocalDateTime regDate;
+
+    /**
+     * @return 평가금
+     */
+    public double getAppraisal() {
+        return price + price * yield;
+    }
 }

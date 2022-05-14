@@ -1,5 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
+import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -8,6 +9,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+/**
+ * 웹서비스 체결 모델
+ * https://docs.upbit.com/docs/upbit-quotation-websocket
+ */
 @Getter
 @Builder
 @ToString
@@ -34,6 +39,13 @@ public class TradeResult {
      */
     public double getTotalPrice() {
         return tradePrice * tradeVolume;
+    }
+
+    /**
+     * @return 일일 수익률
+     */
+    public double getYieldDay() {
+        return ApplicationUtil.getYield(prevClosingPrice, tradePrice);
     }
 }
 

@@ -10,7 +10,6 @@ import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
-import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.OrderHistory;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.record.entity.AssetHistoryEntity;
@@ -22,7 +21,6 @@ import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.LimitedSizeQueue;
 import com.setvect.bokslcoin.autotrading.util.MathUtil;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -30,10 +28,12 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -86,27 +86,40 @@ public class MabsMultiService implements CoinTrading {
      * 보유 자산
      * (코인코드: 계좌)
      */
-    private Map<String, Account> coinAccount;
+    private final Map<String, Account> coinAccount;
 
     /**
      * 보유 자산
      * (코인코드: 매매 대기)
      */
-    private Map<String, OrderHistory> coinOrderWait;
+    private final Map<String, OrderHistory> coinOrderWait;
 
     /**
      * 매수 이후 최고 수익률
      */
-    @Getter
     private final Map<String, Double> highYield = new HashMap<>();
     /**
      * 매수 이후 최저 수익률
      */
-    @Getter
     private final Map<String, Double> lowYield = new HashMap<>();
+
+    /**
+     * 정기적인 코인 시세 출력을 위한 마크
+     */
+    private final Set<String> logCoinMark = new HashSet<>();
+
+    /**
+     * 마지막 체결 시세
+     * (코인코드: 체결)
+     */
+    private final Map<String, TradeResult> currentTradeResult = new HashMap<>();
+
+    private int logRotation = -1;
 
     @Override
     public synchronized void tradeEvent(TradeResult tradeResult) {
+        currentTradeResult.put(tradeResult.getCode(), tradeResult);
+
         if (coinByCandles.size() < properties.getMarkets().size()) {
             loadAccount();
             loadOrderWait();
@@ -116,12 +129,13 @@ public class MabsMultiService implements CoinTrading {
         LocalDateTime nowUtc = tradeResult.getTradeDateTimeUtc();
         int currentPeriod = getCurrentPeriod(nowUtc);
 
+
         // 새로운 날짜면 매매 다시 초기화
         if (periodIdx != currentPeriod) {
             tradeEvent.newPeriod(tradeResult);
-            periodIdx = currentPeriod;
+            saveAsset(tradeResult.getTradeDateTimeKst(), tradeResult);
             tradeCompleteOfPeriod.clear();
-            saveAsset(tradeResult.getTradeDateTimeKst());
+            periodIdx = currentPeriod;
         }
 
         String market = tradeResult.getCode();
@@ -135,7 +149,7 @@ public class MabsMultiService implements CoinTrading {
         Candle newestCandle = candles.get(0);
         LocalDateTime tradeDateTimeKst = properties.getPeriodType().fitDateTime(tradeResult.getTradeDateTimeKst());
         LocalDateTime candleDateTimeKst = properties.getPeriodType().fitDateTime(newestCandle.getCandleDateTimeKst());
-        // TODO 시간이 분단위 까지 잘 들어가지는 확인
+
         if (candleDateTimeKst.equals(tradeDateTimeKst)) {
             newestCandle.change(tradeResult);
         } else {
@@ -147,15 +161,25 @@ public class MabsMultiService implements CoinTrading {
         double maShort = CommonTradeHelper.getMa(candles, properties.getShortPeriod());
         double maLong = CommonTradeHelper.getMa(candles, properties.getLongPeriod());
         tradeEvent.check(newestCandle, maShort, maLong);
-        String message = String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
-                newestCandle.getMarket(),
-                maShort - maLong,
-                MathUtil.getYield(maShort, maLong) * 100,
-                newestCandle.getTradePrice(),
-                properties.getShortPeriod(), maShort,
-                properties.getLongPeriod(), maLong
-        );
-        log.debug(message);
+
+        int rotation = LocalTime.now().getSecond() / 10;
+        if (logRotation != rotation) {
+            logCoinMark.clear();
+            logRotation = rotation;
+        }
+
+        if (!logCoinMark.contains(newestCandle.getMarket())) {
+            logCoinMark.add(newestCandle.getMarket());
+            String message = String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
+                    newestCandle.getMarket(),
+                    maShort - maLong,
+                    MathUtil.getYield(maShort, maLong) * 100,
+                    newestCandle.getTradePrice(),
+                    properties.getShortPeriod(), maShort,
+                    properties.getLongPeriod(), maLong
+            );
+            log.debug(message);
+        }
 
         if (isBuyable(market)) {
             doBid(market);
@@ -169,7 +193,11 @@ public class MabsMultiService implements CoinTrading {
      * @return true 매수 조건 만족
      */
     private boolean isBuyable(String market) {
+        // 해당 주기에서 매도한 종목은 다시 매수 하지 않음
         if (tradeCompleteOfPeriod.contains(market)) {
+            return false;
+        }
+        if (coinAccount.containsKey(market)) {
             return false;
         }
 
@@ -334,8 +362,10 @@ public class MabsMultiService implements CoinTrading {
      * 자산 기록
      *
      * @param tradeDateTimeKst 현재 시간
+     * @param tradeResult
      */
-    private void saveAsset(LocalDateTime tradeDateTimeKst) {
+    private void saveAsset(LocalDateTime tradeDateTimeKst, TradeResult tradeResult) {
+        // 각 코인들의 가장 최근 캔들
         Map<String, Candle> lastCandle = coinByCandles.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, p -> p.getValue().get(0)));
         List<AssetHistoryEntity> rateByCoin = writeCurrentAssetRate(coinAccount, lastCandle, tradeDateTimeKst);
 
@@ -346,7 +376,8 @@ public class MabsMultiService implements CoinTrading {
      * 현금, 매수 코인 목록
      */
     private void loadAccount() {
-        coinAccount = accountService.getMyAccountBalance();
+        coinAccount.clear();
+        coinAccount.putAll(accountService.getMyAccountBalance());
         log.info("load account: {}", coinAccount);
     }
 
@@ -355,7 +386,8 @@ public class MabsMultiService implements CoinTrading {
      */
     private void loadOrderWait() {
         List<OrderHistory> history = orderService.getHistory(0, properties.getMaxBuyCount());
-        coinOrderWait = history.stream().collect(Collectors.toMap(OrderHistory::getMarket, Function.identity()));
+        coinOrderWait.clear();
+        coinOrderWait.putAll(history.stream().collect(Collectors.toMap(OrderHistory::getMarket, Function.identity())));
         log.info("load coinOrder: {}", coinOrderWait);
     }
 
@@ -417,28 +449,36 @@ public class MabsMultiService implements CoinTrading {
      * @param rateByCoin 코인 투자 수익률
      */
     private void sendCurrentStatus(List<AssetHistoryEntity> rateByCoin) {
+        Map<String, AssetHistoryEntity> coinByAsset = rateByCoin.stream().collect(Collectors.toMap(p -> p.getCurrency(), Function.identity()));
 
         String priceMessage = coinByCandles.values().stream().map(
                 candleList -> {
                     double maShort = CommonTradeHelper.getMa(candleList, properties.getShortPeriod());
                     double maLong = CommonTradeHelper.getMa(candleList, properties.getLongPeriod());
                     Candle candle = candleList.get(0);
-                    CandleDay candleDay = candleService.getDay(candle.getMarket());
-                    return String.format("[%s] %.2f%%, %.2f%%, %,.0f",
-                            candle.getMarket(),
+
+                    String market = candle.getMarket();
+                    TradeResult tradeResult = currentTradeResult.get(market);
+                    String dayYield = Optional.ofNullable(tradeResult).map(p -> String.format("%.2f%%", p.getYieldDay() * 100)).orElse("X");
+                    String message = String.format("[%s] %.2f%%, %s, %,.0f",
+                            market,
                             MathUtil.getYield(maShort, maLong) * 100,
-                            candleDay.getYield(),
+                            dayYield,
                             candle.getTradePrice()
                     );
+                    AssetHistoryEntity asset = coinByAsset.get(market);
+                    return message + Optional.ofNullable(asset).map(p -> String.format(", 수익율: %.2f%%", p.getYield() * 100)).orElse("");
                 }
         ).collect(Collectors.joining("\n"));
 
-        String rateMessage = rateByCoin.stream()
-                .filter(p -> !p.getCurrency().equals("KRW"))
-                .map(p -> String.format("[%s] 수익률: %,.2f%%", p.getCurrency(), p.getYield() * 100))
-                .collect(Collectors.joining("\n"));
+        double investment = rateByCoin.stream().filter(p -> !p.getCurrency().equals("KRW"))
+                .mapToDouble(AssetHistoryEntity::getPrice).sum();
+        double appraisal = rateByCoin.stream().filter(p -> !p.getCurrency().equals("KRW"))
+                .mapToDouble(AssetHistoryEntity::getAppraisal).sum();
+        String investmentSummary = String.format("투자금: %,.0f, 평가금: %,.0f, 수익: %,.0f(%.2f%%)",
+                investment, appraisal, appraisal - investment, ApplicationUtil.getYield(investment, appraisal) * 100);
 
-        slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n", priceMessage, rateMessage));
+        slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n", priceMessage, investmentSummary));
     }
 
     /**
