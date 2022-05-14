@@ -53,7 +53,7 @@ com:
           # 이동평균선 돌파 전략, 멀티코인
           mabsMulti:
             # 매수, 매도 대상 코인
-            markets: KRW-BTC,KRW-ETH,KRW-XRP,KRW-EOS
+            markets: KRW-BTC, KRW-ETH, KRW-XRP, KRW-EOS, KRW-ETC, KRW-ADA, KRW-MANA, KRW-BAT, KRW-BCH, KRW-DOT
             # 최대 코인 매매 갯수
             maxBuyCount: 3
             # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
@@ -61,7 +61,7 @@ com:
             # 손절 매도
             loseStopRate: 0.5
             # 매매 주기(P_60, P_240, P_1440)
-            tradePeriod: P_240
+            periodType: PERIOD_240
             # 상승 매수률
             upBuyRate: 0.01
             # 하락 매도률

@@ -107,7 +107,7 @@ public class MabsMultiService implements CoinTrading {
 
     @Override
     public synchronized void tradeEvent(TradeResult tradeResult) {
-        if (coinByCandles.isEmpty()) {
+        if (coinByCandles.size() < properties.getMarkets().size()) {
             loadAccount();
             loadOrderWait();
             loadCandle();
@@ -125,7 +125,6 @@ public class MabsMultiService implements CoinTrading {
         }
 
         String market = tradeResult.getCode();
-        // TODO 컬렉션 전체 변경
         List<Candle> candles = coinByCandles.get(market);
         if (candles == null) {
             slackMessageService.sendMessage(String.format("%s 설정에 없는 시세데이타가 조회 되었습니다.", market));
@@ -148,6 +147,15 @@ public class MabsMultiService implements CoinTrading {
         double maShort = CommonTradeHelper.getMa(candles, properties.getShortPeriod());
         double maLong = CommonTradeHelper.getMa(candles, properties.getLongPeriod());
         tradeEvent.check(newestCandle, maShort, maLong);
+        String message = String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
+                newestCandle.getMarket(),
+                maShort - maLong,
+                MathUtil.getYield(maShort, maLong) * 100,
+                newestCandle.getTradePrice(),
+                properties.getShortPeriod(), maShort,
+                properties.getLongPeriod(), maLong
+        );
+        log.debug(message);
 
         if (isBuyable(market)) {
             doBid(market);
@@ -339,6 +347,7 @@ public class MabsMultiService implements CoinTrading {
      */
     private void loadAccount() {
         coinAccount = accountService.getMyAccountBalance();
+        log.info("load account: {}", coinAccount);
     }
 
     /**
@@ -347,6 +356,7 @@ public class MabsMultiService implements CoinTrading {
     private void loadOrderWait() {
         List<OrderHistory> history = orderService.getHistory(0, properties.getMaxBuyCount());
         coinOrderWait = history.stream().collect(Collectors.toMap(OrderHistory::getMarket, Function.identity()));
+        log.info("load coinOrder: {}", coinOrderWait);
     }
 
     /**
@@ -355,7 +365,6 @@ public class MabsMultiService implements CoinTrading {
     private void loadCandle() {
         int candleMaxSize = properties.getLongPeriod() + 1;
         for (String market : properties.getMarkets()) {
-            // TODO 캔들 시간이 딱떨어지지 않고 16:04 이런식으로 나오는지 확인
             List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, properties.getPeriodType(), candleMaxSize);
             if (candleList.isEmpty()) {
                 throw new RuntimeException(String.format("[%s] 현재 시세 데이터가 없습니다.", market));
@@ -368,6 +377,11 @@ public class MabsMultiService implements CoinTrading {
             candles.addAll(candleList);
             coinByCandles.put(market, candles);
         }
+        String candleInfo = coinByCandles.entrySet()
+                .stream()
+                .map(entity -> entity.getKey() + ": " + entity.getValue().size())
+                .collect(Collectors.joining(", "));
+        log.info("load candle: {}", candleInfo);
     }
 
     /**
@@ -447,6 +461,8 @@ public class MabsMultiService implements CoinTrading {
             Candle candle = lastCandle.get(entity.getKey());
             if (candle != null) {
                 assetHistory.setYield(getYield(candle, account));
+            } else {
+                assetHistory.setYield(0.0);
             }
             assetHistory.setRegDate(regDate);
             return assetHistory;
@@ -455,7 +471,6 @@ public class MabsMultiService implements CoinTrading {
         assetHistoryRepository.saveAll(accountHistoryList);
         return accountHistoryList;
     }
-
 
     private int getCurrentPeriod(LocalDateTime nowUtc) {
         int dayHourMinuteSum = nowUtc.getDayOfMonth() * 1440 + nowUtc.getHour() * 60 + nowUtc.getMinute();

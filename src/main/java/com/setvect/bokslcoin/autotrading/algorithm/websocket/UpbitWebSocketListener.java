@@ -2,6 +2,8 @@ package com.setvect.bokslcoin.autotrading.algorithm.websocket;
 
 import com.google.gson.annotations.SerializedName;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
+import com.setvect.bokslcoin.autotrading.starter.TradingWebsocket;
+import com.setvect.bokslcoin.autotrading.util.BeanUtils;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class UpbitWebSocketListener extends WebSocketListener {
@@ -76,8 +79,19 @@ public class UpbitWebSocketListener extends WebSocketListener {
     @Override
     public void onFailure(@NotNull WebSocket webSocket, @NotNull Throwable t, @Nullable Response response) {
         String message = "Socket Error : " + t.getMessage();
-        log.error(message);
+        log.error(message, t);
         slack(message);
+
+        try {
+            TimeUnit.SECONDS.sleep(5);
+        } catch (InterruptedException e) {
+            log.error(e.getMessage());
+        }
+
+        log.info("restarting");
+        TradingWebsocket tradingWebsocket = BeanUtils.getBean(TradingWebsocket.class);
+        tradingWebsocket.onApplicationEvent();
+        log.info("restart completed");
     }
 
     @Override
@@ -103,6 +117,7 @@ public class UpbitWebSocketListener extends WebSocketListener {
         return this.json;
     }
 
+
     @Getter
     @RequiredArgsConstructor(staticName = "of")
     private static class Ticket {
@@ -122,5 +137,6 @@ public class UpbitWebSocketListener extends WebSocketListener {
         }
         slackMessageService.sendMessage(message);
     }
+
 
 }

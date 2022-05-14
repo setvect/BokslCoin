@@ -28,7 +28,7 @@ public class OrderService {
     private final AccessTokenMaker accessInfo;
 
     private final ConnectionInfo connectionInfo;
-    @Value("${com.setvect.bokslcoin.autotrading.slack.enable}")
+    @Value("${com.setvect.bokslcoin.autotrading.enable}")
     private boolean enable;
 
     /**

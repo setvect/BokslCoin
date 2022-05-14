@@ -13,7 +13,7 @@ import java.util.List;
  * 이평선 돌파 알고리즘 설정
  */
 @Component
-@ConfigurationProperties(prefix = "com.setvect.bokslcoin.autotrading.algorithm")
+@ConfigurationProperties(prefix = "com.setvect.bokslcoin.autotrading.algorithm.mabs-multi")
 @Getter
 @Setter
 @ToString

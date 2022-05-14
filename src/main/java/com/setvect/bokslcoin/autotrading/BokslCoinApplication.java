@@ -12,7 +12,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableJpaAuditing
 public class BokslCoinApplication {
     public static void main(String[] args) {
-        SpringApplication.run(BokslCoinApplication.class, args);
         ConfigurableApplicationContext context = SpringApplication.run(BokslCoinApplication.class, args);
         TradingWebsocket tradingWebsocket = context.getBean(TradingWebsocket.class);
         tradingWebsocket.onApplicationEvent();
