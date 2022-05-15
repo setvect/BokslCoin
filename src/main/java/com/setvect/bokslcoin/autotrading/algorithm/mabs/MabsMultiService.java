@@ -216,8 +216,7 @@ public class MabsMultiService implements CoinTrading {
         }
         // 매수 대기 처리 여부 확인을 위해 계좌 내역 한번더 조회
         loadAccount();
-        Account account = coinAccount.get(market);
-        if (account == null) {
+        if (coinAccount.containsKey(market)) {
             log.warn("[{}] 매수 안함. 이미 매수한 종목", candle.getMarket());
             return false;
         }
