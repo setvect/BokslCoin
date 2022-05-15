@@ -60,7 +60,7 @@ com:
             investRatio: 0.5
             # 손절 매도
             loseStopRate: 0.5
-            # 매매 주기(P_60, P_240, P_1440)
+            # 매매 주기(PERIOD_60, PERIOD_240,PERIODP_1440)
             periodType: PERIOD_240
             # 상승 매수률
             upBuyRate: 0.01

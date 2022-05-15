@@ -86,13 +86,13 @@ public class MabsMultiService implements CoinTrading {
      * 보유 자산
      * (코인코드: 계좌)
      */
-    private final Map<String, Account> coinAccount;
+    private final Map<String, Account> coinAccount = new HashMap<>();
 
     /**
      * 보유 자산
      * (코인코드: 매매 대기)
      */
-    private final Map<String, OrderHistory> coinOrderWait;
+    private final Map<String, OrderHistory> coinOrderWait = new HashMap<>();
 
     /**
      * 매수 이후 최고 수익률
@@ -133,7 +133,7 @@ public class MabsMultiService implements CoinTrading {
         // 새로운 날짜면 매매 다시 초기화
         if (periodIdx != currentPeriod) {
             tradeEvent.newPeriod(tradeResult);
-            saveAsset(tradeResult.getTradeDateTimeKst(), tradeResult);
+            saveAsset(tradeResult.getTradeDateTimeKst());
             tradeCompleteOfPeriod.clear();
             periodIdx = currentPeriod;
         }
@@ -362,9 +362,8 @@ public class MabsMultiService implements CoinTrading {
      * 자산 기록
      *
      * @param tradeDateTimeKst 현재 시간
-     * @param tradeResult
      */
-    private void saveAsset(LocalDateTime tradeDateTimeKst, TradeResult tradeResult) {
+    private void saveAsset(LocalDateTime tradeDateTimeKst) {
         // 각 코인들의 가장 최근 캔들
         Map<String, Candle> lastCandle = coinByCandles.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, p -> p.getValue().get(0)));
         List<AssetHistoryEntity> rateByCoin = writeCurrentAssetRate(coinAccount, lastCandle, tradeDateTimeKst);
@@ -449,8 +448,9 @@ public class MabsMultiService implements CoinTrading {
      * @param rateByCoin 코인 투자 수익률
      */
     private void sendCurrentStatus(List<AssetHistoryEntity> rateByCoin) {
-        Map<String, AssetHistoryEntity> coinByAsset = rateByCoin.stream().collect(Collectors.toMap(p -> p.getCurrency(), Function.identity()));
+        Map<String, AssetHistoryEntity> coinByAsset = rateByCoin.stream().collect(Collectors.toMap(AssetHistoryEntity::getCurrency, Function.identity()));
 
+        String header = "종목, 장-단 차이, 1D수익, 현재가, 수익률";
         String priceMessage = coinByCandles.values().stream().map(
                 candleList -> {
                     double maShort = CommonTradeHelper.getMa(candleList, properties.getShortPeriod());
@@ -461,13 +461,13 @@ public class MabsMultiService implements CoinTrading {
                     TradeResult tradeResult = currentTradeResult.get(market);
                     String dayYield = Optional.ofNullable(tradeResult).map(p -> String.format("%.2f%%", p.getYieldDay() * 100)).orElse("X");
                     String message = String.format("[%s] %.2f%%, %s, %,.0f",
-                            market,
+                            StringUtils.replace(market, "KRW-", ""),
                             MathUtil.getYield(maShort, maLong) * 100,
                             dayYield,
                             candle.getTradePrice()
                     );
                     AssetHistoryEntity asset = coinByAsset.get(market);
-                    return message + Optional.ofNullable(asset).map(p -> String.format(", 수익율: %.2f%%", p.getYield() * 100)).orElse("");
+                    return message + Optional.ofNullable(asset).map(p -> String.format(", %.2f%%", p.getYield() * 100)).orElse("-");
                 }
         ).collect(Collectors.joining("\n"));
 
@@ -475,10 +475,13 @@ public class MabsMultiService implements CoinTrading {
                 .mapToDouble(AssetHistoryEntity::getPrice).sum();
         double appraisal = rateByCoin.stream().filter(p -> !p.getCurrency().equals("KRW"))
                 .mapToDouble(AssetHistoryEntity::getAppraisal).sum();
+        double cash = rateByCoin.stream().filter(p -> p.getCurrency().equals("KRW"))
+                .mapToDouble(AssetHistoryEntity::getPrice).sum();
         String investmentSummary = String.format("투자금: %,.0f, 평가금: %,.0f, 수익: %,.0f(%.2f%%)",
                 investment, appraisal, appraisal - investment, ApplicationUtil.getYield(investment, appraisal) * 100);
+        String cashSummary = String.format("보유현금: %,.0f, 합계 금액: %,.0f", cash, cash + appraisal);
 
-        slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n", priceMessage, investmentSummary));
+        slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n", header, priceMessage, investmentSummary, cashSummary));
     }
 
     /**
