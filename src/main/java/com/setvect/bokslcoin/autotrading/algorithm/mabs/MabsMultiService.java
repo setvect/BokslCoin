@@ -481,7 +481,8 @@ public class MabsMultiService implements CoinTrading {
     private double getBuyCash() {
         // 이미 매수한 코인 갯수
         int allowBuyCount = Math.min(properties.getMaxBuyCount(), properties.getMarkets().size());
-        int buyCount = (int) properties.getMarkets().stream().filter(p -> coinAccount.get(p) != null).count();
+        // 구매 건수 = 이미 구매 건수 + 매수 대기 건수 
+        int buyCount = (int) properties.getMarkets().stream().filter(p -> coinAccount.containsKey(p) || coinOrderWait.containsKey(p)).count();
         int rate = allowBuyCount - buyCount;
         double buyCash = 0;
 
