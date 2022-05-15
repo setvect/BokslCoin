@@ -200,18 +200,18 @@ public class MabsMultiService implements CoinTrading {
         if (!isBuy || !(cash >= MINIMUM_BUY_CASH)) {
             return false;
         }
-        // 매수 직전 주문 요청 이력 확인
-        loadOrderWait();
-        OrderHistory orderHistory = coinOrderWait.get(market);
-        if (orderHistory != null) {
-            log.info("{} 매수 주문요청  상태임: {}", market, orderHistory);
-            return false;
-        }
         // 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
         boolean isBeforeBuy = isBeforeBuy(candleList);
         Candle candle = candleList.get(0);
         if (isBeforeBuy && properties.isNewMasBuy()) {
             log.debug("[{}] 매수 안함. 새롭게 이동평균을 돌파할 때만 매수합니다.", candle.getMarket());
+            return false;
+        }
+        // 매수 직전 주문 요청 이력 확인
+        loadOrderWait();
+        OrderHistory orderHistory = coinOrderWait.get(market);
+        if (orderHistory != null) {
+            log.info("{} 매수 주문요청  상태임: {}", market, orderHistory);
             return false;
         }
         // 매수 대기 처리 여부 확인을 위해 계좌 내역 한번더 조회
