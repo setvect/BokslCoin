@@ -47,5 +47,12 @@ public class TradeResult {
     public double getYieldDay() {
         return ApplicationUtil.getYield(prevClosingPrice, tradePrice);
     }
+
+    /**
+     * @return 현 서버 타임스템프 - 시세 타임스템프
+     */
+    public long getTimestampDiff() {
+        return System.currentTimeMillis() - timestamp;
+    }
 }
 

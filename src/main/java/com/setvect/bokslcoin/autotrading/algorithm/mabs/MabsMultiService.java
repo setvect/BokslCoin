@@ -165,7 +165,7 @@ public class MabsMultiService implements CoinTrading {
         double maLong = CommonTradeHelper.getMa(candles, properties.getLongPeriod());
         tradeEvent.check(newestCandle, maShort, maLong);
 
-        logCurrentPrice(newestCandle, maShort, maLong);
+        logCurrentPrice(tradeResult, maShort, maLong);
         checkOrderWait();
 
         if (isBuyable(market)) {
@@ -384,7 +384,7 @@ public class MabsMultiService implements CoinTrading {
     /**
      * 10초마다 코인별 현재 가격 출력
      */
-    private void logCurrentPrice(Candle newestCandle, double maShort, double maLong) {
+    private void logCurrentPrice(TradeResult tradeResult, double maShort, double maLong) {
         LocalTime now = LocalTime.now();
         int temp = now.getSecond() / 10;
         if (logRotation != temp) {
@@ -392,17 +392,18 @@ public class MabsMultiService implements CoinTrading {
             logRotation = temp;
         }
 
-        if (logCoinMark.contains(newestCandle.getMarket())) {
+        if (logCoinMark.contains(tradeResult.getCode())) {
             return;
         }
-        logCoinMark.add(newestCandle.getMarket());
-        String message = String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
-                newestCandle.getMarket(),
+        logCoinMark.add(tradeResult.getCode());
+        String message = String.format("[%s] 장-단: %,.2f(%.2f%%), %,.2f, MA_%d: %,.2f, MA_%d: %,.2f, TD: %,d",
+                tradeResult.getCode(),
                 maShort - maLong,
                 MathUtil.getYield(maShort, maLong) * 100,
-                newestCandle.getTradePrice(),
+                tradeResult.getTradePrice(),
                 properties.getShortPeriod(), maShort,
-                properties.getLongPeriod(), maLong
+                properties.getLongPeriod(), maLong,
+                tradeResult.getTimestampDiff()
         );
         log.debug(message);
     }
@@ -531,7 +532,12 @@ public class MabsMultiService implements CoinTrading {
                 investment, appraisal, appraisal - investment, ApplicationUtil.getYield(investment, appraisal) * 100);
         String cashSummary = String.format("보유현금: %,.0f, 합계 금액: %,.0f", cash, cash + appraisal);
 
-        slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n", header, priceMessage, investmentSummary, cashSummary));
+        long maxDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).max().orElse(-9999);
+        long minDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).min().orElse(-9999);
+        String diffTimeSummary = String.format("시간차: 최대 %,d, 최소 %,d", maxDiff, minDiff);
+
+        slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n",
+                header, priceMessage, investmentSummary, cashSummary, diffTimeSummary));
     }
 
 
