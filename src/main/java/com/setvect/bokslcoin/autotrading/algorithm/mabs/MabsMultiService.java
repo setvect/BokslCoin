@@ -133,6 +133,7 @@ public class MabsMultiService implements CoinTrading {
         // 새로운 날짜면 매매 다시 초기화
         if (periodIdx != currentPeriod) {
             tradeEvent.newPeriod(tradeResult);
+            loadAccount();
             saveAsset(tradeResult.getTradeDateTimeKst());
             tradeCompleteOfPeriod.clear();
             periodIdx = currentPeriod;
@@ -225,6 +226,13 @@ public class MabsMultiService implements CoinTrading {
         Candle candle = candleList.get(0);
         if (isBeforeBuy && properties.isNewMasBuy()) {
             log.debug("[{}] 매수 안함. 새롭게 이동평균을 돌파할 때만 매수합니다.", candle.getMarket());
+            return false;
+        }
+        // 매수 대기 처리 여부 확인을 위해 계좌 내역 한번더 조회
+        loadAccount();
+        Account account = coinAccount.get(market);
+        if (account == null) {
+            log.warn("[{}] 매수 안함. 이미 매수한 종목", candle.getMarket());
             return false;
         }
         return true;
@@ -381,7 +389,7 @@ public class MabsMultiService implements CoinTrading {
     }
 
     /**
-     * 현금, 매수 코인 목록
+     * 매수/매도 대기 주문 조회
      */
     private void loadOrderWait() {
         List<OrderHistory> history = orderService.getHistory(0, properties.getMaxBuyCount());
