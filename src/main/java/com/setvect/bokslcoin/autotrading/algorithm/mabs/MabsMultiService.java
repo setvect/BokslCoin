@@ -24,6 +24,7 @@ import com.setvect.bokslcoin.autotrading.util.MathUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -115,6 +116,7 @@ public class MabsMultiService implements CoinTrading {
     private final Map<String, TradeResult> currentTradeResult = new HashMap<>();
 
     private int logRotation = -1;
+    private int orderWaitRotation = -1;
 
     @Override
     public synchronized void tradeEvent(TradeResult tradeResult) {
@@ -163,24 +165,8 @@ public class MabsMultiService implements CoinTrading {
         double maLong = CommonTradeHelper.getMa(candles, properties.getLongPeriod());
         tradeEvent.check(newestCandle, maShort, maLong);
 
-        int rotation = LocalTime.now().getSecond() / 10;
-        if (logRotation != rotation) {
-            logCoinMark.clear();
-            logRotation = rotation;
-        }
-
-        if (!logCoinMark.contains(newestCandle.getMarket())) {
-            logCoinMark.add(newestCandle.getMarket());
-            String message = String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
-                    newestCandle.getMarket(),
-                    maShort - maLong,
-                    MathUtil.getYield(maShort, maLong) * 100,
-                    newestCandle.getTradePrice(),
-                    properties.getShortPeriod(), maShort,
-                    properties.getLongPeriod(), maLong
-            );
-            log.debug(message);
-        }
+        logCurrentPrice(newestCandle, maShort, maLong);
+        checkOrderWait();
 
         if (isBuyable(market)) {
             doBid(market);
@@ -367,6 +353,61 @@ public class MabsMultiService implements CoinTrading {
     }
 
     /**
+     * 5분마다 매매 시세 체크, 매매 대기가 있으면 슬랙으로 메시지 전달
+     */
+    private void checkOrderWait() {
+        int temp = LocalTime.now().getMinute() / 5;
+        if (orderWaitRotation == temp) {
+            return;
+        }
+        orderWaitRotation = temp;
+
+        loadOrderWait();
+        String message = coinOrderWait.values().stream().map(history -> {
+            String currentPrice = Optional.ofNullable(currentTradeResult.get(history.getMarket()))
+                    .map(p -> ApplicationUtil.toNumberString(p.getTradePrice())).orElse("");
+            return String.format("[%s] %s 대기 %s/%s, %s/%s",
+                    removeKrw(history.getMarket()),
+                    history.getSide().getName(),
+                    history.getPrice(),
+                    currentPrice,
+                    history.getRemainingVolume(),
+                    history.getVolume());
+        }).collect(Collectors.joining("\n"));
+        if (!StringUtils.isNotBlank(message)) {
+            return;
+        }
+        log.info(message);
+        slackMessageService.sendMessage(message);
+    }
+
+    /**
+     * 10초마다 코인별 현재 가격 출력
+     */
+    private void logCurrentPrice(Candle newestCandle, double maShort, double maLong) {
+        LocalTime now = LocalTime.now();
+        int temp = now.getSecond() / 10;
+        if (logRotation != temp) {
+            logCoinMark.clear();
+            logRotation = temp;
+        }
+
+        if (logCoinMark.contains(newestCandle.getMarket())) {
+            return;
+        }
+        logCoinMark.add(newestCandle.getMarket());
+        String message = String.format("[%s] 단기-장기 차이: %,.2f(%.2f%%), 현재가: %,.2f, MA_%d: %,.2f, MA_%d: %,.2f",
+                newestCandle.getMarket(),
+                maShort - maLong,
+                MathUtil.getYield(maShort, maLong) * 100,
+                newestCandle.getTradePrice(),
+                properties.getShortPeriod(), maShort,
+                properties.getLongPeriod(), maLong
+        );
+        log.debug(message);
+    }
+
+    /**
      * 자산 기록
      *
      * @param tradeDateTimeKst 현재 시간
@@ -469,7 +510,7 @@ public class MabsMultiService implements CoinTrading {
                     TradeResult tradeResult = currentTradeResult.get(market);
                     String dayYield = Optional.ofNullable(tradeResult).map(p -> String.format("%.2f%%", p.getYieldDay() * 100)).orElse("X");
                     String message = String.format("[%s] %.2f%%, %s, %,.0f",
-                            StringUtils.replace(market, "KRW-", ""),
+                            removeKrw(market),
                             MathUtil.getYield(maShort, maLong) * 100,
                             dayYield,
                             candle.getTradePrice()
@@ -491,6 +532,7 @@ public class MabsMultiService implements CoinTrading {
 
         slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n", header, priceMessage, investmentSummary, cashSummary));
     }
+
 
     /**
      * 현재 보유중인 코인 및 현금 수익률 저장
@@ -547,5 +589,10 @@ public class MabsMultiService implements CoinTrading {
         double avgPrice = account.getAvgBuyPriceValue();
         double diff = candle.getTradePrice() - avgPrice;
         return diff / avgPrice;
+    }
+
+    @Nullable
+    private static String removeKrw(String market) {
+        return StringUtils.replace(market, "KRW-", "");
     }
 }

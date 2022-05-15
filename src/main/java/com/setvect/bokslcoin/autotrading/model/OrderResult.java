@@ -1,5 +1,7 @@
 package com.setvect.bokslcoin.autotrading.model;
 
+import lombok.Getter;
+
 /**
  * 주문 접수
  */
@@ -8,11 +10,18 @@ public class OrderResult {
         /**
          * 매수
          */
-        bid,
+        bid("매수"),
         /**
          * 매도
          */
-        ask
+        ask("매도");
+
+        @Getter
+        private final String name;
+
+        Side(String name) {
+            this.name = name;
+        }
     }
 
     /**
