@@ -166,7 +166,7 @@ public class MabsMultiService implements CoinTrading {
         tradeEvent.check(newestCandle, maShort, maLong);
 
         logCurrentPrice(tradeResult, maShort, maLong);
-        checkOrderWait();
+        checkStatus();
 
         if (isBuyable(market)) {
             doBid(market);
@@ -353,8 +353,9 @@ public class MabsMultiService implements CoinTrading {
 
     /**
      * 5분마다 매매 시세 체크, 매매 대기가 있으면 슬랙으로 메시지 전달
+     * 매매 대기가 있으면 계좌 정보도 추가로 체크함
      */
-    private void checkOrderWait() {
+    private void checkStatus() {
         int temp = LocalTime.now().getMinute() / 5;
         if (orderWaitRotation == temp) {
             return;
@@ -376,6 +377,7 @@ public class MabsMultiService implements CoinTrading {
         if (!StringUtils.isNotBlank(message)) {
             return;
         }
+        loadAccount();
         log.info(message);
         slackMessageService.sendMessage(message);
     }
