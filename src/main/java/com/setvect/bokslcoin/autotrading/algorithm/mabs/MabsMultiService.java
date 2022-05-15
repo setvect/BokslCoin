@@ -467,7 +467,7 @@ public class MabsMultiService implements CoinTrading {
                             candle.getTradePrice()
                     );
                     AssetHistoryEntity asset = coinByAsset.get(market);
-                    return message + Optional.ofNullable(asset).map(p -> String.format(", %.2f%%", p.getYield() * 100)).orElse("-");
+                    return message + Optional.ofNullable(asset).map(p -> String.format(", %.2f%%", p.getYield() * 100)).orElse(", _");
                 }
         ).collect(Collectors.joining("\n"));
 
