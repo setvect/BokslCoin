@@ -118,8 +118,14 @@ public class MabsMultiService implements CoinTrading {
     private int logRotation = -1;
     private int orderWaitRotation = -1;
 
+    /**
+     * 본 메소드를 호출하는 쪽에서는 스레드 안전성을 보장해야됨
+     *
+     * @param tradeResult 체결 현황
+     */
     @Override
-    public synchronized void tradeEvent(TradeResult tradeResult) {
+    public void tradeEvent(TradeResult tradeResult) {
+        TradeResult beforeTradeResult = currentTradeResult.get(tradeResult.getCode());
         currentTradeResult.put(tradeResult.getCode(), tradeResult);
 
         if (coinByCandles.size() < properties.getMarkets().size()) {
@@ -144,7 +150,7 @@ public class MabsMultiService implements CoinTrading {
         String market = tradeResult.getCode();
         List<Candle> candles = coinByCandles.get(market);
         if (candles == null) {
-            slackMessageService.sendMessage(String.format("%s 설정에 없는 시세데이타가 조회 되었습니다.", market));
+            log.warn(String.format("%s 설정에 없는 시세데이타가 조회 되었습니다.", market));
             return;
         }
 
@@ -155,6 +161,10 @@ public class MabsMultiService implements CoinTrading {
 
         if (candleDateTimeKst.equals(tradeDateTimeKst)) {
             newestCandle.change(tradeResult);
+            // 같은 주기에 이전과 같은 값은 이후 처리는 하지 않음
+            if (beforeTradeResult != null && beforeTradeResult.getTradePrice() == tradeResult.getTradePrice()) {
+                return;
+            }
         } else {
             newestCandle = new Candle(tradeResult);
             // 최근 캔들이 맨 앞에 있기 때문에 index 0에 넣음
@@ -556,7 +566,7 @@ public class MabsMultiService implements CoinTrading {
             Account account = entity.getValue();
             AssetHistoryEntity assetHistory = new AssetHistoryEntity();
             assetHistory.setCurrency(entity.getKey());
-            double price = entity.getKey().equals("KRW") ? account.getBalanceValue() : account.getInvestCash();
+            double price = entity.getKey().equals("KRW") ? account.getBalanceValueWithLock() : account.getInvestCashWithLock();
             assetHistory.setPrice(price);
 
             Candle candle = lastCandle.get(entity.getKey());

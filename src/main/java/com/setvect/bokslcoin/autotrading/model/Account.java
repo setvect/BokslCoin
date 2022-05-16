@@ -55,11 +55,25 @@ public class Account {
         return Double.parseDouble(balance);
     }
 
+    public double getBalanceValueWithLock() {
+        if (balance == null) {
+            return 0;
+        }
+        return Double.parseDouble(balance) + Double.parseDouble(locked);
+    }
+
     /**
-     * @return 금액
+     * @return 구입금액
      */
     public double getInvestCash() {
         return getAvgBuyPriceValue() * getBalanceValue();
+    }
+
+    /**
+     * @return 구입금액(주문 묶어있는 거 포함)
+     */
+    public double getInvestCashWithLock() {
+        return getAvgBuyPriceValue() * getBalanceValueWithLock();
     }
 }
 
