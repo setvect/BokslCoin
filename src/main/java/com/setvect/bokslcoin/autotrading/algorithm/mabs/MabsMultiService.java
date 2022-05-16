@@ -105,17 +105,11 @@ public class MabsMultiService implements CoinTrading {
     private final Map<String, Double> lowYield = new HashMap<>();
 
     /**
-     * 정기적인 코인 시세 출력을 위한 마크
-     */
-    private final Set<String> logCoinMark = new HashSet<>();
-
-    /**
      * 마지막 체결 시세
      * (코인코드: 체결)
      */
     private final Map<String, TradeResult> currentTradeResult = new HashMap<>();
 
-    private int logRotation = -1;
     private int orderWaitRotation = -1;
 
     /**
@@ -161,7 +155,7 @@ public class MabsMultiService implements CoinTrading {
 
         if (candleDateTimeKst.equals(tradeDateTimeKst)) {
             newestCandle.change(tradeResult);
-            // 같은 주기에 이전과 같은 값은 이후 처리는 하지 않음
+            // 같은 주기에서 이전과 같은 체결값이면 이후 처리는 하지 않음
             if (beforeTradeResult != null && beforeTradeResult.getTradePrice() == tradeResult.getTradePrice()) {
                 return;
             }
@@ -396,17 +390,6 @@ public class MabsMultiService implements CoinTrading {
      * 10초마다 코인별 현재 가격 출력
      */
     private void logCurrentPrice(TradeResult tradeResult, double maShort, double maLong) {
-        LocalTime now = LocalTime.now();
-        int temp = now.getSecond() / 10;
-        if (logRotation != temp) {
-            logCoinMark.clear();
-            logRotation = temp;
-        }
-
-        if (logCoinMark.contains(tradeResult.getCode())) {
-            return;
-        }
-        logCoinMark.add(tradeResult.getCode());
         String message = String.format("[%s] 장-단: %,.2f(%.2f%%), %,.2f, MA_%d: %,.2f, MA_%d: %,.2f, TD: %,d",
                 tradeResult.getCode(),
                 maShort - maLong,
