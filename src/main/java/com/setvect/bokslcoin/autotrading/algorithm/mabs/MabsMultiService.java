@@ -495,7 +495,6 @@ public class MabsMultiService implements CoinTrading {
     private void sendCurrentStatus(List<AssetHistoryEntity> rateByCoin) {
         Map<String, AssetHistoryEntity> coinByAsset = rateByCoin.stream().collect(Collectors.toMap(AssetHistoryEntity::getCurrency, Function.identity()));
 
-        String header = "종목, 장-단 차이, 1D수익, 현재가, 수익률";
         String priceMessage = coinByCandles.values().stream().map(
                 candleList -> {
                     double maShort = CommonTradeHelper.getMa(candleList, properties.getShortPeriod());
@@ -526,12 +525,12 @@ public class MabsMultiService implements CoinTrading {
                 investment, appraisal, appraisal - investment, ApplicationUtil.getYield(investment, appraisal) * 100);
         String cashSummary = String.format("보유현금: %,.0f, 합계 금액: %,.0f", cash, cash + appraisal);
 
-        long maxDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).max().orElse(-9999);
-        long minDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).min().orElse(-9999);
-        String diffTimeSummary = String.format("시간차: 최대 %,d, 최소 %,d", maxDiff, minDiff);
+        String diffTimeSummary = currentTradeResult.values().stream()
+                .map(p -> String.format("[%s] 시간차: %,dms", p.getCode(), p.getTimestampDiff()))
+                .collect(Collectors.joining("\n"));
 
         slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n",
-                header, priceMessage, investmentSummary, cashSummary, diffTimeSummary));
+                priceMessage, investmentSummary, cashSummary, diffTimeSummary));
     }
 
 
