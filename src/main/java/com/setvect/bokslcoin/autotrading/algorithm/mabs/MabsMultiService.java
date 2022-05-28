@@ -421,7 +421,7 @@ public class MabsMultiService implements CoinTrading {
     private void loadAccount() {
         coinAccount.clear();
         coinAccount.putAll(accountService.getMyAccountBalance());
-        log.info("load account: {}", coinAccount);
+        log.debug("load account: {}", coinAccount);
     }
 
     /**
@@ -431,7 +431,7 @@ public class MabsMultiService implements CoinTrading {
         List<OrderHistory> history = orderService.getHistory(0, properties.getMaxBuyCount());
         coinOrderWait.clear();
         coinOrderWait.putAll(history.stream().collect(Collectors.toMap(OrderHistory::getMarket, Function.identity())));
-        log.info("load coinOrder: {}", coinOrderWait);
+        log.debug("load coinOrder: {}", coinOrderWait);
     }
 
     /**
@@ -525,9 +525,9 @@ public class MabsMultiService implements CoinTrading {
                 investment, appraisal, appraisal - investment, ApplicationUtil.getYield(investment, appraisal) * 100);
         String cashSummary = String.format("보유현금: %,.0f, 합계 금액: %,.0f", cash, cash + appraisal);
 
-        String diffTimeSummary = currentTradeResult.values().stream()
-                .map(p -> String.format("[%s] 시간차: %,dms", p.getCode(), p.getTimestampDiff()))
-                .collect(Collectors.joining("\n"));
+        long maxDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).max().orElse(-9999);
+        long minDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).min().orElse(-9999);
+        String diffTimeSummary = String.format("시간차: 최대 %,d, 최소 %,d", maxDiff, minDiff);
 
         slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n",
                 priceMessage, investmentSummary, cashSummary, diffTimeSummary));
@@ -560,7 +560,6 @@ public class MabsMultiService implements CoinTrading {
             assetHistory.setRegDate(regDate);
             return assetHistory;
         }).collect(Collectors.toList());
-
         assetHistoryRepository.saveAll(accountHistoryList);
         return accountHistoryList;
     }

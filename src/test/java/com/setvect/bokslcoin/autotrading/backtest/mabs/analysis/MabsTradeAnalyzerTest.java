@@ -5,6 +5,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
+import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
@@ -24,7 +25,6 @@ import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
-import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +39,7 @@ import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -67,10 +68,6 @@ public class MabsTradeAnalyzerTest {
      * 투자금
      */
     public static final double CASH = 10_000_000;
-    /**
-     * 최소 거래 날자(UTC)
-     */
-    public static final LocalDateTime BASE_START = DateUtil.getLocalDateTime("2017-10-01T00:00:00");
 
     @Autowired
     private MabsConditionEntityRepository mabsConditionEntityRepository;
@@ -120,7 +117,7 @@ public class MabsTradeAnalyzerTest {
 
     @Test
     public void backtest() {
-        List<String> coinList = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
+        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
         periodList.add(new ImmutablePair<>(13, 64));
@@ -140,11 +137,12 @@ public class MabsTradeAnalyzerTest {
 //        periodList.add(new ImmutablePair<>(15, 60));
 
         for (Pair<Integer, Integer> period : periodList) {
-            for (String coin : coinList) {
-                log.info("{} - {} start", period, coin);
-                DateRange range = new DateRange(BASE_START, LocalDateTime.now());
+            for (String market : markets) {
+                log.info("{} - {} start", period, market);
+                LocalDateTime baseStart = makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
+                DateRange range = new DateRange(baseStart, LocalDateTime.now());
                 MabsConditionEntity condition = MabsConditionEntity.builder()
-                        .market(coin)
+                        .market(market)
                         .tradePeriod(PeriodType.PERIOD_60)
                         .upBuyRate(0.01)
                         .downSellRate(0.01)
@@ -175,7 +173,7 @@ public class MabsTradeAnalyzerTest {
                 36879612, // KRW-MANA(2019-04-09)
                 36915333, // KRW-BAT(2018-07-30)
                 44399001, // KRW-BCH(2017-10-08)
-                44544109  //  KRW-DOT(2020-10-15)
+                44544109  // KRW-DOT(2020-10-15)
         );
 
         // 완전한 거래(매수-매도 쌍)를 만들기 위해 마지막 거래가 매수인경우 거래 내역 삭제
@@ -187,7 +185,7 @@ public class MabsTradeAnalyzerTest {
             log.info("{}, {}, {}_{} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod(), condition.getShortPeriod());
             List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getMabsConditionSeq());
 
-            LocalDateTime start = BASE_START;
+            LocalDateTime start = makeBaseStart(condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod() + 1);
             if (!tradeList.isEmpty()) {
                 MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
                 checkLastSell(lastTrade);
@@ -201,6 +199,22 @@ public class MabsTradeAnalyzerTest {
             mabsTradeEntityRepository.saveAll(mabsTradeEntities);
         }
         log.info("끝.");
+    }
+
+
+    /**
+     * @param market 마켓
+     * @param period 주기
+     * @param n      .
+     * @return 최초 시세 기준에서 n번째 candle의 UTC 시간
+     */
+    private LocalDateTime makeBaseStart(String market, PeriodType period, int n) {
+        LocalDateTime base = LocalDateTime.of(2000, 1, 1, 0, 0);
+        List<CandleEntity> candleList = candleRepository.findMarketPricePeriodAfter(market, period, base, PageRequest.of(0, n));
+        if (candleList.size() != n) {
+            throw new RuntimeException(String.format("시세 데이터 부족, 기대값: %d, 실제값: %d", n, candleList.size()));
+        }
+        return candleList.get(n - 1).getCandleDateTimeUtc();
     }
 
     private void checkLastSell(MabsTradeEntity lastTrade) {

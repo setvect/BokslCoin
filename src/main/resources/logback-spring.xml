@@ -35,7 +35,7 @@
         <logger name="org.apache.http" level="INFO" additivity="false">
             <appender-ref ref="STDOUT"/>
         </logger>
-        <logger name="com.setvect.bokslcoin" level="DEBUG" additivity="false">
+        <logger name="com.setvect.bokslcoin" level="INFO" additivity="false">
             <appender-ref ref="FILE"/>
             <appender-ref ref="STDOUT"/>
         </logger>
