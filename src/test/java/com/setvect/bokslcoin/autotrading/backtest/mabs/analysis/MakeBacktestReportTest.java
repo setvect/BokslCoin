@@ -68,6 +68,8 @@ public class MakeBacktestReportTest {
                 .mabsConditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
                 .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-06-08T23:59:59")))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.of(2022, 05, 01, 00, 00)))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
                 .investRatio(.99)
                 .cash(14_223_714)
