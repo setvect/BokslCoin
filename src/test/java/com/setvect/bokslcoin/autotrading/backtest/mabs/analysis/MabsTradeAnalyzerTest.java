@@ -2,6 +2,7 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
@@ -44,24 +45,15 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.notNull;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 @Slf4j
 public class MabsTradeAnalyzerTest {
     /**
@@ -98,6 +90,9 @@ public class MabsTradeAnalyzerTest {
 
     @Spy
     private final TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
+
+    @InjectMocks
+    private TradeCommonService tradeCommonService;
 
     @InjectMocks
     private MabsMultiService mabsMultiService;
@@ -342,9 +337,10 @@ public class MabsTradeAnalyzerTest {
 
 
     private void injectionFieldValue(MabsConditionEntity condition) {
-        ReflectionTestUtils.setField(mabsMultiService, "coinByCandles", new HashMap<>());
-        ReflectionTestUtils.setField(mabsMultiService, "assetHistoryRepository", this.assetHistoryRepository);
-        ReflectionTestUtils.setField(mabsMultiService, "tradeRepository", this.tradeRepository);
+        ReflectionTestUtils.setField(tradeCommonService, "coinByCandles", new HashMap<>());
+        ReflectionTestUtils.setField(tradeCommonService, "assetHistoryRepository", this.assetHistoryRepository);
+        ReflectionTestUtils.setField(tradeCommonService, "tradeRepository", this.tradeRepository);
+        ReflectionTestUtils.setField(mabsMultiService, "tradeCommonService", this.tradeCommonService);
         ReflectionTestUtils.setField(mabsMultiService, "periodIdx", -1);
 
         MabsMultiProperties properties = new MabsMultiProperties();

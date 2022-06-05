@@ -78,7 +78,7 @@ public class DateRange {
     }
 
     /**
-     * 날짜영역 객체 생성. 기본 날짜 포맷 (yyyy-MM-dd)으로 날짜 변환
+     * 날짜영역 객체 생성. 기본 날짜 포맷 (yyyy-MM-ddTHH:mm:ss)으로 날짜 변환
      *
      * @param from 시작날짜
      * @param to   종료날짜

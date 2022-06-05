@@ -1,0 +1,85 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:file:./db/bokslcoin_db
+    username: boksl_user
+    password: boksl_pw
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: true
+        use_sql_comments: false
+  mvc:
+    static-path-pattern: /static/**
+  devtools:
+    livereload:
+      enabled: true
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
+
+logging.level:
+  org.hibernate.SQL: error
+#  org.hibernate.type: trace
+
+com:
+  setvect:
+    bokslcoin:
+      autotrading:
+        # true 매매 진행, false 매매 진행 하지 않음
+        enable: false
+        api:
+          # 엑세스 키: 환경 변수 또는 직접 입력
+          accessKey: dummy
+          # 보안 키: 환경 변수 또는 직접 입력
+          secretKey: dummy
+          url: https://api.upbit.com
+        ws:
+          url: wss://api.upbit.com/websocket/v1
+        algorithm:
+          # 매매 알고리즘 지정
+          name: mabsMulti # 하나만 있음
+
+          # 이동평균선 돌파 전략, 멀티코인
+          mabsMulti:
+            # 매수, 매도 대상 코인
+            markets: KRW-BTC, KRW-ETH, KRW-XRP, KRW-EOS, KRW-ETC, KRW-ADA, KRW-MANA, KRW-BAT, KRW-BCH, KRW-DOT
+            # 최대 코인 매매 갯수
+            maxBuyCount: 3
+            # 총 현금을 기준으로 투자 비율. 1은 전액, 0.5은 50% 투자
+            investRatio: 0.5
+            # 손절 매도
+            loseStopRate: 0.5
+            # 매매 주기(PERIOD_60, PERIOD_240,PERIODP_1440)
+            periodType: PERIOD_240
+            # 상승 매수률
+            upBuyRate: 0.01
+            # 하락 매도률
+            downSellRate: 0.01
+            # 단기 이동평균 기간
+            shortPeriod: 3
+            # 장기 이동평균 기간
+            longPeriod: 15
+            # 프로그램을 시작하자마자 매수하는걸 방지하기 위함.
+            # true: 직전 이동평균을 감지해 새롭게 돌파 했을 때만 매수
+            # false: 프로그램 시작과 동시에 매수 조건이 만족하면 매수, 고가에 매수할 가능성 있음
+            newMasBuy: true
+
+        slack:
+          # 이벤트 발생시 슬랙메시지 전달 여부
+          # 만약 슬렉 메시지를 받고 싶지 않으면 false로 셋팅 후 항목 token, channelId 값을 비워둠
+          enable: false
+          # 'xoxb'로 시작하는 슬렉 App oAuth Key
+          token:
+          # 메시지 전달 채널 ID
+          channelId:
