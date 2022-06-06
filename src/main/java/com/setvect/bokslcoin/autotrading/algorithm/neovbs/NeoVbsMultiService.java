@@ -6,6 +6,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonParameter;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonUtil;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.OrderHistory;
@@ -30,31 +31,31 @@ public class NeoVbsMultiService implements CoinTrading {
     private final TradeCommonService tradeCommonService;
     private final NeoVbsMultiProperties properties;
     private final TradeEvent tradeEvent;
-    private int periodIdx = -1;
-
     /**
      * 마지막 체결 시세
      * (코인코드: 체결)
      */
     private final Map<String, TradeResult> currentTradeResult = new HashMap<>();
+    private int periodIdx = -1;
 
     @Override
     public void tradeEvent(TradeResult tradeResult) {
         TradeResult beforeTradeResult = currentTradeResult.get(tradeResult.getCode());
         currentTradeResult.put(tradeResult.getCode(), tradeResult);
+        PeriodType periodType = properties.getPeriodType();
         if (tradeCommonService.getCoinCandleSize() < properties.getMarkets().size()) {
             tradeCommonService.init(
                     TradeCommonParameter.builder()
                             .candleLoadCount(2)
                             .markets(properties.getMarkets())
-                            .periodType(properties.getPeriodType())
+                            .periodType(periodType)
                             .maxBuyCount(properties.getMaxBuyCount())
                             .investRatio(properties.getInvestRatio())
                             .build());
         }
 
         LocalDateTime nowUtc = tradeResult.getTradeDateTimeUtc();
-        int currentPeriod = TradeCommonUtil.getCurrentPeriod(nowUtc, properties.getPeriodType());
+        int currentPeriod = TradeCommonUtil.getCurrentPeriod(nowUtc, periodType);
 
 
         // 새로운 날짜면 매매 다시 초기화
@@ -71,29 +72,31 @@ public class NeoVbsMultiService implements CoinTrading {
         // 맨 앞에 가장 최근
         Candle newestCandle = candles.get(0);
 
-        LocalDateTime currentDateTimeKst = properties.getPeriodType().fitDateTime(tradeResult.getTradeDateTimeKst());
-        LocalDateTime beforeDateTimeKst = properties.getPeriodType().fitDateTime(beforeTradeResult.getTradeDateTimeKst());
-
+        LocalDateTime currentDateTimeKst = periodType.fitDateTime(tradeResult.getTradeDateTimeKst());
+        LocalDateTime candleDateTimeKst = periodType.fitDateTime(newestCandle.getCandleDateTimeKst());
+        tradeEvent.check(newestCandle);
 
         boolean newCandle = false;
-        if (currentDateTimeKst.equals(beforeDateTimeKst)) {
+        if (candleDateTimeKst.equals(currentDateTimeKst)) {
             newestCandle.change(tradeResult);
+
+            // 같은 주기에서 이전과 같은 체결값이면 이후 처리는 하지 않음
+            if (beforeTradeResult != null && beforeTradeResult.getTradePrice() == tradeResult.getTradePrice()) {
+                return;
+            }
         } else {
             newestCandle = new Candle(tradeResult);
             // 최근 캔들이 맨 앞에 있기 때문에 index 0에 넣음
             candles.add(0, newestCandle);
             newCandle = true;
-
-            // TODO 매수 상태면 매도
         }
 
         String market = tradeResult.getCode();
         if (isBuyable(market)) {
             tradeCommonService.doBid(market);
-        } else if (newCandle && isSellable(market)) {
+        } else if (isSellable(market, newCandle)) {
             tradeCommonService.doAsk(market);
         }
-
     }
 
     /**
@@ -134,12 +137,20 @@ public class NeoVbsMultiService implements CoinTrading {
 
 
     /**
-     * @param market 매도 대상 코인
+     * @param market    매도 대상 코인
+     * @param newCandle 매수 후 새로운 주기 진입 여부
      * @return true 매도 조건 만족
      */
-    private boolean isSellable(String market) {
+    // TODO 실재 운영에서 새로운 주기 기록을 판단할 수 없다. 언제 샀다는 걸 어딘가에 기록해야 된다.
+    private boolean isSellable(String market, boolean newCandle) {
         Account account = tradeCommonService.getAccount(market);
         if (account == null) {
+            return false;
+        }
+
+        tradeCommonService.emitHighMinYield(market);
+
+        if (!newCandle) {
             return false;
         }
 

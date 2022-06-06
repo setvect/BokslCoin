@@ -218,7 +218,15 @@ public class TradeCommonService {
         Candle candle = candleList.get(0);
         double yield = TradeCommonUtil.getYield(candle, account);
 
-        String message = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익률: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%", candle.getMarket(), candle.getTradePrice(), account.getAvgBuyPriceValue(), account.getInvestCash(), yield * 100, highYield.get(market) * 100, lowYield.get(market) * 100);
+        String message = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익률: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
+                candle.getMarket(),
+                candle.getTradePrice(),
+                account.getAvgBuyPriceValue(),
+                account.getInvestCash(),
+                yield * 100,
+                highYield.get(market) * 100,
+                lowYield.get(market) * 100);
+
         log.info(message);
         slackMessageService.sendMessage(message);
 

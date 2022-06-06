@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
+// TODO 공통 모듈로 이동
 public class CandleDataProvider {
     private final CandleRepository candleRepository;
     /**

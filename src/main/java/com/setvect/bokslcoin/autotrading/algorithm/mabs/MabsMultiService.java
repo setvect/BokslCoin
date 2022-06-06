@@ -7,6 +7,7 @@ import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonParameter;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonUtil;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.OrderHistory;
@@ -56,19 +57,20 @@ public class MabsMultiService implements CoinTrading {
         TradeResult beforeTradeResult = currentTradeResult.get(tradeResult.getCode());
         currentTradeResult.put(tradeResult.getCode(), tradeResult);
 
+        PeriodType periodType = properties.getPeriodType();
         if (tradeCommonService.getCoinCandleSize() < properties.getMarkets().size()) {
             tradeCommonService.init(
                     TradeCommonParameter.builder()
                             .candleLoadCount(properties.getLongPeriod() + 1)
                             .markets(properties.getMarkets())
-                            .periodType(properties.getPeriodType())
+                            .periodType(periodType)
                             .maxBuyCount(properties.getMaxBuyCount())
                             .investRatio(properties.getInvestRatio())
                             .build());
         }
 
         LocalDateTime nowUtc = tradeResult.getTradeDateTimeUtc();
-        int currentPeriod = TradeCommonUtil.getCurrentPeriod(nowUtc, properties.getPeriodType());
+        int currentPeriod = TradeCommonUtil.getCurrentPeriod(nowUtc, periodType);
 
 
         // 새로운 날짜면 매매 다시 초기화
@@ -90,8 +92,8 @@ public class MabsMultiService implements CoinTrading {
 
         // 맨 앞에 가장 최근
         Candle newestCandle = candles.get(0);
-        LocalDateTime tradeDateTimeKst = properties.getPeriodType().fitDateTime(tradeResult.getTradeDateTimeKst());
-        LocalDateTime candleDateTimeKst = properties.getPeriodType().fitDateTime(newestCandle.getCandleDateTimeKst());
+        LocalDateTime tradeDateTimeKst = periodType.fitDateTime(tradeResult.getTradeDateTimeKst());
+        LocalDateTime candleDateTimeKst = periodType.fitDateTime(newestCandle.getCandleDateTimeKst());
 
         if (candleDateTimeKst.equals(tradeDateTimeKst)) {
             newestCandle.change(tradeResult);
