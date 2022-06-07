@@ -11,11 +11,12 @@ import java.util.Set;
  */
 @Getter
 @Builder
+// TODO 공통 패키지로 이동
 public class AnalysisMultiCondition {
     /**
-     * 매매 수익률
+     * 매매 조건
      */
-    private final Set<Integer> mabsConditionIdSet;
+    private final Set<Integer> conditionIdSet;
     /**
      * 분석 대상 기간(KST)
      */

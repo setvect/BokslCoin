@@ -26,7 +26,8 @@ public class NeoVbsConditionEntity {
 
     @OneToMany(mappedBy = "vbsConditionEntity")
     @OrderBy("tradeTimeKst ASC")
-    private List<NeoVbsTradeEntity> mabsTradeEntityList;
+    @Setter
+    private List<NeoVbsTradeEntity> neoVbsTradeEntityList;
 
     /**
      * 코인 이름

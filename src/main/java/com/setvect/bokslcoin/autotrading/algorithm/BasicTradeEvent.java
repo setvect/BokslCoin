@@ -31,6 +31,11 @@ public class BasicTradeEvent implements TradeEvent {
     }
 
     @Override
+    public void setTargetPrice(String market, double targetPrice) {
+        // nothing
+    }
+
+    @Override
     public void setMaPrice(double ma) {
 
     }

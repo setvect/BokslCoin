@@ -62,7 +62,7 @@ public class NeoVbsMultiService implements CoinTrading {
         if (periodIdx != currentPeriod) {
             tradeEvent.newPeriod(tradeResult);
             tradeCommonService.loadAccount();
-            List<AssetHistoryEntity> rateByCoin = tradeCommonService.saveAsset(tradeResult.getTradeDateTimeKst());
+            List<AssetHistoryEntity> rateByCoin = tradeCommonService.saveAsset(tradeResult.getTradeDateTimeUtc());
             sendCurrentStatus(rateByCoin);
             tradeCommonService.clearTradeCompleteOfPeriod();
             periodIdx = currentPeriod;
@@ -72,12 +72,11 @@ public class NeoVbsMultiService implements CoinTrading {
         // 맨 앞에 가장 최근
         Candle newestCandle = candles.get(0);
 
-        LocalDateTime currentDateTimeKst = periodType.fitDateTime(tradeResult.getTradeDateTimeKst());
-        LocalDateTime candleDateTimeKst = periodType.fitDateTime(newestCandle.getCandleDateTimeKst());
-        tradeEvent.check(newestCandle);
+        LocalDateTime currentDateTimeUtc = periodType.fitDateTime(tradeResult.getTradeDateTimeUtc());
+        LocalDateTime candleDateTimeUtc = periodType.fitDateTime(newestCandle.getCandleDateTimeUtc());
 
-        boolean newCandle = false;
-        if (candleDateTimeKst.equals(currentDateTimeKst)) {
+        boolean newPeriod = false;
+        if (candleDateTimeUtc.equals(currentDateTimeUtc)) {
             newestCandle.change(tradeResult);
 
             // 같은 주기에서 이전과 같은 체결값이면 이후 처리는 하지 않음
@@ -88,13 +87,14 @@ public class NeoVbsMultiService implements CoinTrading {
             newestCandle = new Candle(tradeResult);
             // 최근 캔들이 맨 앞에 있기 때문에 index 0에 넣음
             candles.add(0, newestCandle);
-            newCandle = true;
+            newPeriod = true;
         }
+        tradeEvent.check(newestCandle);
 
         String market = tradeResult.getCode();
         if (isBuyable(market)) {
             tradeCommonService.doBid(market);
-        } else if (isSellable(market, newCandle)) {
+        } else if (isSellable(market, newPeriod)) {
             tradeCommonService.doAsk(market);
         }
     }
@@ -112,6 +112,7 @@ public class NeoVbsMultiService implements CoinTrading {
         List<Candle> candleList = tradeCommonService.getCandles(market);
         Candle currentCandle = candleList.get(0);
         double targetValue = getTargetValue(market);
+        tradeEvent.setTargetPrice(market, targetValue);
 
         //(장기이평 + 장기이평 * 상승매수률) <= 단기이평
         boolean isBuy = targetValue <= currentCandle.getTradePrice();

@@ -23,6 +23,12 @@ public interface TradeEvent {
     void check(Candle candle);
 
     /**
+     * @param market      종목
+     * @param targetPrice 목표주가
+     */
+    void setTargetPrice(String market, double targetPrice);
+
+    /**
      * 시세 체크
      *
      * @param ma 이동평균

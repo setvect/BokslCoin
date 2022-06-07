@@ -26,15 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -65,14 +57,17 @@ public class MakeBacktestReportTest {
         );
 
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                .mabsConditionIdSet(new HashSet<>(conditionSeqList))
+                .conditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-06-08T23:59:59")))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-06-08T23:59:59")))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.of(2022, 05, 01, 00, 00)))
+                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
                 .investRatio(.99)
                 .cash(14_223_714)
+//                .cash(15_000_000)
                 .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
                 .feeBuy(0.002)
                 .build();
@@ -166,7 +161,7 @@ public class MakeBacktestReportTest {
 //        for (Integer conditionSeq : conditionSeqList) {
         for (DateRange dateRange : rangeList) {
             AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                    .mabsConditionIdSet(new HashSet<>(conditionSeqList))
+                    .conditionIdSet(new HashSet<>(conditionSeqList))
                     .range(dateRange)
                     .investRatio(.99)
                     .cash(10_000_000)
@@ -192,7 +187,7 @@ public class MakeBacktestReportTest {
      * @return 대상코인의 수익률 정보를 제공
      */
     private List<MabsTradeReportItem> trading(AnalysisMultiCondition analysisMultiCondition) throws RuntimeException {
-        List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getMabsConditionIdSet());
+        List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
         List<List<MabsTradeEntity>> tradeList = mabsConditionEntityList.stream().map(MabsConditionEntity::getMabsTradeEntityList).collect(Collectors.toList());
 
         List<MabsTradeEntity> allTrade = new ArrayList<>();
@@ -211,7 +206,7 @@ public class MakeBacktestReportTest {
 
         List<MabsTradeReportItem> reportHistory = new ArrayList<>();
 
-        Set<Integer> ids = analysisMultiCondition.getMabsConditionIdSet();
+        Set<Integer> ids = analysisMultiCondition.getConditionIdSet();
         int allowBuyCount = ids.size();
 
         int buyCount = 0;
@@ -284,7 +279,7 @@ public class MakeBacktestReportTest {
      * @return 분석결과
      */
     private AnalysisReportResult analysis(List<MabsTradeReportItem> tradeHistory, AnalysisMultiCondition conditionMulti) {
-        List<MabsConditionEntity> conditionByCoin = mabsConditionEntityRepository.findAllById(conditionMulti.getMabsConditionIdSet());
+        List<MabsConditionEntity> conditionByCoin = mabsConditionEntityRepository.findAllById(conditionMulti.getConditionIdSet());
         Set<String> markets = conditionByCoin.stream()
                 .map(MabsConditionEntity::getMarket)
                 .collect(Collectors.toSet());
