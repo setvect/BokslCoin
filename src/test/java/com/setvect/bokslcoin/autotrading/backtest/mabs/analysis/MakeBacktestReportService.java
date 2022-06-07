@@ -10,15 +10,14 @@ import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -30,47 +29,18 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-@SpringBootTest
-@ActiveProfiles("local")
+@Service
 @Slf4j
-public class MakeBacktestReportTest {
+public class MakeBacktestReportService {
 
     @Autowired
     private MabsConditionEntityRepository mabsConditionEntityRepository;
     @Autowired
     private CandleRepository candleRepository;
 
-    @Test
+    @SneakyThrows
     @Transactional
-    public void 실제_코인_매매_평가() throws IOException {
-        List<Integer> conditionSeqList = Arrays.asList(
-                27288611,// KRW-BTC(2017-10-16)
-                27346706,// KRW-ETH(2017-10-10)
-                27403421,// KRW-XRP(2017-10-10)
-                27458175,// KRW-EOS(2018-03-30)
-                27508376,// KRW-ETC(2017-10-09)
-                29794493,// KRW-ADA(2017-10-16)
-                36879612,// KRW-MANA(2019-04-09)
-                36915333,// KRW-BAT(2018-07-30)
-                44399001,// KRW-BCH(2017-10-08)
-                44544109// KRW-DOT(2020-10-15)
-        );
-
-        AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                .conditionIdSet(new HashSet<>(conditionSeqList))
-//                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
-//                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-06-08T23:59:59")))
-//                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-06-08T23:59:59")))
-//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.of(2022, 05, 01, 00, 00)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
-//                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
-                .investRatio(.99)
-                .cash(14_223_714)
-//                .cash(15_000_000)
-                .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
-                .feeBuy(0.002)
-                .build();
+    public void makeReport(AnalysisMultiCondition analysisMultiCondition) {
         List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
         AnalysisReportResult result = analysis(tradeReportItems, analysisMultiCondition);
         printSummary(result);
@@ -78,7 +48,6 @@ public class MakeBacktestReportTest {
         System.out.println("끝");
     }
 
-    @Test
     @Transactional
     public void multiBacktest() throws IOException {
         // 60, 13, 64
