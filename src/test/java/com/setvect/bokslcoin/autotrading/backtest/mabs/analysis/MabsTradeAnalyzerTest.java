@@ -12,13 +12,9 @@ import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityQuerydslRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityRepository;
-import com.setvect.bokslcoin.autotrading.exchange.AccountService;
-import com.setvect.bokslcoin.autotrading.exchange.OrderService;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
-import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
-import com.setvect.bokslcoin.autotrading.quotation.CandleService;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.record.repository.AssetHistoryRepository;
 import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
@@ -35,8 +31,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -46,9 +40,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.when;
-
 @SpringBootTest
 @ActiveProfiles("test")
 @Slf4j
@@ -57,56 +48,30 @@ public class MabsTradeAnalyzerTest {
      * 투자금
      */
     public static final double CASH = 10_000_000;
-
+    private final SlackMessageService slackMessageService = new MockSlackMessageService();
+    private final MockTradeEvent tradeEvent = new MockTradeEvent(slackMessageService);
+    private final MockAccountService accountService = new MockAccountService();
+    private final MockOrderService orderService = new MockOrderService(new MockAccessTokenMaker(), new MockConnectionInfo());
+    private final MockCandleService candleService = new MockCandleService(new MockConnectionInfo());
     @Autowired
     private MabsConditionEntityRepository mabsConditionEntityRepository;
-
     @Autowired
     private MabsTradeEntityRepository mabsTradeEntityRepository;
-
     @Autowired
     private CandleRepository candleRepository;
-
     @Autowired
     private AssetHistoryRepository assetHistoryRepository;
-
     @Autowired
     private TradeRepository tradeRepository;
-
     @Autowired
     private BacktestHelperComponent backtestHelperService;
-
     @Autowired
     private MakeBacktestReportService makeBacktestReportService;
-
     @Autowired
     private MabsTradeEntityQuerydslRepository mabsTradeEntityQuerydslRepository;
 
-    private final SlackMessageService slackMessageService = new MockSlackMessageService();
-
-    //    @Spy
-//    private TradeEvent tradeEvent;
-    private final MockTradeEvent tradeEvent = new MockTradeEvent(slackMessageService);
-
-    @Mock
-    private AccountService accountService;
-    //    private AccountService accountService = new MockAccountService();
-
-    @Mock
-    private OrderService orderService;
-//    private OrderService orderService = new MockOrderService(new MockAccessTokenMaker(), new MockConnectionInfo());
-
-    @Mock
-    private CandleService candleService;
-    //    private CandleService candleService = new MockCandleService(new MockConnectionInfo());
-
     private TradeCommonService tradeCommonService;
     private MockMabsMultiService mabsMultiService;
-    private List<MabsMultiBacktestRow> tradeHistory;
-
-    private Map<String, CurrentPrice> priceMap;
-    private Map<String, Account> accountMap;
-
 
     @Test
     @DisplayName("변동성 돌파 전략 백테스트")
@@ -117,10 +82,10 @@ public class MabsTradeAnalyzerTest {
 
         List<MabsConditionEntity> mabsConditionEntities = makeCondition();
 //        LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
-//        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
-//        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
-        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
-        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
+        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
+        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
+//        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
+//        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
 
         DateRange range = new DateRange(baseStart, baseEnd);
 
@@ -191,8 +156,8 @@ public class MabsTradeAnalyzerTest {
     }
 
     private List<MabsConditionEntity> makeCondition() {
-//        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
-        List<String> markets = Arrays.asList("KRW-BTC");
+        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
+//        List<String> markets = Arrays.asList("KRW-BTC");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
         periodList.add(new ImmutablePair<>(13, 64));
@@ -293,7 +258,7 @@ public class MabsTradeAnalyzerTest {
      */
     private List<MabsMultiBacktestRow> backtest(MabsConditionEntity condition, DateRange range) {
         // key: market, value: 자산
-        accountMap = new HashMap<>();
+        Map<String, Account> accountMap = new HashMap<>();
 
         Account cashAccount = new Account();
         cashAccount.setCurrency("KRW");
@@ -309,30 +274,24 @@ public class MabsTradeAnalyzerTest {
         accountMap.put(market, acc);
 
         // Key: market, value: 시세 정보
-        priceMap = new HashMap<>();
+        Map<String, CurrentPrice> priceMap = new HashMap<>();
 
         injectionFieldValue(condition);
-        tradeHistory = new ArrayList<>();
+        List<MabsMultiBacktestRow> tradeHistory = new ArrayList<>();
 
         tradeEvent.setPriceMap(priceMap);
         tradeEvent.setAccountMap(accountMap);
         tradeEvent.setTradeHistory(tradeHistory);
 
+        accountService.setAccountMap(accountMap);
+
         LocalDateTime current = range.getFrom();
         LocalDateTime to = range.getTo();
         CandleDataProvider candleDataProvider = new CandleDataProvider(candleRepository);
 
-        initMock(candleDataProvider);
+        candleService.setCandleDataProvider(candleDataProvider);
 
-        int count = 0;
         while (current.isBefore(to) || current.equals(to)) {
-            if (count == 1440 * 7) {
-                log.info("clear: {}, {}, {}", condition.getMarket(), current, count);
-                Mockito.reset(candleService, orderService, accountService);
-                initMock(candleDataProvider);
-                count = 0;
-            }
-
             candleDataProvider.setCurrentTime(current);
             CandleMinute candle = candleDataProvider.getCurrentCandle(condition.getMarket());
             if (candle == null) {
@@ -354,10 +313,7 @@ public class MabsTradeAnalyzerTest {
 
             mabsMultiService.tradeEvent(tradeResult);
             current = current.plusMinutes(1);
-            count++;
         }
-
-        Mockito.reset(candleService, orderService, accountService);
         return tradeHistory;
     }
 
@@ -383,35 +339,6 @@ public class MabsTradeAnalyzerTest {
         ReflectionTestUtils.setField(mabsMultiService, "properties", properties);
 
     }
-
-    private void initMock(CandleDataProvider candleDataProvider) {
-        when(candleService.getMinute(anyInt(), anyString()))
-                .then((invocation) -> candleDataProvider.getCurrentCandle(invocation.getArgument(1)));
-
-        when(candleService.getMinute(eq(15), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_15, invocation.getArgument(2, Integer.class)));
-        when(candleService.getMinute(eq(30), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_30, invocation.getArgument(2, Integer.class)));
-        when(candleService.getMinute(eq(60), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_60, invocation.getArgument(2, Integer.class)));
-        when(candleService.getMinute(eq(240), anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeMinute(invocation.getArgument(1, String.class), PeriodType.PERIOD_240, invocation.getArgument(2, Integer.class)));
-
-        when(candleService.getDay(anyString()))
-                .then((invocation) -> {
-                    List<CandleDay> candleDays = candleDataProvider.beforeDayCandle(invocation.getArgument(0, String.class), 2);
-                    return candleDays.get(0);
-                });
-        when(candleService.getDay(anyString(), anyInt()))
-                .then((invocation) -> candleDataProvider.beforeDayCandle(invocation.getArgument(0, String.class), invocation.getArgument(1, Integer.class)));
-
-        // 현재 가지고있는 자산 조회
-        when(accountService.getMyAccountBalance()).then((method) -> accountMap.entrySet().stream()
-                .filter(e -> e.getValue().getBalanceValue() != 0)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-
-    }
-
 
     @RequiredArgsConstructor
     @Getter
