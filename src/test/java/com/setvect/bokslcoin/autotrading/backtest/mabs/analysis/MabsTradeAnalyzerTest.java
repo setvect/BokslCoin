@@ -89,7 +89,6 @@ public class MabsTradeAnalyzerTest {
     @Autowired
     private MabsTradeEntityQuerydslRepository mabsTradeEntityQuerydslRepository;
 
-
     @Mock
     private SlackMessageService slackMessageService;
     @Spy
@@ -124,17 +123,27 @@ public class MabsTradeAnalyzerTest {
         return GsonUtil.GSON.fromJson(json, Candle.class);
     }
 
-    @DisplayName("백테스트 결과를 DB에 저장하지 않음")
     @Test
-    public void backtestNoSave() {
-        List<MabsConditionEntity> mabsConditionEntities = null;
+    @DisplayName("변동성 돌파 전략 백테스트")
+    public void backtest() {
+        boolean saveDb = false;
+
+        List<MabsConditionEntity> mabsConditionEntities = makeCondition();
+//        LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
+//        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
+//        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
+        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
+        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
+
+        DateRange range = new DateRange(baseStart, baseEnd);
+
         try {
-            mabsConditionEntities = backtest();
+            mabsConditionEntities = backtest(mabsConditionEntities, range);
             List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
 
             AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
                     .conditionIdSet(new HashSet<>(conditionSeqList))
-                    .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), DateUtil.getLocalDateTime("2022-06-02T23:59:59")))
+                    .range(range)
                     .investRatio(.99)
                     .cash(14_223_714)
                     .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
@@ -143,72 +152,19 @@ public class MabsTradeAnalyzerTest {
 
             makeBacktestReportService.makeReport(analysisMultiCondition);
         } finally {
-            if (CollectionUtils.isEmpty(mabsConditionEntities)) {
-                return;
-            }
-            List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
-            // 결과를 삭제함
-            // TODO 너무 무식한 방법이다. @Transactional를 사용해야 되는데 사용하면 속도가 매우 느리다. 해결해야됨
-            mabsTradeEntityQuerydslRepository.deleteByConditionId(conditionSeqList);
-            mabsConditionEntityRepository.deleteAll(mabsConditionEntities);
-        }
-    }
-
-    @NotNull
-    private List<Integer> getConditionSeqList(List<MabsConditionEntity> mabsConditionEntities) {
-        return mabsConditionEntities.stream()
-                .map(MabsConditionEntity::getMabsConditionSeq)
-                .collect(Collectors.toList());
-    }
-
-    @DisplayName("백테스트 결과를 DB에 저장함")
-    @Test
-    public void backtestSave() {
-        backtest();
-    }
-
-
-    public List<MabsConditionEntity> backtest() {
-//        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
-        List<String> markets = Arrays.asList("KRW-BTC");
-
-        List<Pair<Integer, Integer>> periodList = new ArrayList<>();
-        periodList.add(new ImmutablePair<>(13, 64));
-
-        List<MabsConditionEntity> mabsConditionEntities = new ArrayList<>();
-        for (Pair<Integer, Integer> period : periodList) {
-            for (String market : markets) {
-                log.info("{} - {} start", period, market);
-//                LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
-//                LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
-//                LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
-                LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-03-01T00:00:00");
-                LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
-
-                DateRange range = new DateRange(baseStart, baseEnd);
-                MabsConditionEntity condition = MabsConditionEntity.builder()
-                        .market(market)
-                        .tradePeriod(PeriodType.PERIOD_60)
-                        .upBuyRate(0.01)
-                        .downSellRate(0.01)
-                        .shortPeriod(period.getLeft())
-                        .longPeriod(period.getRight())
-                        .loseStopRate(0.5)
-                        .comment(null)
-                        .build();
-                mabsConditionEntityRepository.save(condition);
-                mabsConditionEntities.add(condition);
-                List<MabsMultiBacktestRow> tradeHistory = backtest(condition, range);
-
-                List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
-                mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+            if (!saveDb && CollectionUtils.isNotEmpty(mabsConditionEntities)) {
+                List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
+                // 결과를 삭제함
+                // TODO 너무 무식한 방법이다. @Transactional를 사용해야 되는데 사용하면 속도가 매우 느리다. 해결해야됨
+                mabsTradeEntityQuerydslRepository.deleteByConditionId(conditionSeqList);
+                mabsConditionEntityRepository.deleteAll(mabsConditionEntities);
             }
         }
-        return mabsConditionEntities;
     }
 
     @Test
-    public void 특정_조건에_대해_증분_분석_수행() {
+    @DisplayName("기 매매 결과에서 추가된 시세 데이터에 대한 증분 수행")
+    public void backtestIncremental() {
         List<Integer> conditionSeqList = Arrays.asList(
                 27288611, // KRW-BTC(2017-10-16)
                 27346706, // KRW-ETH(2017-10-10)
@@ -246,6 +202,52 @@ public class MabsTradeAnalyzerTest {
         }
         log.info("끝.");
     }
+
+    private List<MabsConditionEntity> makeCondition() {
+//        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
+        List<String> markets = Arrays.asList("KRW-BTC");
+
+        List<Pair<Integer, Integer>> periodList = new ArrayList<>();
+        periodList.add(new ImmutablePair<>(13, 64));
+
+        List<MabsConditionEntity> mabsConditionEntities = new ArrayList<>();
+        for (Pair<Integer, Integer> period : periodList) {
+            for (String market : markets) {
+                log.info("{} - {} start", period, market);
+                MabsConditionEntity condition = MabsConditionEntity.builder()
+                        .market(market)
+                        .tradePeriod(PeriodType.PERIOD_60)
+                        .upBuyRate(0.01)
+                        .downSellRate(0.01)
+                        .shortPeriod(period.getLeft())
+                        .longPeriod(period.getRight())
+                        .loseStopRate(0.5)
+                        .comment(null)
+                        .build();
+                mabsConditionEntities.add(condition);
+            }
+        }
+        return mabsConditionEntities;
+    }
+
+    @NotNull
+    private List<Integer> getConditionSeqList(List<MabsConditionEntity> mabsConditionEntities) {
+        return mabsConditionEntities.stream()
+                .map(MabsConditionEntity::getMabsConditionSeq)
+                .collect(Collectors.toList());
+    }
+
+    public List<MabsConditionEntity> backtest(List<MabsConditionEntity> mabsConditionEntities, DateRange range) {
+        for (MabsConditionEntity condition : mabsConditionEntities) {
+            mabsConditionEntityRepository.save(condition);
+            List<MabsMultiBacktestRow> tradeHistory = backtest(condition, range);
+
+            List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
+            mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+        }
+        return mabsConditionEntities;
+    }
+
 
     private void checkLastSell(MabsTradeEntity lastTrade) {
         if (lastTrade.getTradeType() == TradeType.BUY) {
