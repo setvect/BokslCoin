@@ -1,5 +1,6 @@
-package com.setvect.bokslcoin.autotrading.backtest.entity;
+package com.setvect.bokslcoin.autotrading.backtest.entity.neovbs;
 
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,7 +18,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity(name = "XC_VBS_CONDITION")
 @EntityListeners(AuditingEntityListener.class)
-@ToString(exclude = {"vbsTradeEntityList"})
+@ToString(exclude = {"neoVbsTradeEntityList"})
 public class NeoVbsConditionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

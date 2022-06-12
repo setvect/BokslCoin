@@ -1,7 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.repository;
 
-import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.NeoVbsTradeEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsTradeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

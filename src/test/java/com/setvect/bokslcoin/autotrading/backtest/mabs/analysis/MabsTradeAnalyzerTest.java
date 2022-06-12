@@ -7,9 +7,9 @@ import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
 import com.setvect.bokslcoin.autotrading.backtest.common.CandleDataProvider;
 import com.setvect.bokslcoin.autotrading.backtest.common.mock.*;
-import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
+import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiService;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsTradeEvent;
@@ -142,7 +142,7 @@ public class MabsTradeAnalyzerTest {
 
         for (MabsConditionEntity condition : conditionEntityList) {
             log.info("{}, {}, {}_{} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod(), condition.getShortPeriod());
-            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getMabsConditionSeq());
+            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getConditionSeq());
 
             LocalDateTime start = backtestHelperService.makeBaseStart(condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod() + 1);
             if (!tradeList.isEmpty()) {
@@ -190,7 +190,7 @@ public class MabsTradeAnalyzerTest {
     @NotNull
     private List<Integer> getConditionSeqList(List<MabsConditionEntity> mabsConditionEntities) {
         return mabsConditionEntities.stream()
-                .map(MabsConditionEntity::getMabsConditionSeq)
+                .map(MabsConditionEntity::getConditionSeq)
                 .collect(Collectors.toList());
     }
 
@@ -221,7 +221,7 @@ public class MabsTradeAnalyzerTest {
         List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
 
         for (MabsConditionEntity condition : conditionEntityList) {
-            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getMabsConditionSeq());
+            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getConditionSeq());
             if (tradeList.isEmpty()) {
                 continue;
             }
@@ -243,7 +243,7 @@ public class MabsTradeAnalyzerTest {
      */
     private List<MabsTradeEntity> convert(MabsConditionEntity condition, List<MabsMultiBacktestRow> tradeHistory) {
         return tradeHistory.stream().map(p -> MabsTradeEntity.builder()
-                .mabsConditionEntity(condition)
+                .conditionEntity(condition)
                 .tradeType(p.getTradeEvent())
                 .highYield(p.getHighYield())
                 .lowYield(p.getLowYield())

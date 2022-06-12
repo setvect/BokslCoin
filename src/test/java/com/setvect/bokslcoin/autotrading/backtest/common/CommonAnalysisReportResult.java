@@ -1,7 +1,7 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
+package com.setvect.bokslcoin.autotrading.backtest.common;
 
-import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.MabsTradeReportItem;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Builder
-public class AnalysisReportResult {
+public class CommonAnalysisReportResult {
     /**
      * 리포트 조건
      */

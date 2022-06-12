@@ -1,6 +1,6 @@
 package com.setvect.bokslcoin.autotrading.backtest.neovbs;
 
-import com.setvect.bokslcoin.autotrading.backtest.entity.NeoVbsTradeEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsTradeEntity;
 import lombok.Builder;
 import lombok.Getter;
 

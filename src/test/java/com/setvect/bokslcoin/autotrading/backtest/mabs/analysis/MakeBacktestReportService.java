@@ -2,9 +2,9 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
 import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
+import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
@@ -158,7 +158,7 @@ public class MakeBacktestReportService {
      */
     private List<MabsTradeReportItem> trading(AnalysisMultiCondition analysisMultiCondition) throws RuntimeException {
         List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
-        List<List<MabsTradeEntity>> tradeList = mabsConditionEntityList.stream().map(MabsConditionEntity::getMabsTradeEntityList).collect(Collectors.toList());
+        List<List<MabsTradeEntity>> tradeList = mabsConditionEntityList.stream().map(MabsConditionEntity::getTradeEntityList).collect(Collectors.toList());
 
         List<MabsTradeEntity> allTrade = new ArrayList<>();
         for (List<MabsTradeEntity> tradeHistory : tradeList) {
@@ -189,7 +189,7 @@ public class MakeBacktestReportService {
 
             MabsTradeReportItem.MabsTradeReportItemBuilder itemBuilder = MabsTradeReportItem.builder();
             itemBuilder.mabsTradeEntity(trade);
-            String market = trade.getMabsConditionEntity().getMarket();
+            String market = trade.getConditionEntity().getMarket();
 
 
             if (trade.getTradeType() == TradeType.BUY) {
@@ -444,7 +444,7 @@ public class MakeBacktestReportService {
      */
     private static AnalysisReportResult.WinningRate calculateInvestment(String market, List<MabsTradeReportItem> tradeHistory) {
         List<MabsTradeReportItem> filter = tradeHistory.stream()
-                .filter(p -> p.getMabsTradeEntity().getMabsConditionEntity().getMarket().equals(market))
+                .filter(p -> p.getMabsTradeEntity().getConditionEntity().getMarket().equals(market))
                 .filter(p -> p.getMabsTradeEntity().getTradeType() == TradeType.SELL)
                 .collect(Collectors.toList());
         double totalInvest = filter.stream().mapToDouble(MabsTradeReportItem::getGains).sum();
@@ -500,7 +500,7 @@ public class MakeBacktestReportService {
         StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
         for (MabsTradeReportItem row : result.getTradeHistory()) {
             MabsTradeEntity mabsTradeEntity = row.getMabsTradeEntity();
-            MabsConditionEntity mabsConditionEntity = mabsTradeEntity.getMabsConditionEntity();
+            MabsConditionEntity mabsConditionEntity = mabsTradeEntity.getConditionEntity();
             LocalDateTime tradeTimeKst = mabsTradeEntity.getTradeTimeKst();
             String dateKst = DateUtil.formatDateTime(tradeTimeKst);
             LocalDateTime utcTime = convertUtc(tradeTimeKst);
@@ -571,7 +571,7 @@ public class MakeBacktestReportService {
 
         for (MabsConditionEntity mabsConditionEntity : result.getConditionList()) {
             report.append("\n---\n");
-            report.append(String.format("조건아이디\t %s", mabsConditionEntity.getMabsConditionSeq())).append("\n");
+            report.append(String.format("조건아이디\t %s", mabsConditionEntity.getConditionSeq())).append("\n");
             report.append(String.format("분석주기\t %s", mabsConditionEntity.getTradePeriod())).append("\n");
             report.append(String.format("대상 코인\t %s", mabsConditionEntity.getMarket())).append("\n");
             report.append(String.format("상승 매수률\t %,.2f%%", mabsConditionEntity.getUpBuyRate() * 100)).append("\n");
@@ -638,11 +638,11 @@ public class MakeBacktestReportService {
         List<MabsConditionEntity> conditionAll = accResult.stream()
                 .flatMap(p -> p.getConditionList().stream())
                 .distinct()
-                .sorted(Comparator.comparingInt(MabsConditionEntity::getMabsConditionSeq))
+                .sorted(Comparator.comparingInt(MabsConditionEntity::getConditionSeq))
                 .collect(Collectors.toList());
 
         for (MabsConditionEntity condition : conditionAll) {
-            String reportRow = String.format("%s\t", condition.getMabsConditionSeq()) +
+            String reportRow = String.format("%s\t", condition.getConditionSeq()) +
                     String.format("%s\t", condition.getTradePeriod()) +
                     String.format("%s\t", condition.getMarket()) +
                     String.format("%,.2f%%\t", condition.getUpBuyRate() * 100) +

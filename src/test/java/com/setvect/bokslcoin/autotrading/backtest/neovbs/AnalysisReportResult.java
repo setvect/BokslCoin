@@ -1,7 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.neovbs;
 
 import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
-import com.setvect.bokslcoin.autotrading.backtest.entity.NeoVbsConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsConditionEntity;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import lombok.Builder;
 import lombok.Getter;

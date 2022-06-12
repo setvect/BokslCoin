@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.entity;
+package com.setvect.bokslcoin.autotrading.backtest.entity.neovbs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;

@@ -1,24 +1,14 @@
-package com.setvect.bokslcoin.autotrading.backtest.entity;
+package com.setvect.bokslcoin.autotrading.backtest.entity.mabs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.TradeEntity;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Index;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 
 /**
@@ -32,7 +22,7 @@ import java.time.LocalDateTime;
 @Table(indexes = {
         @Index(name = "XB_MABS_TRADE_TRADE_TIME_KST_INDEX", columnList = "TRADE_TIME_KST")
 })
-public class MabsTradeEntity {
+public class MabsTradeEntity implements TradeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "TRADE_SEQ")
@@ -43,7 +33,7 @@ public class MabsTradeEntity {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "BACKTEST_CONDITION_SEQ")
-    private MabsConditionEntity mabsConditionEntity;
+    private MabsConditionEntity conditionEntity;
 
     /**
      * 매수/매도
@@ -104,4 +94,5 @@ public class MabsTradeEntity {
      */
     @Column(name = "TRADE_TIME_KST", nullable = false)
     private LocalDateTime tradeTimeKst;
+
 }

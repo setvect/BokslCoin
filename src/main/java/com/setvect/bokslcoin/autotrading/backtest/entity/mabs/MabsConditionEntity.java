@@ -1,23 +1,12 @@
-package com.setvect.bokslcoin.autotrading.backtest.entity;
+package com.setvect.bokslcoin.autotrading.backtest.entity.mabs;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.ConditionEntity;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EntityListeners;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
-import javax.persistence.OrderBy;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,16 +19,16 @@ import java.util.List;
 @NoArgsConstructor
 @Entity(name = "XA_MABS_CONDITION")
 @EntityListeners(AuditingEntityListener.class)
-@ToString(exclude = {"mabsTradeEntityList"})
-public class MabsConditionEntity {
+@ToString(exclude = {"tradeEntityList"})
+public class MabsConditionEntity implements ConditionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "BACKTEST_CONDITION_SEQ")
-    private int mabsConditionSeq;
+    private int conditionSeq;
 
-    @OneToMany(mappedBy = "mabsConditionEntity")
+    @OneToMany(mappedBy = "conditionEntity")
     @OrderBy("tradeTimeKst ASC")
-    private List<MabsTradeEntity> mabsTradeEntityList;
+    private List<MabsTradeEntity> tradeEntityList;
 
     /**
      * 코인 이름
@@ -97,4 +86,9 @@ public class MabsConditionEntity {
     @Column(name = "REG_DATE", nullable = false)
     @CreatedDate
     private LocalDateTime regDate;
+
+    @Override
+    public List<MabsTradeEntity> getTradeEntityList() {
+        return tradeEntityList;
+    }
 }
