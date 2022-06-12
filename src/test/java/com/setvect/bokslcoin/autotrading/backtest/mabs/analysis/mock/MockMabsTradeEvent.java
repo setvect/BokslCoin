@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class MockTradeEvent extends BasicTradeEvent {
+public class MockMabsTradeEvent extends BasicTradeEvent {
     @Setter
     private Map<String, MabsTradeAnalyzerTest.CurrentPrice> priceMap;
     @Setter
@@ -35,7 +35,7 @@ public class MockTradeEvent extends BasicTradeEvent {
     @Getter
     private double lowYield;
 
-    public MockTradeEvent(SlackMessageService slackMessageService) {
+    public MockMabsTradeEvent(SlackMessageService slackMessageService) {
         super(slackMessageService);
     }
 
@@ -52,18 +52,17 @@ public class MockTradeEvent extends BasicTradeEvent {
 
         Account coinAccount = accountMap.get(market);
         coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(tradePrice));
-        double investAmount = bidPrice;
 
         Account krwAccount = accountMap.get("KRW");
-        double cash = Double.parseDouble(krwAccount.getBalance()) - investAmount;
+        double cash = Double.parseDouble(krwAccount.getBalance()) - bidPrice;
         krwAccount.setBalance(ApplicationUtil.toNumberString(cash));
 
-        String balance = ApplicationUtil.toNumberString(investAmount / tradePrice);
+        String balance = ApplicationUtil.toNumberString(bidPrice / tradePrice);
         coinAccount.setBalance(balance);
 
         backtestRow.setTradeEvent(TradeType.BUY);
         backtestRow.setBidPrice(tradePrice);
-        backtestRow.setBuyAmount(investAmount);
+        backtestRow.setBuyAmount(bidPrice);
         backtestRow.setBuyTotalAmount(BacktestHelper.getBuyTotalAmount(accountMap));
         backtestRow.setCash(cash);
         backtestRow.setMaShort(currentPrice.getMaShort());

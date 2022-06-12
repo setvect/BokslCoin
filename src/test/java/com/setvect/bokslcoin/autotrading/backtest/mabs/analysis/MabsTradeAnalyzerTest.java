@@ -3,11 +3,16 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
+import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
+import com.setvect.bokslcoin.autotrading.backtest.common.CandleDataProvider;
+import com.setvect.bokslcoin.autotrading.backtest.common.mock.*;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.*;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiProperties;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiService;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsTradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityQuerydslRepository;
@@ -49,7 +54,7 @@ public class MabsTradeAnalyzerTest {
      */
     public static final double CASH = 10_000_000;
     private final SlackMessageService slackMessageService = new MockSlackMessageService();
-    private final MockTradeEvent tradeEvent = new MockTradeEvent(slackMessageService);
+    private final MockMabsTradeEvent tradeEvent = new MockMabsTradeEvent(slackMessageService);
     private final MockAccountService accountService = new MockAccountService();
     private final MockOrderService orderService = new MockOrderService(new MockAccessTokenMaker(), new MockConnectionInfo());
     private final MockCandleService candleService = new MockCandleService(new MockConnectionInfo());
@@ -77,15 +82,15 @@ public class MabsTradeAnalyzerTest {
     @DisplayName("변동성 돌파 전략 백테스트")
     public void backtest() {
         boolean saveDb = false;
-        mabsMultiService = new MockMabsMultiService(tradeCommonService, tradeEvent, new MockMabsMultiProperties());
         tradeCommonService = new MockTradeCommonService(tradeEvent, accountService, orderService, candleService, tradeRepository, slackMessageService, assetHistoryRepository);
+        mabsMultiService = new MockMabsMultiService(tradeCommonService, tradeEvent, new MockMabsMultiProperties());
 
         List<MabsConditionEntity> mabsConditionEntities = makeCondition();
 //        LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
-        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
-        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
-//        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
-//        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
+//        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
+//        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
+        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
+        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
 
         DateRange range = new DateRange(baseStart, baseEnd);
 
@@ -156,8 +161,8 @@ public class MabsTradeAnalyzerTest {
     }
 
     private List<MabsConditionEntity> makeCondition() {
-        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
-//        List<String> markets = Arrays.asList("KRW-BTC");
+//        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
+        List<String> markets = Arrays.asList("KRW-BTC");
 
         List<Pair<Integer, Integer>> periodList = new ArrayList<>();
         periodList.add(new ImmutablePair<>(13, 64));

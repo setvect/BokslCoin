@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
+package com.setvect.bokslcoin.autotrading.backtest.common;
 
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.Builder;
@@ -11,7 +11,6 @@ import java.util.Set;
  */
 @Getter
 @Builder
-// TODO 공통 패키지로 이동
 public class AnalysisMultiCondition {
     /**
      * 매매 조건

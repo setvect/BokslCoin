@@ -1,8 +1,8 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock;
+package com.setvect.bokslcoin.autotrading.backtest.common.mock;
 
 import com.setvect.bokslcoin.autotrading.ConnectionInfo;
+import com.setvect.bokslcoin.autotrading.backtest.common.CandleDataProvider;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.CandleDataProvider;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.quotation.CandleService;

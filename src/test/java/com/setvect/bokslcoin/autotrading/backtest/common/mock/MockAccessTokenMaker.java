@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock;
+package com.setvect.bokslcoin.autotrading.backtest.common.mock;
 
 import com.setvect.bokslcoin.autotrading.AccessTokenMaker;
 

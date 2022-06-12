@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
+package com.setvect.bokslcoin.autotrading.backtest.common;
 
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
-// TODO 공통 모듈로 이동
 public class CandleDataProvider {
     private final CandleRepository candleRepository;
     /**
