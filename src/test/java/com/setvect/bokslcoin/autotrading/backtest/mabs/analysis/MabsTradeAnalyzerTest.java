@@ -1,15 +1,17 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
-import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
-import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiService;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiProperties;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiService;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockSlackMessageService;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockTradeCommonService;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityQuerydslRepository;
@@ -38,7 +40,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
@@ -89,22 +90,26 @@ public class MabsTradeAnalyzerTest {
     @Autowired
     private MabsTradeEntityQuerydslRepository mabsTradeEntityQuerydslRepository;
 
-    @Mock
-    private SlackMessageService slackMessageService;
+    private final SlackMessageService slackMessageService = new MockSlackMessageService();
+
     @Spy
-    private final TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
+    private TradeEvent tradeEvent;
+    //    private final TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
+
     @Mock
     private AccountService accountService;
-    @Mock
-    private CandleService candleService;
+    //    private AccountService accountService = new MockAccountService();
+
     @Mock
     private OrderService orderService;
-    @InjectMocks
+//    private OrderService orderService = new MockOrderService(new MockAccessTokenMaker(), new MockConnectionInfo());
+
+    @Mock
+    private CandleService candleService;
+    //    private CandleService candleService = new MockCandleService(new MockConnectionInfo());
+
     private TradeCommonService tradeCommonService;
-
-    @InjectMocks
-    private MabsMultiService mabsMultiService;
-
+    private MockMabsMultiService mabsMultiService;
     private List<MabsMultiBacktestRow> tradeHistory;
 
     /**
@@ -127,6 +132,8 @@ public class MabsTradeAnalyzerTest {
     @DisplayName("변동성 돌파 전략 백테스트")
     public void backtest() {
         boolean saveDb = false;
+        mabsMultiService = new MockMabsMultiService(tradeCommonService, tradeEvent, new MockMabsMultiProperties());
+        tradeCommonService = new MockTradeCommonService(tradeEvent, accountService, orderService, candleService, tradeRepository, slackMessageService, assetHistoryRepository);
 
         List<MabsConditionEntity> mabsConditionEntities = makeCondition();
 //        LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
@@ -377,7 +384,7 @@ public class MabsTradeAnalyzerTest {
         ReflectionTestUtils.setField(mabsMultiService, "tradeCommonService", this.tradeCommonService);
         ReflectionTestUtils.setField(mabsMultiService, "periodIdx", -1);
 
-        MabsMultiProperties properties = new MabsMultiProperties();
+        MabsMultiProperties properties = mabsMultiService.getProperties();
         properties.setMarkets(Collections.singletonList(condition.getMarket()));
         properties.setMaxBuyCount(1);
         properties.setInvestRatio(0.99);
@@ -388,6 +395,7 @@ public class MabsTradeAnalyzerTest {
         properties.setShortPeriod(condition.getShortPeriod());
         properties.setLongPeriod(condition.getLongPeriod());
         properties.setNewMasBuy(true);
+
         ReflectionTestUtils.setField(mabsMultiService, "properties", properties);
 
     }
