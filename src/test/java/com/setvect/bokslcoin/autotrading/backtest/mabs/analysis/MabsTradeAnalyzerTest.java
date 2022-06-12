@@ -1,6 +1,5 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
-import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
@@ -8,10 +7,7 @@ import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiProperties;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiService;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockSlackMessageService;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockTradeCommonService;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.*;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityQuerydslRepository;
@@ -30,7 +26,6 @@ import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
-import com.setvect.bokslcoin.autotrading.util.GsonUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +37,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.Spy;
-import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -54,7 +47,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -92,9 +84,9 @@ public class MabsTradeAnalyzerTest {
 
     private final SlackMessageService slackMessageService = new MockSlackMessageService();
 
-    @Spy
-    private TradeEvent tradeEvent;
-    //    private final TradeEvent tradeEvent = new BasicTradeEvent(slackMessageService);
+    //    @Spy
+//    private TradeEvent tradeEvent;
+    private final MockTradeEvent tradeEvent = new MockTradeEvent(slackMessageService);
 
     @Mock
     private AccountService accountService;
@@ -112,21 +104,9 @@ public class MabsTradeAnalyzerTest {
     private MockMabsMultiService mabsMultiService;
     private List<MabsMultiBacktestRow> tradeHistory;
 
-    /**
-     * 최고 수익률
-     */
-    private double highYield;
-    /**
-     * 최저 수익률
-     */
-    private double lowYield;
     private Map<String, CurrentPrice> priceMap;
     private Map<String, Account> accountMap;
 
-    private static Candle depthCopy(Candle candle) {
-        String json = GsonUtil.GSON.toJson(candle);
-        return GsonUtil.GSON.fromJson(json, Candle.class);
-    }
 
     @Test
     @DisplayName("변동성 돌파 전략 백테스트")
@@ -334,6 +314,10 @@ public class MabsTradeAnalyzerTest {
         injectionFieldValue(condition);
         tradeHistory = new ArrayList<>();
 
+        tradeEvent.setPriceMap(priceMap);
+        tradeEvent.setAccountMap(accountMap);
+        tradeEvent.setTradeHistory(tradeHistory);
+
         LocalDateTime current = range.getFrom();
         LocalDateTime to = range.getTo();
         CandleDataProvider candleDataProvider = new CandleDataProvider(candleRepository);
@@ -344,7 +328,7 @@ public class MabsTradeAnalyzerTest {
         while (current.isBefore(to) || current.equals(to)) {
             if (count == 1440 * 7) {
                 log.info("clear: {}, {}, {}", condition.getMarket(), current, count);
-                Mockito.reset(candleService, orderService, accountService, tradeEvent);
+                Mockito.reset(candleService, orderService, accountService);
                 initMock(candleDataProvider);
                 count = 0;
             }
@@ -373,7 +357,7 @@ public class MabsTradeAnalyzerTest {
             count++;
         }
 
-        Mockito.reset(candleService, orderService, accountService, tradeEvent);
+        Mockito.reset(candleService, orderService, accountService);
         return tradeHistory;
     }
 
@@ -426,112 +410,12 @@ public class MabsTradeAnalyzerTest {
                 .filter(e -> e.getValue().getBalanceValue() != 0)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
 
-
-        // 시세 체크
-        doAnswer(invocation -> {
-            Candle currentCandle = invocation.getArgument(0);
-            double maShort = invocation.getArgument(1, Double.class);
-            double maLong = invocation.getArgument(2, Double.class);
-            priceMap.put(currentCandle.getMarket(), new CurrentPrice(currentCandle, maShort, maLong));
-            return null;
-            // TODO check 사용할수 있게 이벤트 적용
-        }).when(tradeEvent).check(notNull(), anyDouble(), anyDouble());
-
-
-        // 매수
-        doAnswer(invocation -> {
-            String market = invocation.getArgument(0, String.class);
-            CurrentPrice currentPrice = priceMap.get(market);
-            Candle candle = currentPrice.getCandle();
-            MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(depthCopy(candle));
-            double tradePrice = invocation.getArgument(1);
-
-            Account coinAccount = accountMap.get(market);
-            coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(tradePrice));
-            double investAmount = invocation.getArgument(2);
-
-            Account krwAccount = accountMap.get("KRW");
-            double cash = Double.parseDouble(krwAccount.getBalance()) - investAmount;
-            krwAccount.setBalance(ApplicationUtil.toNumberString(cash));
-
-            String balance = ApplicationUtil.toNumberString(investAmount / tradePrice);
-            coinAccount.setBalance(balance);
-
-            backtestRow.setTradeEvent(TradeType.BUY);
-            backtestRow.setBidPrice(tradePrice);
-            backtestRow.setBuyAmount(investAmount);
-            backtestRow.setBuyTotalAmount(getBuyTotalAmount(accountMap));
-            backtestRow.setCash(cash);
-            backtestRow.setMaShort(currentPrice.getMaShort());
-            backtestRow.setMaLong(currentPrice.getMaLong());
-
-            tradeHistory.add(backtestRow);
-
-            return null;
-        }).when(tradeEvent).bid(anyString(), anyDouble(), anyDouble());
-
-        // 최고수익률
-        doAnswer(invocation -> {
-            this.highYield = invocation.getArgument(1, Double.class);
-            return null;
-        }).when(tradeEvent).highYield(anyString(), anyDouble());
-
-        // 최저 수익률
-        doAnswer(this::answer).when(tradeEvent).lowYield(anyString(), anyDouble());
-
-        // 매도
-        doAnswer(invocation -> {
-            String market = invocation.getArgument(0, String.class);
-            CurrentPrice currentPrice = priceMap.get(market);
-            Candle candle = currentPrice.getCandle();
-
-            MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(depthCopy(candle));
-
-            Account coinAccount = accountMap.get(market);
-            backtestRow.setBidPrice(coinAccount.getAvgBuyPriceValue());
-            backtestRow.setBuyAmount(coinAccount.getInvestCash());
-
-            double tradePrice = invocation.getArgument(2);
-            double balance = Double.parseDouble(coinAccount.getBalance());
-            double askAmount = tradePrice * balance;
-
-            Account krwAccount = accountMap.get("KRW");
-            double totalCash = Double.parseDouble(krwAccount.getBalance()) + askAmount;
-            krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
-            coinAccount.setBalance("0");
-            coinAccount.setAvgBuyPrice(null);
-
-            backtestRow.setBuyTotalAmount(getBuyTotalAmount(accountMap));
-            backtestRow.setTradeEvent(TradeType.SELL);
-            backtestRow.setAskPrice(tradePrice);
-            backtestRow.setCash(krwAccount.getBalanceValue());
-            backtestRow.setAskReason(invocation.getArgument(3));
-            backtestRow.setMaShort(currentPrice.getMaShort());
-            backtestRow.setMaLong(currentPrice.getMaLong());
-            backtestRow.setHighYield(highYield);
-            backtestRow.setLowYield(lowYield);
-
-            tradeHistory.add(backtestRow);
-            return null;
-        }).when(tradeEvent).ask(anyString(), anyDouble(), anyDouble(), notNull());
     }
 
-    /**
-     * @param accountMap 코인(현금 포함) 계좌
-     * @return 현재 투자한 코인 함
-     */
-    private double getBuyTotalAmount(Map<String, Account> accountMap) {
-        return accountMap.entrySet().stream().filter(e -> !e.getKey().equals("KRW")).mapToDouble(e -> e.getValue().getInvestCash()).sum();
-    }
-
-    private Object answer(InvocationOnMock invocation) {
-        this.lowYield = invocation.getArgument(1, Double.class);
-        return null;
-    }
 
     @RequiredArgsConstructor
     @Getter
-    static class CurrentPrice {
+    public static class CurrentPrice {
         final Candle candle;
         final double maShort;
         final double maLong;
