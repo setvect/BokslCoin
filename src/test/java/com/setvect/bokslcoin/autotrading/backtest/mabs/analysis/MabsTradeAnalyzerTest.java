@@ -1,16 +1,11 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
 import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
-import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
-import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityRepository;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.DisplayName;
@@ -31,12 +26,6 @@ import java.util.List;
 @Slf4j
 public class MabsTradeAnalyzerTest {
     @Autowired
-    private MabsConditionEntityRepository mabsConditionEntityRepository;
-    @Autowired
-    private MabsTradeEntityRepository mabsTradeEntityRepository;
-    @Autowired
-    private BacktestHelperComponent backtestHelperService;
-    @Autowired
     private MakeBacktestReportService makeBacktestReportService;
     @Autowired
     private MabsBacktestService mabsBacktestService;
@@ -44,51 +33,32 @@ public class MabsTradeAnalyzerTest {
     @Test
     @DisplayName("변동성 돌파 전략 백테스트")
     public void backtest() {
-        boolean saveDb = false;
-        mabsBacktestService.init();
-
-        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
-//        List<String> markets = Arrays.asList("KRW-BTC");
-
-        List<MabsConditionEntity> mabsConditionEntities = makeCondition(markets);
 //        LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
 //        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
 //        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
         LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
         LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
 
-        DateRange range = new DateRange(baseStart, baseEnd);
+        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
+//        List<String> markets = Arrays.asList("KRW-BTC");
+        final DateRange range = new DateRange(baseStart, baseEnd);
 
-        try {
-            mabsConditionEntities = mabsBacktestService.backtestSub(mabsConditionEntities, range);
-            List<Integer> conditionSeqList = mabsBacktestService.getConditionSeqList(mabsConditionEntities);
+        AnalysisMultiCondition.AnalysisMultiConditionBuilder analysisMultiConditionBuilder = AnalysisMultiCondition.builder()
+                .range(range)
+                .investRatio(.99)
+                .cash(14_223_714)
+                .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
+                .feeBuy(0.002);
 
-            AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
-                    .conditionIdSet(new HashSet<>(conditionSeqList))
-                    .range(range)
-                    .investRatio(.99)
-                    .cash(14_223_714)
-                    .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
-                    .feeBuy(0.002)
-                    .build();
-
-            makeBacktestReportService.makeReport(analysisMultiCondition);
-        } finally {
-            if (!saveDb && CollectionUtils.isNotEmpty(mabsConditionEntities)) {
-                List<Integer> conditionSeqList = mabsBacktestService.getConditionSeqList(mabsConditionEntities);
-                // 결과를 삭제함
-                // TODO 너무 무식한 방법이다. @Transactional를 사용해야 되는데 사용하면 속도가 매우 느리다. 해결해야됨
-                mabsTradeEntityRepository.deleteTradeByConditionId(conditionSeqList);
-                mabsConditionEntityRepository.deleteAll(mabsConditionEntities);
-            }
-        }
+        mabsBacktestService.backtest(
+                makeCondition(markets),
+                range, analysisMultiConditionBuilder
+        );
     }
 
     @Test
     @DisplayName("기 매매 결과에서 추가된 시세 데이터에 대한 증분 수행")
     public void backtestIncremental() {
-        mabsBacktestService.init();
-
         List<Integer> conditionSeqList = Arrays.asList(
                 27288611, // KRW-BTC(2017-10-16)
                 27346706, // KRW-ETH(2017-10-10)
@@ -102,29 +72,7 @@ public class MabsTradeAnalyzerTest {
                 44544109  // KRW-DOT(2020-10-15)
         );
 
-        // 완전한 거래(매수-매도 쌍)를 만들기 위해 마지막 거래가 매수인경우 거래 내역 삭제
-        mabsBacktestService.deleteLastBuy(conditionSeqList);
-
-        List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
-
-        for (MabsConditionEntity condition : conditionEntityList) {
-            log.info("{}, {}, {}_{} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod(), condition.getShortPeriod());
-            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getConditionSeq());
-
-            LocalDateTime start = backtestHelperService.makeBaseStart(condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod() + 1);
-            if (!tradeList.isEmpty()) {
-                MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
-                mabsBacktestService.checkLastSell(lastTrade);
-                start = lastTrade.getTradeTimeKst();
-            }
-            DateRange range = new DateRange(start, LocalDateTime.now());
-            List<MabsMultiBacktestRow> tradeHistory = mabsBacktestService.backtestSub(condition, range);
-
-            List<MabsTradeEntity> mabsTradeEntities = mabsBacktestService.convert(condition, tradeHistory);
-            log.info("[{}] save. range: {}, trade Count: {}", condition.getMarket(), range, mabsTradeEntities.size());
-            mabsTradeEntityRepository.saveAll(mabsTradeEntities);
-        }
-        log.info("끝.");
+        mabsBacktestService.backtestIncremental(conditionSeqList);
     }
 
     @Test
@@ -266,5 +214,4 @@ public class MabsTradeAnalyzerTest {
         }
         return mabsConditionEntities;
     }
-
 }

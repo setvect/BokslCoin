@@ -3,6 +3,7 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
+import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
 import com.setvect.bokslcoin.autotrading.backtest.common.CandleDataProvider;
 import com.setvect.bokslcoin.autotrading.backtest.common.mock.*;
@@ -26,6 +27,7 @@ import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -61,10 +63,60 @@ public class MabsBacktestService {
     private TradeCommonService tradeCommonService;
     private MockMabsMultiService mabsMultiService;
 
-    void init() {
+    private void initMock() {
         tradeCommonService = new MockTradeCommonService(tradeEvent, accountService, orderService, candleService, tradeRepository, slackMessageService, assetHistoryRepository);
         mabsMultiService = new MockMabsMultiService(tradeCommonService, tradeEvent, new MockMabsMultiProperties());
     }
+
+    public void backtest(List<MabsConditionEntity> mabsConditionEntities, DateRange range, AnalysisMultiCondition.AnalysisMultiConditionBuilder analysisMultiConditionBuilder) {
+        boolean saveDb = false;
+        initMock();
+
+        try {
+            mabsConditionEntities = backtestSub(mabsConditionEntities, range);
+            List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
+
+            AnalysisMultiCondition analysisMultiCondition = analysisMultiConditionBuilder.conditionIdSet(new HashSet<>(conditionSeqList)).build();
+
+            makeBacktestReportService.makeReport(analysisMultiCondition);
+        } finally {
+            if (!saveDb && CollectionUtils.isNotEmpty(mabsConditionEntities)) {
+                List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
+                // 결과를 삭제함
+                // TODO 너무 무식한 방법이다. @Transactional를 사용해야 되는데 사용하면 속도가 매우 느리다. 해결해야됨
+                mabsTradeEntityRepository.deleteTradeByConditionId(conditionSeqList);
+                mabsConditionEntityRepository.deleteAll(mabsConditionEntities);
+            }
+        }
+    }
+
+
+    public void backtestIncremental(List<Integer> conditionSeqList) {
+        initMock();
+        // 완전한 거래(매수-매도 쌍)를 만들기 위해 마지막 거래가 매수인경우 거래 내역 삭제
+        deleteLastBuy(conditionSeqList);
+
+        List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
+
+        for (MabsConditionEntity condition : conditionEntityList) {
+            log.info("{}, {}, {}_{} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod(), condition.getShortPeriod());
+            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getConditionSeq());
+
+            LocalDateTime start = backtestHelperService.makeBaseStart(condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod() + 1);
+            if (!tradeList.isEmpty()) {
+                MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
+                checkLastSell(lastTrade);
+                start = lastTrade.getTradeTimeKst();
+            }
+            DateRange range = new DateRange(start, LocalDateTime.now());
+            List<MabsMultiBacktestRow> tradeHistory = backtestSub(condition, range);
+
+            List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
+            log.info("[{}] save. range: {}, trade Count: {}", condition.getMarket(), range, mabsTradeEntities.size());
+            mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+        }
+    }
+
 
     @NotNull
     List<Integer> getConditionSeqList(List<MabsConditionEntity> mabsConditionEntities) {
