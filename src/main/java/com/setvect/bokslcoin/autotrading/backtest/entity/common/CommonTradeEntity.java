@@ -35,5 +35,5 @@ public interface CommonTradeEntity {
     /**
      * 매매 조건 일련번호
      */
-    ConditionEntity getConditionEntity();
+    CommonConditionEntity getConditionEntity();
 }

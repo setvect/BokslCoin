@@ -3,7 +3,7 @@ package com.setvect.bokslcoin.autotrading.backtest.entity.common;
 /**
  * 백테스트 기본 조건
  */
-public interface ConditionEntity {
+public interface CommonConditionEntity {
     int getConditionSeq();
 
     /**

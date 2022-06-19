@@ -4,6 +4,7 @@ import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCond
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonAnalysisReportResult;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReportItem;
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.model.Account;
@@ -12,6 +13,8 @@ import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.GsonUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -204,4 +207,75 @@ public class BacktestHelper {
         return sumYield;
     }
 
+    /**
+     * @param accResult ..
+     * @return 각 매매 결과
+     */
+    @NotNull
+    public static String makeReportMultiList(List<? extends CommonAnalysisReportResult<? extends CommonConditionEntity, ? extends CommonTradeEntity>> accResult) {
+        String header = "분석기간,분석 아이디,대상 코인,투자비율,최초 투자금액,매수 수수료,매도 수수료,조건 설명," +
+                "매수 후 보유 수익,매수 후 보유 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
+        StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
+
+        for (CommonAnalysisReportResult<? extends CommonConditionEntity, ? extends CommonTradeEntity> result : accResult) {
+            AnalysisMultiCondition multiCondition = result.getCondition();
+
+            StringBuilder reportRow = new StringBuilder();
+            reportRow.append(String.format("%s\t", multiCondition.getRange()));
+            reportRow.append(String.format("%s\t", StringUtils.join(result.getMabsConditionIds(), ", ")));
+            reportRow.append(String.format("%s\t", StringUtils.join(result.getMarkets(), ", ")));
+            reportRow.append(String.format("%,.2f%%\t", multiCondition.getInvestRatio() * 100));
+            reportRow.append(String.format("%,.0f\t", multiCondition.getCash()));
+            reportRow.append(String.format("%,.2f%%\t", multiCondition.getFeeBuy() * 100));
+            reportRow.append(String.format("%,.2f%%\t", multiCondition.getFeeSell() * 100));
+            reportRow.append(String.format("%s\t", multiCondition.getComment()));
+            CommonAnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
+            CommonAnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
+
+            reportRow.append(String.format("%,.2f%%\t", sumYield.getYield() * 100));
+            reportRow.append(String.format("%,.2f%%\t", sumYield.getMdd() * 100));
+
+            CommonAnalysisReportResult.TotalYield totalYield = result.getTotalYield();
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getYield() * 100));
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getMdd() * 100));
+            reportRow.append(String.format("%d\t", totalYield.getTradeCount()));
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getWinRate() * 100));
+            reportRow.append(String.format("%,.2f%%\t", totalYield.getCagr() * 100));
+
+            report.append(reportRow).append("\n");
+        }
+        return report.toString();
+    }
+
+    /**
+     * 분석 요약결과
+     *
+     * @param result ..
+     */
+    public static void printSummary(CommonAnalysisReportResult<? extends CommonConditionEntity, ? extends CommonTradeEntity> result) {
+        StringBuilder report = new StringBuilder();
+        CommonAnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
+        CommonAnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
+        report.append(String.format("동일비중 수익\t %,.2f%%", sumYield.getYield() * 100)).append("\n");
+        report.append(String.format("동일비중 MDD\t %,.2f%%", sumYield.getMdd() * 100)).append("\n");
+        report.append("\n-----------\n");
+
+        for (Map.Entry<String, CommonAnalysisReportResult.WinningRate> entry : result.getCoinWinningRate().entrySet()) {
+            String market = entry.getKey();
+            CommonAnalysisReportResult.WinningRate coinInvestment = entry.getValue();
+            report.append(String.format("[%s] 수익금액 합계\t %,.0f", market, coinInvestment.getInvest())).append("\n");
+            report.append(String.format("[%s] 매매 횟수\t %d", market, coinInvestment.getTradeCount())).append("\n");
+            report.append(String.format("[%s] 승률\t %,.2f%%", market, coinInvestment.getWinRate() * 100)).append("\n");
+        }
+
+        report.append("\n-----------\n");
+        CommonAnalysisReportResult.TotalYield totalYield = result.getTotalYield();
+        report.append(String.format("실현 수익\t %,.2f%%", totalYield.getYield() * 100)).append("\n");
+        report.append(String.format("실현 MDD\t %,.2f%%", totalYield.getMdd() * 100)).append("\n");
+        report.append(String.format("매매회수\t %d", totalYield.getTradeCount())).append("\n");
+        report.append(String.format("승률\t %,.2f%%", totalYield.getWinRate() * 100)).append("\n");
+        report.append(String.format("CAGR\t %,.2f%%", totalYield.getCagr() * 100)).append("\n");
+
+        System.out.println(report);
+    }
 }

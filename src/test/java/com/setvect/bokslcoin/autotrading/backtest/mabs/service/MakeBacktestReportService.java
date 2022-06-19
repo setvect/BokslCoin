@@ -35,6 +35,7 @@ public class MakeBacktestReportService {
     @Autowired
     private BacktestHelperComponent backtestHelperService;
 
+
     /**
      * @param analysisMultiCondition 매매 조건
      * @return 멀티코인 매매 결과
@@ -44,7 +45,7 @@ public class MakeBacktestReportService {
     public CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> makeReport(AnalysisMultiCondition analysisMultiCondition) {
         List<CommonTradeReportItem<MabsTradeEntity>> tradeReportItems = trading(analysisMultiCondition);
         CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result = analysis(tradeReportItems, analysisMultiCondition);
-        printSummary(result);
+        BacktestHelper.printSummary(result);
         makeReport(result);
         return result;
     }
@@ -82,6 +83,7 @@ public class MakeBacktestReportService {
         // 코인명:매수가격
         Map<String, Double> buyCoinAmount = new HashMap<>();
 
+        // TODO 공통 코드로 만들수 있을 것 같음
         for (MabsTradeEntity trade : allTrade) {
             CommonTradeReportItem.CommonTradeReportItemBuilder<MabsTradeEntity> itemBuilder = CommonTradeReportItem.builder();
             itemBuilder.tradeEntity(trade);
@@ -174,39 +176,6 @@ public class MakeBacktestReportService {
                 .skip(skip)
                 .limit(limit)
                 .collect(Collectors.toList());
-    }
-
-
-    /**
-     * 분석 요약결과
-     *
-     * @param result ..
-     */
-    private void printSummary(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result) {
-        StringBuilder report = new StringBuilder();
-        CommonAnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
-        CommonAnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
-        report.append(String.format("동일비중 수익\t %,.2f%%", sumYield.getYield() * 100)).append("\n");
-        report.append(String.format("동일비중 MDD\t %,.2f%%", sumYield.getMdd() * 100)).append("\n");
-        report.append("\n-----------\n");
-
-        for (Map.Entry<String, CommonAnalysisReportResult.WinningRate> entry : result.getCoinWinningRate().entrySet()) {
-            String market = entry.getKey();
-            CommonAnalysisReportResult.WinningRate coinInvestment = entry.getValue();
-            report.append(String.format("[%s] 수익금액 합계\t %,.0f", market, coinInvestment.getInvest())).append("\n");
-            report.append(String.format("[%s] 매매 횟수\t %d", market, coinInvestment.getTradeCount())).append("\n");
-            report.append(String.format("[%s] 승률\t %,.2f%%", market, coinInvestment.getWinRate() * 100)).append("\n");
-        }
-
-        report.append("\n-----------\n");
-        CommonAnalysisReportResult.TotalYield totalYield = result.getTotalYield();
-        report.append(String.format("실현 수익\t %,.2f%%", totalYield.getYield() * 100)).append("\n");
-        report.append(String.format("실현 MDD\t %,.2f%%", totalYield.getMdd() * 100)).append("\n");
-        report.append(String.format("매매회수\t %d", totalYield.getTradeCount())).append("\n");
-        report.append(String.format("승률\t %,.2f%%", totalYield.getWinRate() * 100)).append("\n");
-        report.append(String.format("CAGR\t %,.2f%%", totalYield.getCagr() * 100)).append("\n");
-
-        System.out.println(report);
     }
 
     /**
@@ -310,7 +279,6 @@ public class MakeBacktestReportService {
         System.out.println("결과 파일:" + reportFile.getName());
     }
 
-
     /**
      * 복수개의 분석 결과 요약 리포트
      *
@@ -318,40 +286,10 @@ public class MakeBacktestReportService {
      */
     @SneakyThrows
     public void makeReportMulti(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult) {
-        String header = "분석기간,분석 아이디,대상 코인,투자비율,최초 투자금액,매수 수수료,매도 수수료,조건 설명," +
-                "매수 후 보유 수익,매수 후 보유 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
-        StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
+        String resultList = BacktestHelper.makeReportMultiList(accResult);
 
-        // 1. 각 매매 결과
-        for (CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result : accResult) {
-            AnalysisMultiCondition multiCondition = result.getCondition();
-
-            StringBuilder reportRow = new StringBuilder();
-            reportRow.append(String.format("%s\t", multiCondition.getRange()));
-            reportRow.append(String.format("%s\t", StringUtils.join(result.getMabsConditionIds(), ", ")));
-            reportRow.append(String.format("%s\t", StringUtils.join(result.getMarkets(), ", ")));
-            reportRow.append(String.format("%,.2f%%\t", multiCondition.getInvestRatio() * 100));
-            reportRow.append(String.format("%,.0f\t", multiCondition.getCash()));
-            reportRow.append(String.format("%,.2f%%\t", multiCondition.getFeeBuy() * 100));
-            reportRow.append(String.format("%,.2f%%\t", multiCondition.getFeeSell() * 100));
-            reportRow.append(String.format("%s\t", multiCondition.getComment()));
-            CommonAnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
-            CommonAnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
-
-            reportRow.append(String.format("%,.2f%%\t", sumYield.getYield() * 100));
-            reportRow.append(String.format("%,.2f%%\t", sumYield.getMdd() * 100));
-
-            CommonAnalysisReportResult.TotalYield totalYield = result.getTotalYield();
-            reportRow.append(String.format("%,.2f%%\t", totalYield.getYield() * 100));
-            reportRow.append(String.format("%,.2f%%\t", totalYield.getMdd() * 100));
-            reportRow.append(String.format("%d\t", totalYield.getTradeCount()));
-            reportRow.append(String.format("%,.2f%%\t", totalYield.getWinRate() * 100));
-            reportRow.append(String.format("%,.2f%%\t", totalYield.getCagr() * 100));
-
-            report.append(reportRow).append("\n");
-        }
-
-        // 2. 사용한 매매 조건 정보
+        StringBuilder report = new StringBuilder(resultList);
+        // 사용한 매매 조건 정보
         report.append("\n----------------\n");
         report.append("조건들\n");
         String condHeader = "조건 아이디,분석주기,대상 코인,상승 매수률,하락 매도률,단기 이동평균,장기 이동평균,손절률";
@@ -374,10 +312,9 @@ public class MakeBacktestReportService {
             report.append(reportRow).append("\n");
         }
 
-        // 3. 결과 저장
+        // 결과 저장
         File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + Timestamp.valueOf(LocalDateTime.now()).getTime() + ".txt");
         FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
         System.out.println("결과 파일:" + reportFile.getName());
     }
-
 }

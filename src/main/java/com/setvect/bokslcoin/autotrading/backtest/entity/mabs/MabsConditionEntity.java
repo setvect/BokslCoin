@@ -1,7 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.entity.mabs;
 
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
-import com.setvect.bokslcoin.autotrading.backtest.entity.common.ConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonConditionEntity;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -19,8 +19,7 @@ import java.util.List;
 @NoArgsConstructor
 @Entity(name = "XA_MABS_CONDITION")
 @EntityListeners(AuditingEntityListener.class)
-@ToString(exclude = {"tradeEntityList"})
-public class MabsConditionEntity implements ConditionEntity {
+public class MabsConditionEntity implements CommonConditionEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "BACKTEST_CONDITION_SEQ")
@@ -28,6 +27,7 @@ public class MabsConditionEntity implements ConditionEntity {
 
     @OneToMany(mappedBy = "conditionEntity")
     @OrderBy("tradeTimeKst ASC")
+    @ToString.Exclude
     private List<MabsTradeEntity> tradeEntityList;
 
     /**
@@ -86,6 +86,10 @@ public class MabsConditionEntity implements ConditionEntity {
     @Column(name = "REG_DATE", nullable = false)
     @CreatedDate
     private LocalDateTime regDate;
+
+    public void setTradeEntityList(List<MabsTradeEntity> tradeEntityList) {
+        this.tradeEntityList = tradeEntityList;
+    }
 
     public List<MabsTradeEntity> getTradeEntityList() {
         return tradeEntityList;

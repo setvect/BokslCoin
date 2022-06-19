@@ -283,6 +283,4 @@ public class MabsBacktestService {
         final double maShort;
         final double maLong;
     }
-
-
 }
