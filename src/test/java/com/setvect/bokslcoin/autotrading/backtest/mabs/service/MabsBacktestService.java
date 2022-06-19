@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
+package com.setvect.bokslcoin.autotrading.backtest.mabs.service;
 
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
@@ -9,9 +9,10 @@ import com.setvect.bokslcoin.autotrading.backtest.common.CandleDataProvider;
 import com.setvect.bokslcoin.autotrading.backtest.common.mock.*;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiProperties;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiService;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsTradeEvent;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.mock.MockMabsMultiProperties;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.mock.MockMabsMultiService;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.mock.MockMabsTradeEvent;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.model.MabsMultiBacktestRow;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepositoryCustom;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityRepository;
@@ -273,9 +274,7 @@ public class MabsBacktestService {
         properties.setNewMasBuy(true);
 
         ReflectionTestUtils.setField(mabsMultiService, "properties", properties);
-
     }
-
 
     @RequiredArgsConstructor
     @Getter

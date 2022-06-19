@@ -1,10 +1,10 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock;
+package com.setvect.bokslcoin.autotrading.backtest.mabs.mock;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelper;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.MabsBacktestService;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.MabsMultiBacktestRow;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.model.MabsMultiBacktestRow;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.service.MabsBacktestService;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;

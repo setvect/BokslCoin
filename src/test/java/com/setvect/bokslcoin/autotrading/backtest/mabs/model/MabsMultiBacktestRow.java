@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
+package com.setvect.bokslcoin.autotrading.backtest.mabs.model;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.model.Candle;

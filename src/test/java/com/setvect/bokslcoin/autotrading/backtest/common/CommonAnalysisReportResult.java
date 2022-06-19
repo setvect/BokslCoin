@@ -1,7 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.common;
 
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.MabsTradeReportItem;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.model.MabsTradeReportItem;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import lombok.Builder;
 import lombok.Getter;
