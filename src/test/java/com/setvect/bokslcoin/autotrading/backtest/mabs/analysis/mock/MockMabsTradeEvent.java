@@ -3,8 +3,8 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock;
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelper;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.MabsBacktestService;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.MabsMultiBacktestRow;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.MabsTradeAnalyzerTest;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class MockMabsTradeEvent extends BasicTradeEvent {
     @Setter
-    private Map<String, MabsTradeAnalyzerTest.CurrentPrice> priceMap;
+    private Map<String, MabsBacktestService.CurrentPrice> priceMap;
     @Setter
     private Map<String, Account> accountMap;
     @Setter
@@ -41,12 +41,12 @@ public class MockMabsTradeEvent extends BasicTradeEvent {
 
     @Override
     public void check(Candle candle, double maShort, double maLong) {
-        priceMap.put(candle.getMarket(), new MabsTradeAnalyzerTest.CurrentPrice(candle, maShort, maLong));
+        priceMap.put(candle.getMarket(), new MabsBacktestService.CurrentPrice(candle, maShort, maLong));
     }
 
     @Override
     public void bid(String market, double tradePrice, double bidPrice) {
-        MabsTradeAnalyzerTest.CurrentPrice currentPrice = priceMap.get(market);
+        MabsBacktestService.CurrentPrice currentPrice = priceMap.get(market);
         Candle candle = currentPrice.getCandle();
         MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(BacktestHelper.depthCopy(candle));
 
@@ -73,7 +73,7 @@ public class MockMabsTradeEvent extends BasicTradeEvent {
 
     @Override
     public void ask(String market, double balance, double tradePrice, AskReason reason) {
-        MabsTradeAnalyzerTest.CurrentPrice currentPrice = priceMap.get(market);
+        MabsBacktestService.CurrentPrice currentPrice = priceMap.get(market);
         Candle candle = currentPrice.getCandle();
 
         MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(BacktestHelper.depthCopy(candle));

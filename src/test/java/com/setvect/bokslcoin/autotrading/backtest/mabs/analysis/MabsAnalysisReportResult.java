@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Builder
-public class AnalysisReportResult {
+public class MabsAnalysisReportResult {
     /**
      * 리포트 조건
      */

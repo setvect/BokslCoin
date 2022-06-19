@@ -9,7 +9,7 @@ import lombok.experimental.SuperBuilder;
 @Getter
 @ToString
 @SuperBuilder
-public class AnalysisCoinCondition {
+public class MabsAnalysisCoinCondition {
     /**
      * 분석 대상 기간(UTC)
      */
