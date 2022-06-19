@@ -53,7 +53,7 @@ public class CandleRepositoryCustom {
                                 .and(candleEntity.periodType.eq(periodType))
                                 .and(candleEntity.candleDateTimeUtc.lt(base))
                 )
-                .orderBy(candleEntity.candleDateTimeUtc.asc())
+                .orderBy(candleEntity.candleDateTimeUtc.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();

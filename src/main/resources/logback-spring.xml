@@ -45,5 +45,11 @@
             <appender-ref ref="FILE"/>
             <appender-ref ref="STDOUT"/>
         </root>
+        <!--        <logger name="org.hibernate.sql" level="DEBUG" additivity="false">-->
+        <!--            <appender-ref ref="STDOUT"/>-->
+        <!--        </logger>-->
+        <!--        <logger name="org.hibernate.type" level="TRACE" additivity="false">-->
+        <!--            <appender-ref ref="STDOUT"/>-->
+        <!--        </logger>-->
     </springProfile>
 </configuration>

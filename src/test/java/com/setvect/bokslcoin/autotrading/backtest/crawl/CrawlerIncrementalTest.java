@@ -2,6 +2,7 @@ package com.setvect.bokslcoin.autotrading.backtest.crawl;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.setvect.bokslcoin.autotrading.AccessTokenMaker;
 import com.setvect.bokslcoin.autotrading.TestCommonUtil;
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
@@ -19,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -36,7 +38,7 @@ import java.util.stream.Collectors;
  * 증분 데이터 수집 후 DB 저장
  */
 @SpringBootTest
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 @Slf4j
 public class CrawlerIncrementalTest {
     /**
@@ -53,6 +55,9 @@ public class CrawlerIncrementalTest {
 
     @Autowired
     private CandleRepositoryCustom candleRepositoryCustom;
+
+    @MockBean
+    private AccessTokenMaker accessTokenMaker;
 
     @Test
     @SneakyThrows
