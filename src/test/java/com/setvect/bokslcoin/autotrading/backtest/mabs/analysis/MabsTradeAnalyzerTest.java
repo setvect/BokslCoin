@@ -13,9 +13,8 @@ import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiProperties;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsMultiService;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.analysis.mock.MockMabsTradeEvent;
-import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
+import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepositoryCustom;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
-import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityQuerydslRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityRepository;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
@@ -63,7 +62,7 @@ public class MabsTradeAnalyzerTest {
     @Autowired
     private MabsTradeEntityRepository mabsTradeEntityRepository;
     @Autowired
-    private CandleRepository candleRepository;
+    private CandleRepositoryCustom candleRepositoryCustom;
     @Autowired
     private AssetHistoryRepository assetHistoryRepository;
     @Autowired
@@ -72,8 +71,6 @@ public class MabsTradeAnalyzerTest {
     private BacktestHelperComponent backtestHelperService;
     @Autowired
     private MakeBacktestReportService makeBacktestReportService;
-    @Autowired
-    private MabsTradeEntityQuerydslRepository mabsTradeEntityQuerydslRepository;
 
     private TradeCommonService tradeCommonService;
     private MockMabsMultiService mabsMultiService;
@@ -113,7 +110,7 @@ public class MabsTradeAnalyzerTest {
                 List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
                 // 결과를 삭제함
                 // TODO 너무 무식한 방법이다. @Transactional를 사용해야 되는데 사용하면 속도가 매우 느리다. 해결해야됨
-                mabsTradeEntityQuerydslRepository.deleteByConditionId(conditionSeqList);
+                mabsTradeEntityRepository.deleteTradeByConditionId(conditionSeqList);
                 mabsConditionEntityRepository.deleteAll(mabsConditionEntities);
             }
         }
@@ -292,7 +289,7 @@ public class MabsTradeAnalyzerTest {
 
         LocalDateTime current = range.getFrom();
         LocalDateTime to = range.getTo();
-        CandleDataProvider candleDataProvider = new CandleDataProvider(candleRepository);
+        CandleDataProvider candleDataProvider = new CandleDataProvider(candleRepositoryCustom);
 
         candleService.setCandleDataProvider(candleDataProvider);
 

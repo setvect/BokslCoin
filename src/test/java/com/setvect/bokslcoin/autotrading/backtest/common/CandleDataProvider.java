@@ -2,7 +2,7 @@ package com.setvect.bokslcoin.autotrading.backtest.common;
 
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
-import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
+import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepositoryCustom;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleDay;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class CandleDataProvider {
-    private final CandleRepository candleRepository;
+    private final CandleRepositoryCustom candleRepositoryCustom;
     /**
      * UTC 기준
      */
@@ -33,8 +33,8 @@ public class CandleDataProvider {
 
     private final Map<CacheKey, List<Candle>> cachePeriod = new HashMap<>();
 
-    public CandleDataProvider(CandleRepository candleRepository) {
-        this.candleRepository = candleRepository;
+    public CandleDataProvider(CandleRepositoryCustom candleRepositoryCustom) {
+        this.candleRepositoryCustom = candleRepositoryCustom;
     }
 
     /**
@@ -45,7 +45,7 @@ public class CandleDataProvider {
     }
 
     public CandleMinute getCurrentCandle(String market) {
-        List<CandleEntity> minuteOfDay = candleRepository.findMarketPrice(market, PeriodType.PERIOD_1, currentDateTime, currentDateTime);
+        List<CandleEntity> minuteOfDay = candleRepositoryCustom.findMarketPrice(market, PeriodType.PERIOD_1, currentDateTime, currentDateTime);
         if (minuteOfDay.size() == 0) {
             currentCandle = null;
         } else {
@@ -87,7 +87,7 @@ public class CandleDataProvider {
         CacheKey key = CacheKey.builder().market(market).count(count).base(base).period(periodType).build();
         List<Candle> periodData = cachePeriod.get(key);
         if (periodData == null) {
-            List<CandleEntity> candleList = candleRepository.findMarketPricePeriodBefore(market, periodType, base, PageRequest.of(0, count - 1));
+            List<CandleEntity> candleList = candleRepositoryCustom.findMarketPricePeriodBefore(market, periodType, base, PageRequest.of(0, count - 1));
             periodData = candleList.stream().map(v -> ApplicationUtil.getMapper().map(v, CandleDay.class)).collect(Collectors.toList());
             periodData.add(0, ApplicationUtil.getMapper().map(currentCandle, CandleDay.class));
             cachePeriod.put(key, periodData);

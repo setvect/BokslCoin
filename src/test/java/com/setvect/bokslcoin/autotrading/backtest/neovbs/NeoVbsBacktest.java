@@ -12,7 +12,7 @@ import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
+import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepositoryCustom;
 import com.setvect.bokslcoin.autotrading.backtest.repository.NeoVbsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.backtest.repository.NeoVbsTradeEntityRepository;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
@@ -77,7 +77,7 @@ public class NeoVbsBacktest {
     private NeoVbsTradeEntityRepository neoVbsTradeEntityRepository;
 
     @Autowired
-    private CandleRepository candleRepository;
+    private CandleRepositoryCustom candleRepositoryCustom;
 
     @Autowired
     private AssetHistoryRepository assetHistoryRepository;
@@ -387,7 +387,7 @@ public class NeoVbsBacktest {
     private AnalysisReportResult.MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
         Map<String, List<CandleEntity>> coinCandleListMap = markets.stream()
                 .collect(Collectors.toMap(Function.identity(),
-                        p -> candleRepository.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
+                        p -> candleRepositoryCustom.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
                 );
 
         Map<String, AnalysisReportResult.YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);
@@ -667,7 +667,7 @@ public class NeoVbsBacktest {
 
         LocalDateTime current = range.getFrom();
         LocalDateTime to = range.getTo();
-        CandleDataProvider candleDataProvider = new CandleDataProvider(candleRepository);
+        CandleDataProvider candleDataProvider = new CandleDataProvider(candleRepositoryCustom);
 
         initMock(candleDataProvider);
 

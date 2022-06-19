@@ -5,7 +5,7 @@ import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepository;
+import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepositoryCustom;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
@@ -37,7 +37,7 @@ public class MakeBacktestReportService {
     @Autowired
     private MabsConditionEntityRepository mabsConditionEntityRepository;
     @Autowired
-    private CandleRepository candleRepository;
+    private CandleRepositoryCustom candleRepositoryCustom;
 
     @SneakyThrows
     @Transactional
@@ -300,7 +300,7 @@ public class MakeBacktestReportService {
     private AnalysisReportResult.MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
         Map<String, List<CandleEntity>> coinCandleListMap = markets.stream()
                 .collect(Collectors.toMap(Function.identity(),
-                        p -> candleRepository.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
+                        p -> candleRepositoryCustom.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
                 );
 
         Map<String, AnalysisReportResult.YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);

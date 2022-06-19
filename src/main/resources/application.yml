@@ -16,7 +16,7 @@ spring:
       hibernate:
         show_sql: false
         format_sql: true
-        use_sql_comments: false
+        use_sql_comments: true
   mvc:
     static-path-pattern: /static/**
   devtools:
