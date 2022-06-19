@@ -1,7 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.entity.mabs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
-import com.setvect.bokslcoin.autotrading.backtest.entity.common.TradeEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 @Table(indexes = {
         @Index(name = "XB_MABS_TRADE_TRADE_TIME_KST_INDEX", columnList = "TRADE_TIME_KST")
 })
-public class MabsTradeEntity implements TradeEntity {
+public class MabsTradeEntity implements CommonTradeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "TRADE_SEQ")

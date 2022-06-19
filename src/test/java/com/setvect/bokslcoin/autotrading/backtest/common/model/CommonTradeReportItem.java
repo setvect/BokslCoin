@@ -1,16 +1,20 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.model;
+package com.setvect.bokslcoin.autotrading.backtest.common.model;
 
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
 import lombok.Builder;
 import lombok.Getter;
 
+/**
+ * 거래 건별 내역
+ */
+// TODO 공통 모듈화 작업 진행해야됨
 @Getter
 @Builder
-public class MabsTradeReportItem {
+public class CommonTradeReportItem<T extends CommonTradeEntity> {
     /**
      * 거래 수익률
      */
-    private MabsTradeEntity mabsTradeEntity;
+    private T tradeEntity;
     /**
      * 매수금액
      */
@@ -53,6 +57,6 @@ public class MabsTradeReportItem {
      * @return 실현 수익률
      */
     public double getRealYield() {
-        return mabsTradeEntity.getYield();
+        return tradeEntity.getYield();
     }
 }

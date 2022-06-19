@@ -1,9 +1,10 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs;
 
-import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
-import com.setvect.bokslcoin.autotrading.backtest.common.CommonAnalysisReportResult;
+import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCondition;
+import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonAnalysisReportResult;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.service.MabsBacktestService;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.service.MakeBacktestReportService;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
@@ -163,7 +164,7 @@ public class MabsTradeAnalyzerTest {
 //                new DateRange("2021-01-01T00:00:00", "2021-12-31T23:59:59")
         );
 
-        List<CommonAnalysisReportResult> accResult = new ArrayList<>();
+        List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult = new ArrayList<>();
         int count = 0;
         int total = rangeList.size() * conditionSeqList.size();
 //        for (Integer conditionSeq : conditionSeqList) {
@@ -179,7 +180,7 @@ public class MabsTradeAnalyzerTest {
                     .feeBuy(0.002)
                     .build();
 
-            CommonAnalysisReportResult result = makeBacktestReportService.makeReport(analysisMultiCondition);
+            CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result = makeBacktestReportService.makeReport(analysisMultiCondition);
             accResult.add(result);
             count++;
 

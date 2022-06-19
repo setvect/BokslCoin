@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 /**
  * 백테스트 매매 건별 정보
  */
-public interface TradeEntity {
+public interface CommonTradeEntity {
     /**
      * 매수/매도
      */

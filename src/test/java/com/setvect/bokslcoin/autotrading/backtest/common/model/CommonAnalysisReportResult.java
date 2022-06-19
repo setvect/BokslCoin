@@ -1,7 +1,7 @@
-package com.setvect.bokslcoin.autotrading.backtest.common;
+package com.setvect.bokslcoin.autotrading.backtest.common.model;
 
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.model.MabsTradeReportItem;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.ConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
  */
 @Getter
 @Builder
-public class CommonAnalysisReportResult {
+public class CommonAnalysisReportResult<C extends ConditionEntity, T extends MabsTradeEntity> {
     /**
      * 리포트 조건
      */
@@ -26,11 +26,11 @@ public class CommonAnalysisReportResult {
     /**
      * 종목별 매매 조건
      */
-    private List<MabsConditionEntity> conditionList;
+    private List<C> conditionList;
     /**
      * 매매 이력
      */
-    private List<MabsTradeReportItem> tradeHistory;
+    private List<CommonTradeReportItem<T>> tradeHistory;
     /**
      * 전체 수익 결과
      */
@@ -50,14 +50,14 @@ public class CommonAnalysisReportResult {
      * @return 코인 이름
      */
     public Set<String> getMarkets() {
-        return conditionList.stream().map(MabsConditionEntity::getMarket).collect(Collectors.toSet());
+        return conditionList.stream().map(ConditionEntity::getMarket).collect(Collectors.toSet());
     }
 
     /**
      * @return 분석 아이디
      */
     public Set<Integer> getMabsConditionIds() {
-        return conditionList.stream().map(MabsConditionEntity::getConditionSeq).collect(Collectors.toSet());
+        return conditionList.stream().map(ConditionEntity::getConditionSeq).collect(Collectors.toSet());
     }
 
 

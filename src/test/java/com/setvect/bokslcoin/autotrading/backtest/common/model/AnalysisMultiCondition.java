@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.common;
+package com.setvect.bokslcoin.autotrading.backtest.common.model;
 
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.Builder;

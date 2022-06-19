@@ -6,8 +6,8 @@ import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
 import com.setvect.bokslcoin.autotrading.algorithm.neovbs.NeoVbsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.neovbs.NeoVbsMultiService;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
-import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.common.CandleDataProvider;
+import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsConditionEntity;
@@ -475,7 +475,6 @@ public class NeoVbsBacktest {
     private List<NeoVbsConditionEntity> backtest() {
         //        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
         List<String> markets = Arrays.asList("KRW-XRP");
-        List<NeoVbsTradeEntity> neoVbsTradeEntities = Collections.emptyList();
 
         List<NeoVbsConditionEntity> neoVbsConditionEntities = new ArrayList<>();
         for (String market : markets) {
@@ -490,7 +489,7 @@ public class NeoVbsBacktest {
             neoVbsConditionEntityRepository.save(condition);
             List<NeoVbsMultiBacktestRow> tradeHistory = backtest(condition, range);
 
-            neoVbsTradeEntities = convert(condition, tradeHistory);
+            List<NeoVbsTradeEntity> neoVbsTradeEntities = convert(condition, tradeHistory);
             condition.setNeoVbsTradeEntityList(neoVbsTradeEntities);
             neoVbsTradeEntityRepository.saveAll(neoVbsTradeEntities);
 

@@ -1,16 +1,14 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs.service;
 
-import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
-import com.setvect.bokslcoin.autotrading.backtest.common.CommonAnalysisReportResult;
-import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
+import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelper;
+import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
+import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCondition;
+import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonAnalysisReportResult;
+import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReportItem;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.model.MabsTradeReportItem;
-import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepositoryCustom;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
-import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.SneakyThrows;
@@ -24,12 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -39,7 +33,7 @@ public class MakeBacktestReportService {
     @Autowired
     private MabsConditionEntityRepository mabsConditionEntityRepository;
     @Autowired
-    private CandleRepositoryCustom candleRepositoryCustom;
+    private BacktestHelperComponent backtestHelperService;
 
     /**
      * @param analysisMultiCondition 매매 조건
@@ -47,20 +41,19 @@ public class MakeBacktestReportService {
      */
     @SneakyThrows
     @Transactional
-    public CommonAnalysisReportResult makeReport(AnalysisMultiCondition analysisMultiCondition) {
-        List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
-        CommonAnalysisReportResult result = analysis(tradeReportItems, analysisMultiCondition);
+    public CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> makeReport(AnalysisMultiCondition analysisMultiCondition) {
+        List<CommonTradeReportItem<MabsTradeEntity>> tradeReportItems = trading(analysisMultiCondition);
+        CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result = analysis(tradeReportItems, analysisMultiCondition);
         printSummary(result);
         makeReport(result);
         return result;
     }
 
-
     /**
      * @param analysisMultiCondition 매매 분석 조건
      * @return 대상코인의 수익률 정보를 제공
      */
-    private List<MabsTradeReportItem> trading(AnalysisMultiCondition analysisMultiCondition) throws RuntimeException {
+    private List<CommonTradeReportItem<MabsTradeEntity>> trading(AnalysisMultiCondition analysisMultiCondition) throws RuntimeException {
         List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
         List<List<MabsTradeEntity>> tradeList = mabsConditionEntityList.stream().map(MabsConditionEntity::getTradeEntityList).collect(Collectors.toList());
 
@@ -78,7 +71,7 @@ public class MakeBacktestReportService {
         }
         allTrade.sort(Comparator.comparing(MabsTradeEntity::getTradeTimeKst));
 
-        List<MabsTradeReportItem> reportHistory = new ArrayList<>();
+        List<CommonTradeReportItem<MabsTradeEntity>> reportHistory = new ArrayList<>();
 
         Set<Integer> ids = analysisMultiCondition.getConditionIdSet();
         int allowBuyCount = ids.size();
@@ -90,11 +83,9 @@ public class MakeBacktestReportService {
         Map<String, Double> buyCoinAmount = new HashMap<>();
 
         for (MabsTradeEntity trade : allTrade) {
-
-            MabsTradeReportItem.MabsTradeReportItemBuilder itemBuilder = MabsTradeReportItem.builder();
-            itemBuilder.mabsTradeEntity(trade);
+            CommonTradeReportItem.CommonTradeReportItemBuilder<MabsTradeEntity> itemBuilder = CommonTradeReportItem.builder();
+            itemBuilder.tradeEntity(trade);
             String market = trade.getConditionEntity().getMarket();
-
 
             if (trade.getTradeType() == TradeType.BUY) {
                 if (allowBuyCount <= buyCount) {
@@ -111,7 +102,7 @@ public class MakeBacktestReportService {
                 buyCoinAmount.put(market, buyAmount);
 
                 cash -= buyAmount;
-                double totalBuyAmount = getBuyCoin(buyCoinAmount);
+                double totalBuyAmount = BacktestHelper.getBuyCoin(buyCoinAmount);
                 itemBuilder.buyAmount(buyAmount);
                 itemBuilder.buyTotalAmount(totalBuyAmount);
                 itemBuilder.feePrice(feePrice);
@@ -133,7 +124,7 @@ public class MakeBacktestReportService {
                 gains -= feePrice;
                 cash += buyAmount + gains;
 
-                double totalBuyAmount = getBuyCoin(buyCoinAmount);
+                double totalBuyAmount = BacktestHelper.getBuyCoin(buyCoinAmount);
                 itemBuilder.buyAmount(buyAmount);
                 itemBuilder.buyTotalAmount(totalBuyAmount);
                 itemBuilder.cash(cash);
@@ -152,29 +143,21 @@ public class MakeBacktestReportService {
      * @param conditionMulti 조건
      * @return 분석결과
      */
-    private CommonAnalysisReportResult analysis(List<MabsTradeReportItem> tradeHistory, AnalysisMultiCondition conditionMulti) {
+    private CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> analysis(List<CommonTradeReportItem<MabsTradeEntity>> tradeHistory, AnalysisMultiCondition conditionMulti) {
         List<MabsConditionEntity> conditionByCoin = mabsConditionEntityRepository.findAllById(conditionMulti.getConditionIdSet());
         Set<String> markets = conditionByCoin.stream()
                 .map(MabsConditionEntity::getMarket)
                 .collect(Collectors.toSet());
-        CommonAnalysisReportResult.MultiCoinHoldYield holdYield = calculateCoinHoldYield(conditionMulti.getRange(), markets);
+        CommonAnalysisReportResult.MultiCoinHoldYield holdYield = backtestHelperService.calculateCoinHoldYield(conditionMulti.getRange(), markets);
 
-        return CommonAnalysisReportResult.builder()
+        return CommonAnalysisReportResult.<MabsConditionEntity, MabsTradeEntity>builder()
                 .condition(conditionMulti)
                 .conditionList(conditionByCoin)
                 .tradeHistory(tradeHistory)
                 .multiCoinHoldYield(holdYield)
-                .totalYield(calculateTotalYield(tradeHistory, conditionMulti))
-                .coinWinningRate(calculateCoinInvestment(tradeHistory, conditionByCoin))
+                .totalYield(BacktestHelper.calculateTotalYield(tradeHistory, conditionMulti))
+                .coinWinningRate(BacktestHelper.calculateCoinInvestment(tradeHistory, conditionByCoin))
                 .build();
-    }
-
-    /**
-     * @param buyCoinAmount 코인 매수 내역
-     * @return 코인 매수 총액
-     */
-    private double getBuyCoin(Map<String, Double> buyCoinAmount) {
-        return buyCoinAmount.values().stream().mapToDouble(v -> v).sum();
     }
 
     /**
@@ -195,178 +178,11 @@ public class MakeBacktestReportService {
 
 
     /**
-     * 기간동안 보유(존버)할 경우 수익률 계산
-     *
-     * @param range   투자 기간
-     * @param markets 대상 코인
-     * @return 기간별 코인 수익률
-     */
-    private CommonAnalysisReportResult.MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
-        Map<String, List<CandleEntity>> coinCandleListMap = markets.stream()
-                .collect(Collectors.toMap(Function.identity(),
-                        p -> candleRepositoryCustom.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
-                );
-
-        Map<String, CommonAnalysisReportResult.YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);
-        CommonAnalysisReportResult.YieldMdd sumYield = getYieldMdd(range, coinCandleListMap);
-
-        return CommonAnalysisReportResult.MultiCoinHoldYield.builder()
-                .coinByYield(coinByYield)
-                .sumYield(sumYield)
-                .build();
-    }
-
-    /**
-     * @param coinCandleListMap 코인명:기간별 캔들 이력
-     * @return 코인별 수익률
-     * 코인명:수익률
-     */
-    private Map<String, CommonAnalysisReportResult.YieldMdd> getCoinByYield(Map<String, List<CandleEntity>> coinCandleListMap) {
-        return coinCandleListMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> {
-            List<Double> priceList = e.getValue().stream().map(CandleEntity::getOpeningPrice).collect(Collectors.toList());
-            CommonAnalysisReportResult.YieldMdd yieldMdd = new CommonAnalysisReportResult.YieldMdd();
-            yieldMdd.setYield(ApplicationUtil.getYield(priceList));
-            yieldMdd.setMdd(ApplicationUtil.getMdd(priceList));
-            return yieldMdd;
-        }));
-    }
-
-    /**
-     * @param range             투자 기간
-     * @param coinCandleListMap 코인명:기간별 캔들 이력
-     * @return 해당 기간 동안 동일 비중 투자 시 수익률
-     */
-    private CommonAnalysisReportResult.YieldMdd getYieldMdd(DateRange range, Map<String, List<CandleEntity>> coinCandleListMap) {
-        LocalDateTime start = range.getFrom();
-        // 코인 시작 가격 <코인명:가격>
-        Map<String, Double> coinStartPrice = coinCandleListMap.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, p -> {
-                    if (p.getValue().isEmpty()) {
-                        return 0.0;
-                    }
-                    return p.getValue().get(0).getOpeningPrice();
-                }));
-
-        // <코인명:수익률>
-        Map<String, Double> coinYield = coinCandleListMap.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, p -> 1.0));
-
-        // 날짜별 수익률 합계
-        List<Double> evaluationPrice = new ArrayList<>();
-        evaluationPrice.add((coinYield.values().stream().mapToDouble(p -> p).sum()));
-
-        // <코인명:<날짜:캔들정보>>
-        Map<String, Map<LocalDate, CandleEntity>> coinCandleMapByDate = coinCandleListMap
-                .entrySet()
-                .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        p -> p.getValue().stream().collect(Collectors.toMap(c -> c.getCandleDateTimeKst().toLocalDate(), Function.identity()))));
-
-        while (start.isBefore(range.getTo()) || start.isEqual(range.getTo())) {
-            LocalDate date = start.toLocalDate();
-            for (Map.Entry<String, Double> entity : coinStartPrice.entrySet()) {
-                String market = entity.getKey();
-                Double startPrice = entity.getValue();
-                CandleEntity candle = coinCandleMapByDate.get(market).get(date);
-                if (candle == null) {
-                    continue;
-                }
-
-                double yield = candle.getTradePrice() / startPrice;
-                coinYield.put(market, yield);
-            }
-            evaluationPrice.add((coinYield.values().stream().mapToDouble(p -> p).sum()));
-            start = start.plusDays(1);
-        }
-        CommonAnalysisReportResult.YieldMdd sumYield = new CommonAnalysisReportResult.TotalYield();
-        sumYield.setMdd(ApplicationUtil.getMdd(evaluationPrice));
-        sumYield.setYield(ApplicationUtil.getYield(evaluationPrice));
-        return sumYield;
-    }
-
-    /**
-     * @param tradeReportItems        거래 내역
-     * @param mabsConditionEntityList 코인 매매 조건
-     * @return Key: 코인, Value: 수익
-     * 코인별 수익 정보
-     */
-    private Map<String, CommonAnalysisReportResult.WinningRate> calculateCoinInvestment(List<MabsTradeReportItem> tradeReportItems, List<MabsConditionEntity> mabsConditionEntityList) {
-        Map<String, CommonAnalysisReportResult.WinningRate> coinInvestmentMap = new TreeMap<>();
-
-        for (MabsConditionEntity mabsConditionEntity : mabsConditionEntityList) {
-            CommonAnalysisReportResult.WinningRate coinInvestment = calculateInvestment(mabsConditionEntity.getMarket(), tradeReportItems);
-            coinInvestmentMap.put(mabsConditionEntity.getMarket(), coinInvestment);
-        }
-        return coinInvestmentMap;
-    }
-
-    /**
-     * 멀티 코인 매매 수익정보 계산
-     *
-     * @param tradeReportItems       거래 내역
-     * @param analysisMultiCondition 분석 조건
-     * @return 수익률 정보
-     */
-    private CommonAnalysisReportResult.TotalYield calculateTotalYield(List<MabsTradeReportItem> tradeReportItems, AnalysisMultiCondition analysisMultiCondition) {
-
-        CommonAnalysisReportResult.TotalYield totalYield = new CommonAnalysisReportResult.TotalYield();
-        long dayCount = analysisMultiCondition.getRange().getDiffDays();
-        totalYield.setDayCount((int) dayCount);
-
-        if (tradeReportItems.isEmpty()) {
-            totalYield.setYield(0);
-            totalYield.setMdd(0);
-            return totalYield;
-        }
-
-        double realYield = tradeReportItems.get(tradeReportItems.size() - 1).getFinalResult() / tradeReportItems.get(0).getFinalResult() - 1;
-        List<Double> finalResultList = tradeReportItems.stream().map(MabsTradeReportItem::getFinalResult).collect(Collectors.toList());
-        double realMdd = ApplicationUtil.getMdd(finalResultList);
-        totalYield.setYield(realYield);
-        totalYield.setMdd(realMdd);
-
-        // 승률 계산
-        for (MabsTradeReportItem mabsTradeReportItem : tradeReportItems) {
-            if (mabsTradeReportItem.getMabsTradeEntity().getTradeType() == TradeType.BUY) {
-                continue;
-            }
-            if (mabsTradeReportItem.getGains() > 0) {
-                totalYield.incrementGainCount();
-            } else {
-                totalYield.incrementLossCount();
-            }
-        }
-        return totalYield;
-    }
-
-    /**
-     * 개별 코인 수익 정보 계산
-     *
-     * @param market       코인
-     * @param tradeHistory 매매 기록
-     * @return 코인별 투자전략 수익률
-     */
-    private static CommonAnalysisReportResult.WinningRate calculateInvestment(String market, List<MabsTradeReportItem> tradeHistory) {
-        List<MabsTradeReportItem> filter = tradeHistory.stream()
-                .filter(p -> p.getMabsTradeEntity().getConditionEntity().getMarket().equals(market))
-                .filter(p -> p.getMabsTradeEntity().getTradeType() == TradeType.SELL)
-                .collect(Collectors.toList());
-        double totalInvest = filter.stream().mapToDouble(MabsTradeReportItem::getGains).sum();
-        int gainCount = (int) filter.stream().filter(p -> p.getGains() > 0).count();
-        CommonAnalysisReportResult.WinningRate coinInvestment = new CommonAnalysisReportResult.WinningRate();
-        coinInvestment.setInvest(totalInvest);
-        coinInvestment.setGainCount(gainCount);
-        coinInvestment.setLossCount(filter.size() - gainCount);
-        return coinInvestment;
-    }
-
-
-    /**
      * 분석 요약결과
      *
      * @param result ..
      */
-    private void printSummary(CommonAnalysisReportResult result) {
+    private void printSummary(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result) {
         StringBuilder report = new StringBuilder();
         CommonAnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
         CommonAnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
@@ -399,15 +215,16 @@ public class MakeBacktestReportService {
      * @param result 분석결과
      * @throws IOException .
      */
-    private void makeReport(CommonAnalysisReportResult result) throws IOException {
+    private void makeReport(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result) throws IOException {
         String header = "날짜(KST),날짜(UTC),코인,매매구분,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
         StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
-        for (MabsTradeReportItem row : result.getTradeHistory()) {
-            MabsTradeEntity mabsTradeEntity = row.getMabsTradeEntity();
+
+        for (CommonTradeReportItem<MabsTradeEntity> row : result.getTradeHistory()) {
+            MabsTradeEntity mabsTradeEntity = row.getTradeEntity();
             MabsConditionEntity mabsConditionEntity = mabsTradeEntity.getConditionEntity();
             LocalDateTime tradeTimeKst = mabsTradeEntity.getTradeTimeKst();
             String dateKst = DateUtil.formatDateTime(tradeTimeKst);
-            LocalDateTime utcTime = convertUtc(tradeTimeKst);
+            LocalDateTime utcTime = BacktestHelper.convertUtc(tradeTimeKst);
             String dateUtc = DateUtil.formatDateTime(utcTime);
 
             report.append(String.format("%s\t", dateKst));
@@ -500,13 +317,13 @@ public class MakeBacktestReportService {
      * @param accResult 분석결과
      */
     @SneakyThrows
-    public void makeReportMulti(List<CommonAnalysisReportResult> accResult) {
+    public void makeReportMulti(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult) {
         String header = "분석기간,분석 아이디,대상 코인,투자비율,최초 투자금액,매수 수수료,매도 수수료,조건 설명," +
                 "매수 후 보유 수익,매수 후 보유 MDD,실현 수익,실현 MDD,매매 횟수,승률,CAGR";
         StringBuilder report = new StringBuilder(header.replace(",", "\t") + "\n");
 
         // 1. 각 매매 결과
-        for (CommonAnalysisReportResult result : accResult) {
+        for (CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result : accResult) {
             AnalysisMultiCondition multiCondition = result.getCondition();
 
             StringBuilder reportRow = new StringBuilder();
@@ -561,10 +378,6 @@ public class MakeBacktestReportService {
         File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + Timestamp.valueOf(LocalDateTime.now()).getTime() + ".txt");
         FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
         System.out.println("결과 파일:" + reportFile.getName());
-
     }
 
-    private static LocalDateTime convertUtc(LocalDateTime datetime) {
-        return datetime.atZone(ZoneId.systemDefault()).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime();
-    }
 }
