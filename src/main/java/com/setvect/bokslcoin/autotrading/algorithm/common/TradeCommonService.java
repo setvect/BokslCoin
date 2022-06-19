@@ -143,7 +143,6 @@ public class TradeCommonService {
     /**
      * 매수/매도 대기 주문 조회
      */
-    // TODO 공통모듈
     public void loadOrderWait() {
         List<OrderHistory> history = orderService.getHistory(0, parameter.getMaxBuyCount());
         coinOrderWait.clear();

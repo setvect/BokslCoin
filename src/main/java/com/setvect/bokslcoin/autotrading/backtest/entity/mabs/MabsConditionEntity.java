@@ -87,7 +87,6 @@ public class MabsConditionEntity implements ConditionEntity {
     @CreatedDate
     private LocalDateTime regDate;
 
-    @Override
     public List<MabsTradeEntity> getTradeEntityList() {
         return tradeEntityList;
     }

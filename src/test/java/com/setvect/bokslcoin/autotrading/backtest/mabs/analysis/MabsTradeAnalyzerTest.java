@@ -1,6 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.mabs.analysis;
 
 import com.setvect.bokslcoin.autotrading.backtest.common.AnalysisMultiCondition;
+import com.setvect.bokslcoin.autotrading.backtest.common.CommonAnalysisReportResult;
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
@@ -36,8 +37,10 @@ public class MabsTradeAnalyzerTest {
 //        LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
 //        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
 //        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-02T23:59:59");
-        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
-        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
+//        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
+//        LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
+        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
+        LocalDateTime baseEnd = LocalDateTime.now();
 
         List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
 //        List<String> markets = Arrays.asList("KRW-BTC");
@@ -139,8 +142,9 @@ public class MabsTradeAnalyzerTest {
 //        );
 
         List<DateRange> rangeList = Arrays.asList(
-                new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now())
+//                new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now())
 //                new DateRange(DateUtil.getLocalDateTime("2021-06-08T00:00:00"), LocalDateTime.now())
+                new DateRange(DateUtil.getLocalDateTime("2017-12-31T23:59:59"), LocalDateTime.now())
 
 //                new DateRange("2017-10-01T00:00:00", "2017-12-31T23:59:59"),
 //                new DateRange("2018-01-01T00:00:00", "2018-06-30T23:59:59"),
@@ -157,7 +161,7 @@ public class MabsTradeAnalyzerTest {
 //                new DateRange("2021-01-01T00:00:00", "2021-12-31T23:59:59")
         );
 
-        List<MabsAnalysisReportResult> accResult = new ArrayList<>();
+        List<CommonAnalysisReportResult> accResult = new ArrayList<>();
         int count = 0;
         int total = rangeList.size() * conditionSeqList.size();
 //        for (Integer conditionSeq : conditionSeqList) {
@@ -173,7 +177,7 @@ public class MabsTradeAnalyzerTest {
                     .feeBuy(0.002)
                     .build();
 
-            MabsAnalysisReportResult result = makeBacktestReportService.makeReport(analysisMultiCondition);
+            CommonAnalysisReportResult result = makeBacktestReportService.makeReport(analysisMultiCondition);
             accResult.add(result);
             count++;
 
