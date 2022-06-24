@@ -23,7 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,89 +59,23 @@ public class MakeBacktestReportService {
      */
     private List<CommonTradeReportItem<MabsTradeEntity>> trading(AnalysisMultiCondition analysisMultiCondition) throws RuntimeException {
         List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
-        List<List<MabsTradeEntity>> tradeList = mabsConditionEntityList.stream().map(MabsConditionEntity::getTradeEntityList).collect(Collectors.toList());
+        DateRange range = analysisMultiCondition.getRange();
 
-        List<MabsTradeEntity> allTrade = new ArrayList<>();
-        for (List<MabsTradeEntity> tradeHistory : tradeList) {
-            List<MabsTradeEntity> targetTradeHistory = tradeHistory.stream()
-                    .filter(p -> analysisMultiCondition.getRange().isBetween(p.getTradeTimeKst()))
-                    .collect(Collectors.toList());
-            if (targetTradeHistory.isEmpty()) {
-                continue;
-            }
+        List<MabsTradeEntity> allTrade = mabsConditionEntityList.stream()
+                .flatMap(
+                        p -> {
+                            List<MabsTradeEntity> targetTradeHistory = subTrade(p.getTradeEntityList(), range);
+                            List<MabsTradeEntity> list = makePairTrade(targetTradeHistory);
+                            return list.stream();
+                        }
+                )
+                .sorted(Comparator.comparing(MabsTradeEntity::getTradeTimeKst))
+                .collect(Collectors.toList());
 
-            List<MabsTradeEntity> list = makePairTrade(targetTradeHistory);
-            allTrade.addAll(list);
-        }
-        allTrade.sort(Comparator.comparing(MabsTradeEntity::getTradeTimeKst));
 
-        List<CommonTradeReportItem<MabsTradeEntity>> reportHistory = new ArrayList<>();
-
-        Set<Integer> ids = analysisMultiCondition.getConditionIdSet();
-        int allowBuyCount = ids.size();
-
-        int buyCount = 0;
-        double cash = analysisMultiCondition.getCash();
-
-        // 코인명:매수가격
-        Map<String, Double> buyCoinAmount = new HashMap<>();
-
-        // TODO 공통 코드로 만들수 있을 것 같음
-        for (MabsTradeEntity trade : allTrade) {
-            CommonTradeReportItem.CommonTradeReportItemBuilder<MabsTradeEntity> itemBuilder = CommonTradeReportItem.builder();
-            itemBuilder.tradeEntity(trade);
-            String market = trade.getConditionEntity().getMarket();
-
-            if (trade.getTradeType() == TradeType.BUY) {
-                if (allowBuyCount <= buyCount) {
-                    throw new RuntimeException(String.format("매수 종목 한도 초과. 종모 매수 한도: %,d", allowBuyCount));
-                }
-                int rate = allowBuyCount - buyCount;
-                double buyAmount = (cash * analysisMultiCondition.getInvestRatio()) / rate;
-                double feePrice = buyAmount * analysisMultiCondition.getFeeBuy();
-
-                if (buyCoinAmount.containsKey(market)) {
-                    throw new RuntimeException(String.format("이미 매수한 코인 입니다. 코인명: %s", market));
-                }
-
-                buyCoinAmount.put(market, buyAmount);
-
-                cash -= buyAmount;
-                double totalBuyAmount = BacktestHelper.getBuyCoin(buyCoinAmount);
-                itemBuilder.buyAmount(buyAmount);
-                itemBuilder.buyTotalAmount(totalBuyAmount);
-                itemBuilder.feePrice(feePrice);
-                itemBuilder.cash(cash);
-                buyCount++;
-            } else if (trade.getTradeType() == TradeType.SELL) {
-                if (buyCount <= 0) {
-                    throw new RuntimeException("매도할 종목이 없습니다.");
-                }
-                if (!buyCoinAmount.containsKey(market)) {
-                    throw new RuntimeException(String.format("매수 내역이 없습니다. 코인명: %s", market));
-                }
-
-                double buyAmount = buyCoinAmount.get(market);
-                buyCoinAmount.remove(market);
-                double gains = buyAmount * trade.getYield();
-                double sellAmount = buyAmount + gains;
-                double feePrice = sellAmount * analysisMultiCondition.getFeeBuy();
-                gains -= feePrice;
-                cash += buyAmount + gains;
-
-                double totalBuyAmount = BacktestHelper.getBuyCoin(buyCoinAmount);
-                itemBuilder.buyAmount(buyAmount);
-                itemBuilder.buyTotalAmount(totalBuyAmount);
-                itemBuilder.cash(cash);
-                itemBuilder.feePrice(feePrice);
-                itemBuilder.gains(gains);
-
-                buyCount--;
-            }
-            reportHistory.add(itemBuilder.build());
-        }
-        return reportHistory;
+        return BacktestHelper.trading(analysisMultiCondition, allTrade);
     }
+
 
     /**
      * @param tradeHistory   매매 내역
@@ -160,6 +97,18 @@ public class MakeBacktestReportService {
                 .totalYield(BacktestHelper.calculateTotalYield(tradeHistory, conditionMulti))
                 .coinWinningRate(BacktestHelper.calculateCoinInvestment(tradeHistory, conditionByCoin))
                 .build();
+    }
+
+    /**
+     * @param tradeEntityList 매매 내역
+     * @param range           대상 범위
+     * @return 매매 내역에서 range 범위에 해당하는 것만 반환
+     */
+    private List<MabsTradeEntity> subTrade(List<MabsTradeEntity> tradeEntityList, DateRange range) {
+        return tradeEntityList
+                .stream()
+                .filter(pp -> range.isBetween(pp.getTradeTimeKst()))
+                .collect(Collectors.toList());
     }
 
     /**

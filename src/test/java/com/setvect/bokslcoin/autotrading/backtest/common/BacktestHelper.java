@@ -20,10 +20,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -277,5 +274,80 @@ public class BacktestHelper {
         report.append(String.format("CAGR\t %,.2f%%", totalYield.getCagr() * 100)).append("\n");
 
         System.out.println(report);
+    }
+
+    /**
+     * @param analysisMultiCondition 매매 조건
+     * @param allTrade               건별 매매 내역
+     * @param <T>                    건별 매매 내역 타입
+     * @return 통합 매매 이력
+     */
+    public static <T extends CommonTradeEntity> List<CommonTradeReportItem<T>> trading(AnalysisMultiCondition analysisMultiCondition, List<T> allTrade) {
+        List<CommonTradeReportItem<T>> reportHistory = new ArrayList<>();
+
+        Set<Integer> ids = analysisMultiCondition.getConditionIdSet();
+        int allowBuyCount = ids.size();
+
+        int buyCount = 0;
+        double cash = analysisMultiCondition.getCash();
+
+        // 코인명:매수가격
+        Map<String, Double> buyCoinAmount = new HashMap<>();
+
+        for (T trade : allTrade) {
+            CommonTradeReportItem.CommonTradeReportItemBuilder<T> itemBuilder = CommonTradeReportItem.builder();
+            itemBuilder.tradeEntity(trade);
+            String market = trade.getConditionEntity().getMarket();
+
+            if (trade.getTradeType() == TradeType.BUY) {
+                if (allowBuyCount <= buyCount) {
+                    throw new RuntimeException(String.format("매수 종목 한도 초과. 종모 매수 한도: %,d", allowBuyCount));
+                }
+                int rate = allowBuyCount - buyCount;
+                double buyAmount = (cash * analysisMultiCondition.getInvestRatio()) / rate;
+                double feePrice = buyAmount * analysisMultiCondition.getFeeBuy();
+
+                if (buyCoinAmount.containsKey(market)) {
+                    throw new RuntimeException(String.format("이미 매수한 코인 입니다. 코인명: %s", market));
+                }
+
+                buyCoinAmount.put(market, buyAmount);
+
+                cash -= buyAmount;
+                double totalBuyAmount = BacktestHelper.getBuyCoin(buyCoinAmount);
+                itemBuilder.buyAmount(buyAmount);
+                itemBuilder.buyTotalAmount(totalBuyAmount);
+                itemBuilder.feePrice(feePrice);
+                itemBuilder.cash(cash);
+                buyCount++;
+            } else if (trade.getTradeType() == TradeType.SELL) {
+                if (buyCount <= 0) {
+                    throw new RuntimeException("매도할 종목이 없습니다.");
+                }
+                if (!buyCoinAmount.containsKey(market)) {
+                    throw new RuntimeException(String.format("매수 내역이 없습니다. 코인명: %s", market));
+                }
+
+                double buyAmount = buyCoinAmount.get(market);
+                buyCoinAmount.remove(market);
+                double gains = buyAmount * trade.getYield();
+                double sellAmount = buyAmount + gains;
+                double feePrice = sellAmount * analysisMultiCondition.getFeeBuy();
+                gains -= feePrice;
+                cash += buyAmount + gains;
+
+                double totalBuyAmount = BacktestHelper.getBuyCoin(buyCoinAmount);
+                itemBuilder.buyAmount(buyAmount);
+                itemBuilder.buyTotalAmount(totalBuyAmount);
+                itemBuilder.cash(cash);
+                itemBuilder.feePrice(feePrice);
+                itemBuilder.gains(gains);
+
+                buyCount--;
+            }
+            CommonTradeReportItem<T> build = itemBuilder.build();
+            reportHistory.add(build);
+        }
+        return reportHistory;
     }
 }
