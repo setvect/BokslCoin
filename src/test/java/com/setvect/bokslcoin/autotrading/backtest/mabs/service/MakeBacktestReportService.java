@@ -8,7 +8,6 @@ import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReport
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
-import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.SneakyThrows;
@@ -64,14 +63,13 @@ public class MakeBacktestReportService {
         List<MabsTradeEntity> allTrade = mabsConditionEntityList.stream()
                 .flatMap(
                         p -> {
-                            List<MabsTradeEntity> targetTradeHistory = subTrade(p.getTradeEntityList(), range);
-                            List<MabsTradeEntity> list = makePairTrade(targetTradeHistory);
+                            List<MabsTradeEntity> targetTradeHistory = BacktestHelper.subTrade(p.getTradeEntityList(), range);
+                            List<MabsTradeEntity> list = BacktestHelper.makePairTrade(targetTradeHistory);
                             return list.stream();
                         }
                 )
                 .sorted(Comparator.comparing(MabsTradeEntity::getTradeTimeKst))
                 .collect(Collectors.toList());
-
 
         return BacktestHelper.trading(analysisMultiCondition, allTrade);
     }
@@ -99,33 +97,6 @@ public class MakeBacktestReportService {
                 .build();
     }
 
-    /**
-     * @param tradeEntityList 매매 내역
-     * @param range           대상 범위
-     * @return 매매 내역에서 range 범위에 해당하는 것만 반환
-     */
-    private List<MabsTradeEntity> subTrade(List<MabsTradeEntity> tradeEntityList, DateRange range) {
-        return tradeEntityList
-                .stream()
-                .filter(pp -> range.isBetween(pp.getTradeTimeKst()))
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * 첫 거래는 매수로 시작하고 마지막 거래는 매도로 끝나야됨
-     *
-     * @param targetTradeHistory 거래 내역
-     * @return 첫 거래는 매수, 마지막 거래는 매도로 끝나는 거래 내역
-     */
-    private List<MabsTradeEntity> makePairTrade(List<MabsTradeEntity> targetTradeHistory) {
-        int skip = targetTradeHistory.get(0).getTradeType() == TradeType.BUY ? 0 : 1;
-        int size = targetTradeHistory.size();
-        int limit = targetTradeHistory.get(size - 1).getTradeType() == TradeType.SELL ? size - skip : size - skip - 1;
-        return targetTradeHistory.stream()
-                .skip(skip)
-                .limit(limit)
-                .collect(Collectors.toList());
-    }
 
     /**
      * 분석결과 리포트 만듦

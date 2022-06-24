@@ -7,7 +7,6 @@ import lombok.Getter;
 /**
  * 거래 건별 내역
  */
-// TODO 공통 모듈화 작업 진행해야됨
 @Getter
 @Builder
 public class CommonTradeReportItem<T extends CommonTradeEntity> {

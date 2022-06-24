@@ -277,6 +277,34 @@ public class BacktestHelper {
     }
 
     /**
+     * @param tradeEntityList 매매 내역
+     * @param range           대상 범위
+     * @return 매매 내역에서 range 범위에 해당하는 것만 반환
+     */
+    public static <T extends CommonTradeEntity> List<T> subTrade(List<T> tradeEntityList, DateRange range) {
+        return tradeEntityList
+                .stream()
+                .filter(pp -> range.isBetween(pp.getTradeTimeKst()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 첫 거래는 매수로 시작하고 마지막 거래는 매도로 끝나야됨
+     *
+     * @param targetTradeHistory 거래 내역
+     * @return 첫 거래는 매수, 마지막 거래는 매도로 끝나는 거래 내역
+     */
+    public static <T extends CommonTradeEntity> List<T> makePairTrade(List<T> targetTradeHistory) {
+        int skip = targetTradeHistory.get(0).getTradeType() == TradeType.BUY ? 0 : 1;
+        int size = targetTradeHistory.size();
+        int limit = targetTradeHistory.get(size - 1).getTradeType() == TradeType.SELL ? size - skip : size - skip - 1;
+        return targetTradeHistory.stream()
+                .skip(skip)
+                .limit(limit)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * @param analysisMultiCondition 매매 조건
      * @param allTrade               건별 매매 내역
      * @param <T>                    건별 매매 내역 타입
