@@ -37,7 +37,6 @@ public class MakeBacktestReportService {
     @Autowired
     private BacktestHelperComponent backtestHelperService;
 
-
     /**
      * @param analysisMultiCondition 매매 조건
      * @return 멀티코인 매매 결과
@@ -45,35 +44,16 @@ public class MakeBacktestReportService {
     @SneakyThrows
     @Transactional
     public CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> makeReport(AnalysisMultiCondition analysisMultiCondition) {
-        List<CommonTradeReportItem<MabsTradeEntity>> tradeReportItems = trading(analysisMultiCondition);
+        List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
+
+        // 대상코인의 수익률 정보를 제공
+        List<CommonTradeReportItem<MabsTradeEntity>> tradeReportItems = BacktestHelper.trading(analysisMultiCondition, mabsConditionEntityList);
+
         CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result = analysis(tradeReportItems, analysisMultiCondition);
         BacktestHelper.printSummary(result);
         makeReport(result);
         return result;
     }
-
-    /**
-     * @param analysisMultiCondition 매매 분석 조건
-     * @return 대상코인의 수익률 정보를 제공
-     */
-    private List<CommonTradeReportItem<MabsTradeEntity>> trading(AnalysisMultiCondition analysisMultiCondition) throws RuntimeException {
-        List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
-        DateRange range = analysisMultiCondition.getRange();
-
-        List<MabsTradeEntity> allTrade = mabsConditionEntityList.stream()
-                .flatMap(
-                        p -> {
-                            List<MabsTradeEntity> targetTradeHistory = BacktestHelper.subTrade(p.getTradeEntityList(), range);
-                            List<MabsTradeEntity> list = BacktestHelper.makePairTrade(targetTradeHistory);
-                            return list.stream();
-                        }
-                )
-                .sorted(Comparator.comparing(MabsTradeEntity::getTradeTimeKst))
-                .collect(Collectors.toList());
-
-        return BacktestHelper.trading(analysisMultiCondition, allTrade);
-    }
-
 
     /**
      * @param tradeHistory   매매 내역
@@ -96,7 +76,6 @@ public class MakeBacktestReportService {
                 .coinWinningRate(BacktestHelper.calculateCoinInvestment(tradeHistory, conditionByCoin))
                 .build();
     }
-
 
     /**
      * 분석결과 리포트 만듦
