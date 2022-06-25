@@ -2,6 +2,8 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.service;
 
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelper;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
+import com.setvect.bokslcoin.autotrading.backtest.common.ExcelStyle;
+import com.setvect.bokslcoin.autotrading.backtest.common.ReportMakerHelperService;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonAnalysisReportResult;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReportItem;
@@ -9,20 +11,20 @@ import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntit
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
-import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
+import lombok.val;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -84,38 +86,28 @@ public class MakeBacktestReportService {
      * @throws IOException .
      */
     private void makeReport(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result) throws IOException {
-        String header = "날짜(KST),날짜(UTC),코인,매매구분,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
-        StringBuilder report = new StringBuilder(header.replace(",", "\t")).append("\n");
+        AnalysisMultiCondition condition = result.getCondition();
+        DateRange range = condition.getRange();
+        String coins = StringUtils.join(result.getMarkets(), ", ");
+        String reportFileName = String.format("[%s~%s]_[%s].xlsx", range.getFromDateFormat(), range.getToDateFormat(), coins);
+        File reportFile = new File("./backtest-result", reportFileName);
 
-        for (CommonTradeReportItem<MabsTradeEntity> row : result.getTradeHistory()) {
-            MabsTradeEntity mabsTradeEntity = row.getTradeEntity();
-            MabsConditionEntity mabsConditionEntity = mabsTradeEntity.getConditionEntity();
-            LocalDateTime tradeTimeKst = mabsTradeEntity.getTradeTimeKst();
-            String dateKst = DateUtil.formatDateTime(tradeTimeKst);
-            LocalDateTime utcTime = BacktestHelper.convertUtc(tradeTimeKst);
-            String dateUtc = DateUtil.formatDateTime(utcTime);
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = createTradeReport(result, workbook);
+            workbook.setSheetName(workbook.getSheetIndex(sheet), "1. 매매이력");
 
-            report.append(String.format("%s\t", dateKst));
-            report.append(String.format("%s\t", dateUtc));
-            report.append(String.format("%s\t", mabsConditionEntity.getMarket()));
-            report.append(String.format("%s\t", mabsTradeEntity.getTradeType()));
-            report.append(String.format("%,.0f\t", mabsTradeEntity.getMaShort()));
-            report.append(String.format("%,.0f\t", mabsTradeEntity.getMaLong()));
-            report.append(String.format("%,.0f\t", row.getBuyAmount()));
-            report.append(String.format("%,.2f%%\t", mabsTradeEntity.getHighYield() * 100));
-            report.append(String.format("%,.2f%%\t", mabsTradeEntity.getLowYield() * 100));
-            report.append(String.format("%,.0f\t", mabsTradeEntity.getUnitPrice()));
-            report.append(String.format("%s\t", mabsTradeEntity.getSellReason() == null ? "" : mabsTradeEntity.getSellReason()));
-            report.append(String.format("%,.2f%%\t", row.getRealYield() * 100));
-            report.append(String.format("%,.0f\t", row.getBuyAmount()));
-            report.append(String.format("%,.0f\t", row.getBuyTotalAmount()));
-            report.append(String.format("%,.0f\t", row.getCash()));
-            report.append(String.format("%,.0f\t", row.getFeePrice()));
-            report.append(String.format("%,.0f\t", row.getGains()));
-            report.append(String.format("%,.0f\t", row.getInvestResult()));
-            report.append(String.format("%,.0f\t", row.getFinalResult()));
-            report.append(String.format("%,.2f\n", row.getFinalResult() / result.getCondition().getCash()));
+            sheet = createReportSummary(result, workbook);
+            workbook.setSheetName(workbook.getSheetIndex(sheet), "5. 매매 요약결과 및 조건");
+
+            try (FileOutputStream ous = new FileOutputStream(reportFile)) {
+                workbook.write(ous);
+                log.info("결과 파일:" + reportFile.getName());
+            }
         }
+    }
+
+    private XSSFSheet createReportSummary(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result, XSSFWorkbook workbook) {
+        StringBuilder report = new StringBuilder();
 
         report.append("\n-----------\n");
         CommonAnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
@@ -169,14 +161,129 @@ public class MakeBacktestReportService {
             report.append(String.format("장기 이동평균 기간\t %d", mabsConditionEntity.getLongPeriod())).append("\n");
             report.append(String.format("손절\t %,.2f%%", mabsConditionEntity.getLoseStopRate() * 100)).append("\n");
         }
+        val sheet = workbook.createSheet();
 
-        String coins = StringUtils.join(result.getMarkets(), ", ");
-        String reportFileName = String.format("[%s~%s]_[%s].txt", range.getFromDateFormat(), range.getToDateFormat(), coins);
-
-        File reportFile = new File("./backtest-result", reportFileName);
-        FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
-        System.out.println("결과 파일:" + reportFile.getName());
+        ReportMakerHelperService.textToSheet(report.toString(), sheet);
+        sheet.setDefaultColumnWidth(60);
+        return sheet;
     }
+
+
+    private static XSSFSheet createTradeReport(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result, XSSFWorkbook workbook) {
+        XSSFSheet sheet = workbook.createSheet();
+        String header = "날짜(KST),날짜(UTC),코인,매매구분,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
+        ReportMakerHelperService.applyHeader(sheet, header);
+        int rowIdx = 1;
+
+        XSSFCellStyle defaultStyle = ExcelStyle.createDefault(workbook);
+        XSSFCellStyle dateTimeStyle = ExcelStyle.createDateTime(workbook);
+        XSSFCellStyle commaStyle = ExcelStyle.createComma(workbook);
+        XSSFCellStyle commaDecimalStyle = ExcelStyle.createCommaDecimal(workbook);
+        XSSFCellStyle percentStyle = ExcelStyle.createPercent(workbook);
+        XSSFCellStyle decimalStyle = ExcelStyle.createDecimal(workbook);
+
+        for (CommonTradeReportItem<MabsTradeEntity> tradeItem : result.getTradeHistory()) {
+            MabsTradeEntity mabsTradeEntity = tradeItem.getTradeEntity();
+            MabsConditionEntity mabsConditionEntity = mabsTradeEntity.getConditionEntity();
+            LocalDateTime tradeTimeKst = mabsTradeEntity.getTradeTimeKst();
+            LocalDateTime utcTime = BacktestHelper.convertUtc(tradeTimeKst);
+
+            XSSFRow row = sheet.createRow(rowIdx++);
+            MabsTradeEntity tradeEntity = tradeItem.getTradeEntity();
+            int cellIdx = 0;
+
+            XSSFCell createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeTimeKst);
+            createCell.setCellStyle(dateTimeStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(utcTime);
+            createCell.setCellStyle(dateTimeStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsConditionEntity.getMarket());
+            createCell.setCellStyle(defaultStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsTradeEntity.getTradeType().name());
+            createCell.setCellStyle(defaultStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsTradeEntity.getMaShort());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsTradeEntity.getMaLong());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getBuyAmount());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsTradeEntity.getHighYield());
+            createCell.setCellStyle(percentStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsTradeEntity.getLowYield());
+            createCell.setCellStyle(percentStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsTradeEntity.getUnitPrice());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(mabsTradeEntity.getSellReason() == null ? "" : mabsTradeEntity.getSellReason().name());
+            createCell.setCellStyle(defaultStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getRealYield());
+            createCell.setCellStyle(percentStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getBuyAmount());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getBuyTotalAmount());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getCash());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getFeePrice());
+            createCell.setCellStyle(commaDecimalStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getGains());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getInvestResult());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getFinalResult());
+            createCell.setCellStyle(commaStyle);
+
+            createCell = row.createCell(cellIdx++);
+            createCell.setCellValue(tradeItem.getFinalResult() / result.getCondition().getCash());
+            createCell.setCellStyle(decimalStyle);
+        }
+
+        sheet.createFreezePane(0, 1);
+        sheet.setDefaultColumnWidth(14);
+        sheet.setColumnWidth(0, 5000);
+        sheet.setColumnWidth(1, 5000);
+
+        ExcelStyle.applyAllBorder(sheet);
+        ExcelStyle.applyDefaultFont(sheet);
+
+        return sheet;
+    }
+
 
     /**
      * 복수개의 분석 결과 요약 리포트
@@ -185,35 +292,18 @@ public class MakeBacktestReportService {
      */
     @SneakyThrows
     public void makeReportMulti(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult) {
-        String resultList = BacktestHelper.makeReportMultiList(accResult);
+        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + Timestamp.valueOf(LocalDateTime.now()).getTime() + ".xlsx");
+        try (XSSFWorkbook workbook = new XSSFWorkbook()) {
+            XSSFSheet sheet = ReportMakerHelperService.makeReportMultiList(accResult, workbook);
+            workbook.setSheetName(workbook.getSheetIndex(sheet), "1. 평가표");
 
-        StringBuilder report = new StringBuilder(resultList);
-        // 사용한 매매 조건 정보
-        report.append("\n----------------\n");
-        report.append("조건들\n");
-        String condHeader = "조건 아이디,분석주기,대상 코인,상승 매수률,하락 매도률,단기 이동평균,장기 이동평균,손절률";
-        report.append(condHeader.replace(",", "\t")).append("\n");
-        List<MabsConditionEntity> conditionAll = accResult.stream()
-                .flatMap(p -> p.getConditionList().stream())
-                .distinct()
-                .sorted(Comparator.comparingInt(MabsConditionEntity::getConditionSeq))
-                .collect(Collectors.toList());
+            XSSFSheet sheetCondition = ReportMakerHelperService.makeMultiCondition(accResult, workbook);
+            workbook.setSheetName(workbook.getSheetIndex(sheetCondition), "2. 테스트 조건");
 
-        for (MabsConditionEntity condition : conditionAll) {
-            String reportRow = String.format("%s\t", condition.getConditionSeq()) +
-                    String.format("%s\t", condition.getTradePeriod()) +
-                    String.format("%s\t", condition.getMarket()) +
-                    String.format("%,.2f%%\t", condition.getUpBuyRate() * 100) +
-                    String.format("%,.2f%%\t", condition.getDownSellRate() * 100) +
-                    String.format("%d\t", condition.getShortPeriod()) +
-                    String.format("%d\t", condition.getLongPeriod()) +
-                    String.format("%,.2f%%\t", condition.getLoseStopRate() * 100);
-            report.append(reportRow).append("\n");
+            try (FileOutputStream ous = new FileOutputStream(reportFile)) {
+                workbook.write(ous);
+                log.info("결과 파일:" + reportFile.getName());
+            }
         }
-
-        // 결과 저장
-        File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + Timestamp.valueOf(LocalDateTime.now()).getTime() + ".txt");
-        FileUtils.writeStringToFile(reportFile, report.toString(), "euc-kr");
-        System.out.println("결과 파일:" + reportFile.getName());
     }
 }

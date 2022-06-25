@@ -145,9 +145,9 @@ public class MabsTradeAnalyzerTest {
 //        );
 
         List<DateRange> rangeList = Arrays.asList(
-//                new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now())
+                new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now())
 //                new DateRange(DateUtil.getLocalDateTime("2021-06-08T00:00:00"), LocalDateTime.now())
-                new DateRange(DateUtil.getLocalDateTime("2017-12-31T23:59:59"), LocalDateTime.now())
+//                new DateRange(DateUtil.getLocalDateTime("2017-12-31T23:59:59"), LocalDateTime.now())
 
 //                new DateRange("2017-10-01T00:00:00", "2017-12-31T23:59:59"),
 //                new DateRange("2018-01-01T00:00:00", "2018-06-30T23:59:59"),

@@ -56,6 +56,8 @@ dependencies {
     implementation 'org.modelmapper:modelmapper:3.1.0'
     implementation 'com.h2database:h2:1.4.199'
     implementation 'org.projectlombok:lombok'
+    implementation 'org.apache.poi:poi:5.2.2'
+    implementation 'org.apache.poi:poi-ooxml:5.2.2'
     compileOnly "org.springframework.boot:spring-boot-devtools"
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
