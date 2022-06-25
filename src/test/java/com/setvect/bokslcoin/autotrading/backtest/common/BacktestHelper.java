@@ -310,24 +310,7 @@ public class BacktestHelper {
      * @param <T>                    건별 매매 내역 타입
      * @return 통합 매매 이력
      */
-    public static <T extends CommonTradeEntity> List<CommonTradeReportItem<T>> trading(
-            AnalysisMultiCondition analysisMultiCondition,
-            List<? extends CommonConditionEntity> conditionEntityList
-    ) {
-        DateRange range = analysisMultiCondition.getRange();
-
-        List<T> allTrade = conditionEntityList.stream()
-                .flatMap(
-                        p -> {
-                            List<T> targetTradeHistory = BacktestHelper.subTrade(p.getTradeEntityList(), range);
-                            List<T> list = BacktestHelper.makePairTrade(targetTradeHistory);
-                            return list.stream();
-                        }
-                )
-                .sorted(Comparator.comparing(CommonTradeEntity::getTradeTimeKst))
-                .collect(Collectors.toList());
-
-
+    public static <T extends CommonTradeEntity> List<CommonTradeReportItem<T>> trading(AnalysisMultiCondition analysisMultiCondition, List<T> allTrade) {
         List<CommonTradeReportItem<T>> reportHistory = new ArrayList<>();
 
         Set<Integer> ids = analysisMultiCondition.getConditionIdSet();
