@@ -2,6 +2,7 @@ package com.setvect.bokslcoin.autotrading.backtest.entity.mabs;
 
 import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -87,11 +88,10 @@ public class MabsConditionEntity implements CommonConditionEntity {
     @CreatedDate
     private LocalDateTime regDate;
 
-    public void setTradeEntityList(List<MabsTradeEntity> tradeEntityList) {
-        this.tradeEntityList = tradeEntityList;
-    }
-
-    public List<MabsTradeEntity> getTradeEntityList() {
-        return tradeEntityList;
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends CommonTradeEntity> List<T> getTradeEntityList() {
+        // 타임 에러 안남
+        return (List<T>) tradeEntityList;
     }
 }

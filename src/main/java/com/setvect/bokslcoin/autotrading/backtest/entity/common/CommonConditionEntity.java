@@ -1,7 +1,9 @@
 package com.setvect.bokslcoin.autotrading.backtest.entity.common;
 
+import java.util.List;
+
 /**
- * 백테스트 기본 조건
+ * 단일 종ㅁ고 백테스트 기본 조건
  */
 public interface CommonConditionEntity {
     int getConditionSeq();
@@ -11,4 +13,7 @@ public interface CommonConditionEntity {
      * KRW-BTC, KRW-ETH, ...
      */
     String getMarket();
+
+
+    <T extends CommonTradeEntity> List<T> getTradeEntityList();
 }
