@@ -36,12 +36,12 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TradeCommonService {
     /**
-     * ¸Å¼ö ½Ã Áï°¢ÀûÀÎ ¸Å¸Å¸¦ À§ÇØ È£°¡º¸´Ù »ó´Ü¿¡ ÁÖ¹®À» ³Ö´Â ÆÛ¼¾Æ®
+     * ë§¤ìˆ˜ ì‹œ ì¦‰ê°ì ì¸ ë§¤ë§¤ë¥¼ ìœ„í•´ í˜¸ê°€ë³´ë‹¤ ìƒë‹¨ì— ì£¼ë¬¸ì„ ë„£ëŠ” í¼ì„¼íŠ¸
      */
     private static final double DIFF_RATE_BUY = 0.0;
     /**
-     * ¸Åµµ ½Ã Áï°¢ÀûÀÎ ¸Å¸Å¸¦ À§ÇØ È£°¡º¸´Ù ÇÏ´Ü¿¡ ÁÖ¹®À» ³Ö´Â ÆÛ¼¾Æ®
-     * ¹«Á¶°Ç ¸Åµµ¸¦ ÇÏ±âÀ§ÇØ ½ÃÀå°¡ ¼öÁØÀ¸·Î È£°¡¸¦ ³·Ãç ¸Åµµ ¿äÃ»
+     * ë§¤ë„ ì‹œ ì¦‰ê°ì ì¸ ë§¤ë§¤ë¥¼ ìœ„í•´ í˜¸ê°€ë³´ë‹¤ í•˜ë‹¨ì— ì£¼ë¬¸ì„ ë„£ëŠ” í¼ì„¼íŠ¸
+     * ë¬´ì¡°ê±´ ë§¤ë„ë¥¼ í•˜ê¸°ìœ„í•´ ì‹œì¥ê°€ ìˆ˜ì¤€ìœ¼ë¡œ í˜¸ê°€ë¥¼ ë‚®ì¶° ë§¤ë„ ìš”ì²­
      */
     private static final double DIFF_RATE_SELL = 0.010;
 
@@ -55,45 +55,45 @@ public class TradeCommonService {
 
 
     /**
-     * º¸À¯ ÀÚ»ê
-     * (ÄÚÀÎÄÚµå: °èÁÂ)
+     * ë³´ìœ  ìì‚°
+     * (ì½”ì¸ì½”ë“œ: ê³„ì¢Œ)
      */
     private final Map<String, Account> coinAccount = new HashMap<>();
     /**
-     * º¸À¯ ÀÚ»ê
-     * (ÄÚÀÎÄÚµå: ¸Å¸Å ´ë±â)
+     * ë³´ìœ  ìì‚°
+     * (ì½”ì¸ì½”ë“œ: ë§¤ë§¤ ëŒ€ê¸°)
      */
     private final Map<String, OrderHistory> coinOrderWait = new HashMap<>();
 
 
     /**
-     * (ÄÚÀÎ ÄÚµå: ÃÖ±Ù Äµµé ¸ñ·Ï)
+     * (ì½”ì¸ ì½”ë“œ: ìµœê·¼ ìº”ë“¤ ëª©ë¡)
      */
     private final Map<String, LimitedSizeQueue<Candle>> coinByCandles = new HashMap<>();
     /**
-     * ¸Å¼ö ÀÌÈÄ ÃÖ°í ¼öÀÍ·ü
+     * ë§¤ìˆ˜ ì´í›„ ìµœê³  ìˆ˜ìµë¥ 
      */
     private final Map<String, Double> highYield = new HashMap<>();
     /**
-     * ¸Å¼ö ÀÌÈÄ ÃÖÀú ¼öÀÍ·ü
+     * ë§¤ìˆ˜ ì´í›„ ìµœì € ìˆ˜ìµë¥ 
      */
     private final Map<String, Double> lowYield = new HashMap<>();
     /**
-     * ÇØ´ç ±â°£¿¡ ¸Å¸Å ¿©ºÎ ¿Ï·á ¿©ºÎ
-     * value: ÄÚÀÎ ¿¹) KRW-BTC, KRW-ETH, ...
+     * í•´ë‹¹ ê¸°ê°„ì— ë§¤ë§¤ ì—¬ë¶€ ì™„ë£Œ ì—¬ë¶€
+     * value: ì½”ì¸ ì˜ˆ) KRW-BTC, KRW-ETH, ...
      */
     private final Set<String> tradeCompleteOfPeriod = new HashSet<>();
 
     private int orderWaitRotation = -1;
 
     /**
-     * ¸Å¸ÅÀ» À§ÇÑ °¢Á¾ ¼Ó¼º°ª
+     * ë§¤ë§¤ì„ ìœ„í•œ ê°ì¢… ì†ì„±ê°’
      */
-    // TODO ¿©·¯ Àü·«À» º¹ÇÕÀûÀ¸·Î »ç¿ëÇÒ ¶§ ¹®Á¦°¡ ¿¹»óµÊ. ¿Ö? spring instance´Â ±âº»ÀûÀ¸·Î ½Ì±ÛÅæÀÌ´Ï±ñ.
+    // TODO ì—¬ëŸ¬ ì „ëµì„ ë³µí•©ì ìœ¼ë¡œ ì‚¬ìš©í•  ë•Œ ë¬¸ì œê°€ ì˜ˆìƒë¨. ì™œ? spring instanceëŠ” ê¸°ë³¸ì ìœ¼ë¡œ ì‹±ê¸€í†¤ì´ë‹ˆê¹.
     private TradeCommonParameter parameter;
 
     /**
-     * ÃÖÃÊ ½ÃÀÛ½Ã °¢Á¾ Á¤º¸ ÃÊ±âÈ­
+     * ìµœì´ˆ ì‹œì‘ì‹œ ê°ì¢… ì •ë³´ ì´ˆê¸°í™”
      */
     public void init(TradeCommonParameter parameter) {
         this.parameter = parameter;
@@ -132,7 +132,7 @@ public class TradeCommonService {
     }
 
     /**
-     * Çö±İ, ¸Å¼ö ÄÚÀÎ ¸ñ·Ï
+     * í˜„ê¸ˆ, ë§¤ìˆ˜ ì½”ì¸ ëª©ë¡
      */
     public void loadAccount() {
         coinAccount.clear();
@@ -141,7 +141,7 @@ public class TradeCommonService {
     }
 
     /**
-     * ¸Å¼ö/¸Åµµ ´ë±â ÁÖ¹® Á¶È¸
+     * ë§¤ìˆ˜/ë§¤ë„ ëŒ€ê¸° ì£¼ë¬¸ ì¡°íšŒ
      */
     public void loadOrderWait() {
         List<OrderHistory> history = orderService.getHistory(0, parameter.getMaxBuyCount());
@@ -151,16 +151,16 @@ public class TradeCommonService {
     }
 
     /**
-     * ÄÚÀÎ Äµµé Á¤º¸¸¦ ¾òÀ½
+     * ì½”ì¸ ìº”ë“¤ ì •ë³´ë¥¼ ì–»ìŒ
      */
     public void loadCandle() {
         for (String market : parameter.getMarkets()) {
             List<Candle> candleList = CommonTradeHelper.getCandles(candleService, market, parameter.getPeriodType(), parameter.getCandleLoadCount());
             if (candleList.isEmpty()) {
-                throw new RuntimeException(String.format("[%s] ÇöÀç ½Ã¼¼ µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.", market));
+                throw new RuntimeException(String.format("[%s] í˜„ì¬ ì‹œì„¸ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.", market));
             }
             if (candleList.size() < parameter.getCandleLoadCount()) {
-                throw new RuntimeException(String.format("[%s] ÀÌµ¿Æò±Õ°è»êÀ» À§ÇÑ ½Ã¼¼ µ¥ÀÌÅÍ°¡ ºÎÁ·ÇÕ´Ï´Ù", market));
+                throw new RuntimeException(String.format("[%s] ì´ë™í‰ê· ê³„ì‚°ì„ ìœ„í•œ ì‹œì„¸ ë°ì´í„°ê°€ ë¶€ì¡±í•©ë‹ˆë‹¤", market));
             }
 
             LimitedSizeQueue<Candle> candles = new LimitedSizeQueue<>(parameter.getCandleLoadCount());
@@ -172,9 +172,9 @@ public class TradeCommonService {
     }
 
     /**
-     * ÄÚÀÎ ¸Å¼ö
+     * ì½”ì¸ ë§¤ìˆ˜
      *
-     * @param market ÄÚÀÎ Á¾·ù
+     * @param market ì½”ì¸ ì¢…ë¥˜
      */
     public void doBid(String market) {
         List<Candle> candleList = getCandles(market);
@@ -182,10 +182,10 @@ public class TradeCommonService {
         double tradePrice = candle.getTradePrice();
 
         double bidPrice = getBuyCash();
-        // ¸Å¼ö °¡°İ, ³ôÀº °¡°İÀ¸·Î ¸Å¼ö(½ÃÀå°¡ È¿°ú)
+        // ë§¤ìˆ˜ ê°€ê²©, ë†’ì€ ê°€ê²©ìœ¼ë¡œ ë§¤ìˆ˜(ì‹œì¥ê°€ íš¨ê³¼)
         double fitPrice = AskPriceRange.askPrice(tradePrice + tradePrice * DIFF_RATE_BUY);
 
-        // ¸Å¼ö ¼ö·®
+        // ë§¤ìˆ˜ ìˆ˜ëŸ‰
         String volume = ApplicationUtil.toNumberString(bidPrice / fitPrice);
 
         String price = ApplicationUtil.toNumberString(fitPrice);
@@ -194,7 +194,7 @@ public class TradeCommonService {
         TradeEntity trade = new TradeEntity();
         trade.setMarket(market);
         trade.setTradeType(TradeType.BUY);
-        // ¸Å¼ö È£°¡ º¸´Ù ³ô°Ô Ã¼°á µÉ °¡´É¼ºÀÌ ÀÖ±â ¶§¹®¿¡ ¿ÀÂ÷°¡ ÀÖÀ½
+        // ë§¤ìˆ˜ í˜¸ê°€ ë³´ë‹¤ ë†’ê²Œ ì²´ê²° ë  ê°€ëŠ¥ì„±ì´ ìˆê¸° ë•Œë¬¸ì— ì˜¤ì°¨ê°€ ìˆìŒ
         double amount = tradePrice * Double.parseDouble(volume);
         trade.setAmount(amount);
         trade.setUnitPrice(tradePrice);
@@ -207,9 +207,9 @@ public class TradeCommonService {
     }
 
     /**
-     * ¸Åµµ
+     * ë§¤ë„
      *
-     * @param market ÄÚÀÎ Á¾·ù
+     * @param market ì½”ì¸ ì¢…ë¥˜
      */
     public void doAsk(String market) {
         Account account = getAccount(market);
@@ -217,7 +217,7 @@ public class TradeCommonService {
         Candle candle = candleList.get(0);
         double yield = TradeCommonUtil.getYield(candle, account);
 
-        String message = String.format("[%s] ÇöÀç°¡: %,.2f, ¸ÅÀÔ´Ü°¡: %,.2f, ÅõÀÚ±İ: %,.0f, ¼öÀÍ·ü: %.2f%%, ÃÖ°í ¼öÀÍ·ü: %.2f%%, ÃÖÀú ¼öÀÍ·ü: %.2f%%",
+        String message = String.format("[%s] í˜„ì¬ê°€: %,.2f, ë§¤ì…ë‹¨ê°€: %,.2f, íˆ¬ìê¸ˆ: %,.0f, ìˆ˜ìµë¥ : %.2f%%, ìµœê³  ìˆ˜ìµë¥ : %.2f%%, ìµœì € ìˆ˜ìµë¥ : %.2f%%",
                 candle.getMarket(),
                 candle.getTradePrice(),
                 account.getAvgBuyPriceValue(),
@@ -229,7 +229,7 @@ public class TradeCommonService {
         log.info(message);
         slackMessageService.sendMessage(message);
 
-        // ¸Åµµ °¡°İ, ³·Àº °¡°İÀ¸·Î ¸Åµµ(½ÃÀå°¡ È¿°ú)
+        // ë§¤ë„ ê°€ê²©, ë‚®ì€ ê°€ê²©ìœ¼ë¡œ ë§¤ë„(ì‹œì¥ê°€ íš¨ê³¼)
         double currentPrice = candle.getTradePrice();
         double balance = account.getBalanceValue();
         double fitPrice = AskPriceRange.askPrice(currentPrice - currentPrice * DIFF_RATE_SELL);
@@ -238,7 +238,7 @@ public class TradeCommonService {
         TradeEntity trade = new TradeEntity();
         trade.setMarket(market);
         trade.setTradeType(TradeType.SELL);
-        // ¸Åµµ È£°¡ º¸´Ù ³·°Ô Ã¼°á µÉ °¡´É¼ºÀÌ ÀÖ±â ¶§¹®¿¡ ¿ÀÂ÷°¡ ÀÖÀ½
+        // ë§¤ë„ í˜¸ê°€ ë³´ë‹¤ ë‚®ê²Œ ì²´ê²° ë  ê°€ëŠ¥ì„±ì´ ìˆê¸° ë•Œë¬¸ì— ì˜¤ì°¨ê°€ ìˆìŒ
         trade.setAmount(currentPrice * balance);
         trade.setUnitPrice(currentPrice);
         trade.setRegDate(LocalDateTime.now());
@@ -255,9 +255,9 @@ public class TradeCommonService {
 
 
     /**
-     * º¸À¯ Á¾¸ñ ÃÖ°í°¡ ÃÖÀú°¡ ÀÌº¥Æ® ¹İ¿µ
+     * ë³´ìœ  ì¢…ëª© ìµœê³ ê°€ ìµœì €ê°€ ì´ë²¤íŠ¸ ë°˜ì˜
      *
-     * @param market Á¾¸ñÄÚµå
+     * @param market ì¢…ëª©ì½”ë“œ
      */
     public void emitHighMinYield(String market) {
         Account account = getAccount(market);
@@ -277,21 +277,21 @@ public class TradeCommonService {
     }
 
     /**
-     * ÀÚ»ê ±â·Ï
+     * ìì‚° ê¸°ë¡
      *
-     * @param tradeDateTimeKst ÇöÀç ½Ã°£
-     * @return ÀÚ»êº° ¼öÀÍ·ü Á¤º¸
+     * @param tradeDateTimeKst í˜„ì¬ ì‹œê°„
+     * @return ìì‚°ë³„ ìˆ˜ìµë¥  ì •ë³´
      */
     public List<AssetHistoryEntity> saveAsset(LocalDateTime tradeDateTimeKst) {
-        // °¢ ÄÚÀÎµéÀÇ °¡Àå ÃÖ±Ù Äµµé
+        // ê° ì½”ì¸ë“¤ì˜ ê°€ì¥ ìµœê·¼ ìº”ë“¤
         Map<String, Candle> lastCandle = coinByCandles.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, p -> p.getValue().get(0)));
         return writeCurrentAssetRate(coinAccount, lastCandle, tradeDateTimeKst);
     }
 
 
     /**
-     * 5ºĞ¸¶´Ù ¸Å¸Å ½Ã¼¼ Ã¼Å©, ¸Å¸Å ´ë±â°¡ ÀÖÀ¸¸é ½½·¢À¸·Î ¸Ş½ÃÁö Àü´Ş
-     * ¸Å¸Å ´ë±â°¡ ÀÖÀ¸¸é °èÁÂ Á¤º¸µµ Ãß°¡·Î Ã¼Å©ÇÔ
+     * 5ë¶„ë§ˆë‹¤ ë§¤ë§¤ ì‹œì„¸ ì²´í¬, ë§¤ë§¤ ëŒ€ê¸°ê°€ ìˆìœ¼ë©´ ìŠ¬ë™ìœ¼ë¡œ ë©”ì‹œì§€ ì „ë‹¬
+     * ë§¤ë§¤ ëŒ€ê¸°ê°€ ìˆìœ¼ë©´ ê³„ì¢Œ ì •ë³´ë„ ì¶”ê°€ë¡œ ì²´í¬í•¨
      */
     public void checkStatus(Map<String, TradeResult> currentTradeResult) {
         int temp = LocalTime.now().getMinute() / 5;
@@ -303,7 +303,7 @@ public class TradeCommonService {
         loadOrderWait();
         String message = coinOrderWait.values().stream().map(history -> {
             String currentPrice = Optional.ofNullable(currentTradeResult.get(history.getMarket())).map(p -> ApplicationUtil.toNumberString(p.getTradePrice())).orElse("");
-            return String.format("[%s] %s ´ë±â %s/%s, %s/%s", TradeCommonUtil.removeKrw(history.getMarket()), history.getSide().getName(), history.getPrice(), currentPrice, history.getRemainingVolume(), history.getVolume());
+            return String.format("[%s] %s ëŒ€ê¸° %s/%s, %s/%s", TradeCommonUtil.removeKrw(history.getMarket()), history.getSide().getName(), history.getPrice(), currentPrice, history.getRemainingVolume(), history.getVolume());
         }).collect(Collectors.joining("\n"));
         if (!StringUtils.isNotBlank(message)) {
             return;
@@ -314,14 +314,14 @@ public class TradeCommonService {
     }
 
     /**
-     * ÀüÃ¼ º¸À¯ Çö±İ, ÃÖ´ë ¸Å¼ö °Ç¼ö, ÇöÀç ¸Å¼ö ÄÚÀÎ¸¦ ±âÁØÀ¸·Î ¸Å¼ö ±İ¾×À» °è»ê
+     * ì „ì²´ ë³´ìœ  í˜„ê¸ˆ, ìµœëŒ€ ë§¤ìˆ˜ ê±´ìˆ˜, í˜„ì¬ ë§¤ìˆ˜ ì½”ì¸ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ë§¤ìˆ˜ ê¸ˆì•¡ì„ ê³„ì‚°
      *
-     * @return ¸Å¼ö ±İ¾×
+     * @return ë§¤ìˆ˜ ê¸ˆì•¡
      */
     public double getBuyCash() {
-        // ÀÌ¹Ì ¸Å¼öÇÑ ÄÚÀÎ °¹¼ö
+        // ì´ë¯¸ ë§¤ìˆ˜í•œ ì½”ì¸ ê°¯ìˆ˜
         int allowBuyCount = Math.min(parameter.getMaxBuyCount(), parameter.getMarkets().size());
-        // ±¸¸Å °Ç¼ö = ÀÌ¹Ì ±¸¸Å °Ç¼ö + ¸Å¼ö ´ë±â °Ç¼ö
+        // êµ¬ë§¤ ê±´ìˆ˜ = ì´ë¯¸ êµ¬ë§¤ ê±´ìˆ˜ + ë§¤ìˆ˜ ëŒ€ê¸° ê±´ìˆ˜
         int buyCount = (int) parameter.getMarkets().stream().filter(p -> coinAccount.containsKey(p) || coinOrderWait.containsKey(p)).count();
         int rate = allowBuyCount - buyCount;
         double buyCash = 0;
@@ -333,7 +333,7 @@ public class TradeCommonService {
     }
 
     /**
-     * @return º¸À¯ Çö±İ
+     * @return ë³´ìœ  í˜„ê¸ˆ
      */
     private double getCash() {
         Account krw = coinAccount.get("KRW");
@@ -342,12 +342,12 @@ public class TradeCommonService {
     }
 
     /**
-     * ÇöÀç º¸À¯ÁßÀÎ ÄÚÀÎ ¹× Çö±İ ¼öÀÍ·ü ÀúÀå
+     * í˜„ì¬ ë³´ìœ ì¤‘ì¸ ì½”ì¸ ë° í˜„ê¸ˆ ìˆ˜ìµë¥  ì €ì¥
      *
-     * @param accounts   Key: °èÁÂÀÌ¸§,Value: °èÁÂ Á¤º¸
-     * @param lastCandle ¸¶Áö¸· Äµµé
-     * @param regDate    µî·ÏÀÏ
-     * @return ÀÚ»êº° ¼öÀÍ·ü Á¤º¸
+     * @param accounts   Key: ê³„ì¢Œì´ë¦„,Value: ê³„ì¢Œ ì •ë³´
+     * @param lastCandle ë§ˆì§€ë§‰ ìº”ë“¤
+     * @param regDate    ë“±ë¡ì¼
+     * @return ìì‚°ë³„ ìˆ˜ìµë¥  ì •ë³´
      */
     private List<AssetHistoryEntity> writeCurrentAssetRate(Map<String, Account> accounts, Map<String, Candle> lastCandle, LocalDateTime regDate) {
         List<AssetHistoryEntity> accountHistoryList = accounts.entrySet().stream().map(entity -> {
@@ -371,31 +371,31 @@ public class TradeCommonService {
     }
 
     /**
-     * ÇöÀç ½Ã¼¼Á¤º¸¿Í ÅõÀÚ ¼öÀÍ·ü ½½·ºÀ¸·Î Àü´Ş
+     * í˜„ì¬ ì‹œì„¸ì •ë³´ì™€ íˆ¬ì ìˆ˜ìµë¥  ìŠ¬ë ‰ìœ¼ë¡œ ì „ë‹¬
      *
-     * @param rateByCoin         ÄÚÀÎ ÅõÀÚ ¼öÀÍ·ü
-     * @param currentTradeResult ¸¶Áö¸· Ã¼°á ½Ã¼¼ (ÄÚÀÎÄÚµå: Ã¼°á)
-     * @param tradeInfoMessage   ¸Å¸Å ´ë»ó ½Ã¼¼ ÄÚÀÎ Á¤º¸
+     * @param rateByCoin         ì½”ì¸ íˆ¬ì ìˆ˜ìµë¥ 
+     * @param currentTradeResult ë§ˆì§€ë§‰ ì²´ê²° ì‹œì„¸ (ì½”ì¸ì½”ë“œ: ì²´ê²°)
+     * @param tradeInfoMessage   ë§¤ë§¤ ëŒ€ìƒ ì‹œì„¸ ì½”ì¸ ì •ë³´
      */
     public void sendCurrentStatus(List<AssetHistoryEntity> rateByCoin, Map<String, TradeResult> currentTradeResult, String tradeInfoMessage) {
         double investment = rateByCoin.stream().filter(p -> !p.getCurrency().equals("KRW")).mapToDouble(AssetHistoryEntity::getPrice).sum();
         double appraisal = rateByCoin.stream().filter(p -> !p.getCurrency().equals("KRW")).mapToDouble(AssetHistoryEntity::getAppraisal).sum();
         double cash = rateByCoin.stream().filter(p -> p.getCurrency().equals("KRW")).mapToDouble(AssetHistoryEntity::getPrice).sum();
-        String investmentSummary = String.format("ÅõÀÚ±İ: %,.0f, Æò°¡±İ: %,.0f, ¼öÀÍ: %,.0f(%.2f%%)",
+        String investmentSummary = String.format("íˆ¬ìê¸ˆ: %,.0f, í‰ê°€ê¸ˆ: %,.0f, ìˆ˜ìµ: %,.0f(%.2f%%)",
                 investment, appraisal, appraisal - investment, ApplicationUtil.getYield(investment, appraisal) * 100);
-        String cashSummary = String.format("º¸À¯Çö±İ: %,.0f, ÇÕ°è ±İ¾×: %,.0f", cash, cash + appraisal);
+        String cashSummary = String.format("ë³´ìœ í˜„ê¸ˆ: %,.0f, í•©ê³„ ê¸ˆì•¡: %,.0f", cash, cash + appraisal);
 
         long maxDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).max().orElse(-9999);
         long minDiff = currentTradeResult.values().stream().mapToLong(TradeResult::getTimestampDiff).min().orElse(-9999);
-        String diffTimeSummary = String.format("½Ã°£Â÷: ÃÖ´ë %,d, ÃÖ¼Ò %,d", maxDiff, minDiff);
+        String diffTimeSummary = String.format("ì‹œê°„ì°¨: ìµœëŒ€ %,d, ìµœì†Œ %,d", maxDiff, minDiff);
 
         slackMessageService.sendMessage(StringUtils.joinWith("\n-----------\n",
                 tradeInfoMessage, investmentSummary, cashSummary, diffTimeSummary));
     }
 
     /**
-     * @param market Á¾¸ñ
-     * @return Á¾¸ñ¿¡ ´ëÇÑ °èÁÂ Á¤º¸
+     * @param market ì¢…ëª©
+     * @return ì¢…ëª©ì— ëŒ€í•œ ê³„ì¢Œ ì •ë³´
      */
     public Account getAccount(String market) {
         return coinAccount.get(market);
