@@ -3,7 +3,7 @@ package com.setvect.bokslcoin.autotrading.backtest.mabs.service;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelper;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
 import com.setvect.bokslcoin.autotrading.backtest.common.ExcelStyle;
-import com.setvect.bokslcoin.autotrading.backtest.common.ReportMakerHelperService;
+import com.setvect.bokslcoin.autotrading.backtest.common.ReportMakerHelper;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonAnalysisReportResult;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReportItem;
@@ -13,7 +13,6 @@ import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntity
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -161,10 +160,9 @@ public class MakeBacktestReportService {
             report.append(String.format("장기 이동평균 기간\t %d", mabsConditionEntity.getLongPeriod())).append("\n");
             report.append(String.format("손절\t %,.2f%%", mabsConditionEntity.getLoseStopRate() * 100)).append("\n");
         }
-        val sheet = workbook.createSheet();
+        XSSFSheet sheet = workbook.createSheet();
 
-        ReportMakerHelperService.textToSheet(report.toString(), sheet);
-        sheet.setDefaultColumnWidth(60);
+        ReportMakerHelper.textToSheet(report.toString(), sheet);
         return sheet;
     }
 
@@ -172,7 +170,7 @@ public class MakeBacktestReportService {
     private static XSSFSheet createTradeReport(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result, XSSFWorkbook workbook) {
         XSSFSheet sheet = workbook.createSheet();
         String header = "날짜(KST),날짜(UTC),코인,매매구분,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
-        ReportMakerHelperService.applyHeader(sheet, header);
+        ReportMakerHelper.applyHeader(sheet, header);
         int rowIdx = 1;
 
         XSSFCellStyle defaultStyle = ExcelStyle.createDefault(workbook);
@@ -294,10 +292,10 @@ public class MakeBacktestReportService {
     public void makeReportMulti(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult) {
         File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + Timestamp.valueOf(LocalDateTime.now()).getTime() + ".xlsx");
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
-            XSSFSheet sheet = ReportMakerHelperService.makeReportMultiList(accResult, workbook);
+            XSSFSheet sheet = ReportMakerHelper.makeReportMultiList(accResult, workbook);
             workbook.setSheetName(workbook.getSheetIndex(sheet), "1. 평가표");
 
-            XSSFSheet sheetCondition = ReportMakerHelperService.makeMultiCondition(accResult, workbook);
+            XSSFSheet sheetCondition = ReportMakerHelper.makeMultiCondition(accResult, workbook);
             workbook.setSheetName(workbook.getSheetIndex(sheetCondition), "2. 테스트 조건");
 
             try (FileOutputStream ous = new FileOutputStream(reportFile)) {

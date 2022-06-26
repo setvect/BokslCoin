@@ -22,9 +22,8 @@ import java.util.stream.Collectors;
 /**
  * 리포트 생성에 필요한 공통 메소드 제공
  */
-// TODO 리포트 관련 메소드 이곳으로 옮기기
 @Service
-public class ReportMakerHelperService {
+public class ReportMakerHelper {
 
     /**
      * @return 각 매매 결과
@@ -34,7 +33,7 @@ public class ReportMakerHelperService {
         XSSFSheet sheet = workbook.createSheet();
         String header = "분석기간,분석 아이디,대상 코인,투자비율,최초 투자금액,매수 수수료,매도 수수료,조건 설명," +
                 "매수 후 보유 수익,매수 후 보유 MDD,실현 수익,실현 MDD,CAGR,매매 횟수,승률";
-        ReportMakerHelperService.applyHeader(sheet, header);
+        ReportMakerHelper.applyHeader(sheet, header);
         int rowIdx = 1;
 
         XSSFCellStyle defaultStyle = ExcelStyle.createDefault(workbook);
@@ -128,7 +127,7 @@ public class ReportMakerHelperService {
     public static XSSFSheet makeMultiCondition(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult, XSSFWorkbook workbook) {
         XSSFSheet sheet = workbook.createSheet();
         String header = "조건 아이디,분석주기,대상 코인,상승 매수률,하락 매도률,단기 이동평균,장기 이동평균,손절률";
-        ReportMakerHelperService.applyHeader(sheet, header);
+        ReportMakerHelper.applyHeader(sheet, header);
         int rowIdx = 1;
 
         List<MabsConditionEntity> conditionAll = accResult.stream()
@@ -211,7 +210,6 @@ public class ReportMakerHelperService {
                 cell.setCellStyle(ExcelStyle.createDefault(sheet.getWorkbook()));
             }
         }
+        sheet.setDefaultColumnWidth(60);
     }
-
-
 }
