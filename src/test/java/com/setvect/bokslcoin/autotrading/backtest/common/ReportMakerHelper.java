@@ -6,7 +6,6 @@ import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonConditionE
 import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
-import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -200,12 +199,12 @@ public class ReportMakerHelper {
         sheet.createRow(sheet.getPhysicalNumberOfRows());
 
         for (String line : lines) {
-            val row = sheet.createRow(sheet.getPhysicalNumberOfRows());
-            val columns = line.split("\t");
+            XSSFRow row = sheet.createRow(sheet.getPhysicalNumberOfRows());
+            String[] columns = line.split("\t");
 
             int colIdx = 0;
             for (String colVal : columns) {
-                val cell = row.createCell(colIdx++);
+                XSSFCell cell = row.createCell(colIdx++);
                 cell.setCellValue(colVal);
                 cell.setCellStyle(ExcelStyle.createDefault(sheet.getWorkbook()));
             }
