@@ -4,8 +4,7 @@ import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCond
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonAnalysisReportResult;
 import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
+import com.setvect.bokslcoin.autotrading.util.DateRange;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -14,9 +13,8 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 /**
  * 리포트 생성에 필요한 공통 메소드 제공
@@ -123,66 +121,6 @@ public class ReportMakerHelper {
         return sheet;
     }
 
-    public static XSSFSheet makeMultiCondition(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult, XSSFWorkbook workbook) {
-        XSSFSheet sheet = workbook.createSheet();
-        String header = "조건 아이디,분석주기,대상 코인,상승 매수률,하락 매도률,단기 이동평균,장기 이동평균,손절률";
-        ReportMakerHelper.applyHeader(sheet, header);
-        int rowIdx = 1;
-
-        List<MabsConditionEntity> conditionAll = accResult.stream()
-                .flatMap(p -> p.getConditionList().stream())
-                .distinct()
-                .sorted(Comparator.comparingInt(MabsConditionEntity::getConditionSeq))
-                .collect(Collectors.toList());
-
-        XSSFCellStyle defaultStyle = ExcelStyle.createDefault(workbook);
-        XSSFCellStyle percentStyle = ExcelStyle.createPercent(workbook);
-
-        for (MabsConditionEntity condition : conditionAll) {
-
-            XSSFRow row = sheet.createRow(rowIdx++);
-            int cellIdx = 0;
-
-            XSSFCell createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getConditionSeq());
-            createCell.setCellStyle(defaultStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getTradePeriod().toString());
-            createCell.setCellStyle(defaultStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getMarket());
-            createCell.setCellStyle(defaultStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getUpBuyRate());
-            createCell.setCellStyle(percentStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getDownSellRate());
-            createCell.setCellStyle(percentStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getShortPeriod());
-            createCell.setCellStyle(defaultStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getLongPeriod());
-            createCell.setCellStyle(defaultStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getLoseStopRate());
-            createCell.setCellStyle(percentStyle);
-        }
-        sheet.createFreezePane(0, 1);
-        sheet.setDefaultColumnWidth(14);
-
-        ExcelStyle.applyAllBorder(sheet);
-        ExcelStyle.applyDefaultFont(sheet);
-
-        return sheet;
-    }
 
     public static void applyHeader(XSSFSheet sheet, String header) {
         List<String> headerList = Arrays.asList(header.split(","));
@@ -210,5 +148,49 @@ public class ReportMakerHelper {
             }
         }
         sheet.setDefaultColumnWidth(60);
+    }
+
+    public static String makeCommonSummary(CommonAnalysisReportResult<? extends CommonConditionEntity, ? extends CommonTradeEntity> result) {
+        StringBuilder report = new StringBuilder();
+        report.append("\n-----------\n");
+        CommonAnalysisReportResult.MultiCoinHoldYield multiCoinHoldYield = result.getMultiCoinHoldYield();
+        for (Map.Entry<String, CommonAnalysisReportResult.YieldMdd> coinHoldYield : multiCoinHoldYield.getCoinByYield().entrySet()) {
+            String market = coinHoldYield.getKey();
+            CommonAnalysisReportResult.YieldMdd coinYield = coinHoldYield.getValue();
+            report.append(String.format("[%s] 실제 수익\t %,.2f%%", market, coinYield.getYield() * 100)).append("\n");
+            report.append(String.format("[%s] 실제 MDD\t %,.2f%%", market, coinYield.getMdd() * 100)).append("\n");
+        }
+        CommonAnalysisReportResult.YieldMdd sumYield = multiCoinHoldYield.getSumYield();
+        report.append(String.format("동일비중 수익\t %,.2f%%", sumYield.getYield() * 100)).append("\n");
+        report.append(String.format("동일비중 MDD\t %,.2f%%", sumYield.getMdd() * 100)).append("\n");
+
+        report.append("\n-----------\n");
+
+        for (Map.Entry<String, CommonAnalysisReportResult.WinningRate> entry : result.getCoinWinningRate().entrySet()) {
+            String market = entry.getKey();
+            CommonAnalysisReportResult.WinningRate coinInvestment = entry.getValue();
+            report.append(String.format("[%s] 수익금액 합계\t %,.0f", market, coinInvestment.getInvest())).append("\n");
+            report.append(String.format("[%s] 매매 횟수\t %d", market, coinInvestment.getTradeCount())).append("\n");
+            report.append(String.format("[%s] 승률\t %,.2f%%", market, coinInvestment.getWinRate() * 100)).append("\n");
+
+        }
+        report.append("\n-----------\n");
+        CommonAnalysisReportResult.TotalYield totalYield = result.getTotalYield();
+        report.append(String.format("실현 수익\t %,.2f%%", totalYield.getYield() * 100)).append("\n");
+        report.append(String.format("실현 MDD\t %,.2f%%", totalYield.getMdd() * 100)).append("\n");
+        report.append(String.format("매매회수\t %d", totalYield.getTradeCount())).append("\n");
+        report.append(String.format("승률\t %,.2f%%", totalYield.getWinRate() * 100)).append("\n");
+        report.append(String.format("CAGR\t %,.2f%%", totalYield.getCagr() * 100)).append("\n");
+
+        report.append("\n-----------\n");
+
+        AnalysisMultiCondition condition = result.getCondition();
+        DateRange range = condition.getRange();
+        report.append(String.format("분석기간\t %s", range)).append("\n");
+        report.append(String.format("투자비율\t %,.2f%%", condition.getInvestRatio() * 100)).append("\n");
+        report.append(String.format("최초 투자금액\t %,f", condition.getCash())).append("\n");
+        report.append(String.format("매수 수수료\t %,.2f%%", condition.getFeeBuy() * 100)).append("\n");
+        report.append(String.format("매도 수수료\t %,.2f%%", condition.getFeeSell() * 100)).append("\n");
+        return report.toString();
     }
 }

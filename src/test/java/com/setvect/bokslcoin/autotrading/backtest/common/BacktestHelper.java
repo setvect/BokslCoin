@@ -351,4 +351,5 @@ public class BacktestHelper {
         }
         return reportHistory;
     }
+
 }
