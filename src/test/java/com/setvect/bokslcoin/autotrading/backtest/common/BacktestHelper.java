@@ -6,7 +6,6 @@ import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReport
 import com.setvect.bokslcoin.autotrading.backtest.entity.CandleEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
@@ -53,19 +52,19 @@ public class BacktestHelper {
     }
 
     /**
-     * @param tradeReportItems        거래 내역
-     * @param mabsConditionEntityList 코인 매매 조건
+     * @param tradeReportItems    거래 내역
+     * @param conditionEntityList 코인 매매 조건
      * @return Key: 코인, Value: 수익
      * 코인별 수익 정보
      */
     public static Map<String, CommonAnalysisReportResult.WinningRate> calculateCoinInvestment(
             List<? extends CommonTradeReportItem<? extends CommonTradeEntity>> tradeReportItems,
-            List<MabsConditionEntity> mabsConditionEntityList) {
+            List<? extends CommonConditionEntity> conditionEntityList) {
         Map<String, CommonAnalysisReportResult.WinningRate> coinInvestmentMap = new TreeMap<>();
 
-        for (MabsConditionEntity mabsConditionEntity : mabsConditionEntityList) {
-            CommonAnalysisReportResult.WinningRate coinInvestment = BacktestHelper.calculateInvestment(mabsConditionEntity.getMarket(), tradeReportItems);
-            coinInvestmentMap.put(mabsConditionEntity.getMarket(), coinInvestment);
+        for (CommonConditionEntity conditionEntity : conditionEntityList) {
+            CommonAnalysisReportResult.WinningRate coinInvestment = BacktestHelper.calculateInvestment(conditionEntity.getMarket(), tradeReportItems);
+            coinInvestmentMap.put(conditionEntity.getMarket(), coinInvestment);
         }
         return coinInvestmentMap;
     }

@@ -1,10 +1,9 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.mock;
+package com.setvect.bokslcoin.autotrading.backtest.neovbs.mock;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
 import com.setvect.bokslcoin.autotrading.algorithm.BasicTradeEvent;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelper;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.model.MabsMultiBacktestRow;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.service.MabsBacktestService;
+import com.setvect.bokslcoin.autotrading.backtest.neovbs.model.NeoVbsMultiBacktestRow;
 import com.setvect.bokslcoin.autotrading.model.Account;
 import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
@@ -17,13 +16,11 @@ import java.util.List;
 import java.util.Map;
 
 
-public class MockMabsTradeEvent extends BasicTradeEvent {
-    @Setter
-    private Map<String, MabsBacktestService.CurrentPrice> priceMap;
+public class MockNeoVbsTradeEvent extends BasicTradeEvent {
     @Setter
     private Map<String, Account> accountMap;
     @Setter
-    private List<MabsMultiBacktestRow> tradeHistory;
+    private List<NeoVbsMultiBacktestRow> tradeHistory;
     /**
      * 최고 수익률
      */
@@ -34,21 +31,20 @@ public class MockMabsTradeEvent extends BasicTradeEvent {
      */
     @Getter
     private double lowYield;
+    private Candle candle;
 
-    public MockMabsTradeEvent(SlackMessageService slackMessageService) {
+    public MockNeoVbsTradeEvent(SlackMessageService slackMessageService) {
         super(slackMessageService);
     }
 
     @Override
     public void check(Candle candle, double maShort, double maLong) {
-        priceMap.put(candle.getMarket(), new MabsBacktestService.CurrentPrice(candle, maShort, maLong));
+        this.candle = candle;
     }
 
     @Override
     public void bid(String market, double tradePrice, double bidPrice) {
-        MabsBacktestService.CurrentPrice currentPrice = priceMap.get(market);
-        Candle candle = currentPrice.getCandle();
-        MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(BacktestHelper.depthCopy(candle));
+        NeoVbsMultiBacktestRow backtestRow = new NeoVbsMultiBacktestRow(BacktestHelper.depthCopy(candle));
 
         Account coinAccount = accountMap.get(market);
         coinAccount.setAvgBuyPrice(ApplicationUtil.toNumberString(tradePrice));
@@ -65,8 +61,6 @@ public class MockMabsTradeEvent extends BasicTradeEvent {
         backtestRow.setBuyAmount(bidPrice);
         backtestRow.setBuyTotalAmount(BacktestHelper.getBuyTotalAmount(accountMap));
         backtestRow.setCash(cash);
-        backtestRow.setMaShort(currentPrice.getMaShort());
-        backtestRow.setMaLong(currentPrice.getMaLong());
 
         tradeHistory.add(backtestRow);
     }

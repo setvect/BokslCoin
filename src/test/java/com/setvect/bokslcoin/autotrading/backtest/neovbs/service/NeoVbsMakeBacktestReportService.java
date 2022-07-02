@@ -1,4 +1,4 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.service;
+package com.setvect.bokslcoin.autotrading.backtest.neovbs.service;
 
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelper;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
@@ -7,9 +7,9 @@ import com.setvect.bokslcoin.autotrading.backtest.common.ReportMakerHelper;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCondition;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonAnalysisReportResult;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReportItem;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
+import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsTradeEntity;
+import com.setvect.bokslcoin.autotrading.backtest.repository.NeoVbsConditionEntityRepository;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -31,10 +31,10 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class MakeBacktestReportService {
+public class NeoVbsMakeBacktestReportService {
 
     @Autowired
-    private MabsConditionEntityRepository mabsConditionEntityRepository;
+    private NeoVbsConditionEntityRepository neoVbsConditionEntityRepository;
     @Autowired
     private BacktestHelperComponent backtestHelperService;
 
@@ -44,13 +44,13 @@ public class MakeBacktestReportService {
      */
     @SneakyThrows
     @Transactional
-    public CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> makeReport(AnalysisMultiCondition analysisMultiCondition) {
-        List<MabsConditionEntity> mabsConditionEntityList = mabsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
+    public CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> makeReport(AnalysisMultiCondition analysisMultiCondition) {
+        List<NeoVbsConditionEntity> neoVbsConditionEntityList = neoVbsConditionEntityRepository.findAllById(analysisMultiCondition.getConditionIdSet());
 
         // 대상코인의 수익률 정보를 제공
-        List<CommonTradeReportItem<MabsTradeEntity>> tradeReportItems = BacktestHelper.trading(analysisMultiCondition, mabsConditionEntityList);
+        List<CommonTradeReportItem<NeoVbsTradeEntity>> tradeReportItems = BacktestHelper.trading(analysisMultiCondition, neoVbsConditionEntityList);
 
-        CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result = analysis(tradeReportItems, analysisMultiCondition);
+        CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> result = analysis(tradeReportItems, analysisMultiCondition);
         BacktestHelper.printSummary(result);
         makeReport(result);
         return result;
@@ -61,14 +61,14 @@ public class MakeBacktestReportService {
      * @param conditionMulti 조건
      * @return 분석결과
      */
-    private CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> analysis(List<CommonTradeReportItem<MabsTradeEntity>> tradeHistory, AnalysisMultiCondition conditionMulti) {
-        List<MabsConditionEntity> conditionByCoin = mabsConditionEntityRepository.findAllById(conditionMulti.getConditionIdSet());
+    private CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> analysis(List<CommonTradeReportItem<NeoVbsTradeEntity>> tradeHistory, AnalysisMultiCondition conditionMulti) {
+        List<NeoVbsConditionEntity> conditionByCoin = neoVbsConditionEntityRepository.findAllById(conditionMulti.getConditionIdSet());
         Set<String> markets = conditionByCoin.stream()
-                .map(MabsConditionEntity::getMarket)
+                .map(NeoVbsConditionEntity::getMarket)
                 .collect(Collectors.toSet());
         CommonAnalysisReportResult.MultiCoinHoldYield holdYield = backtestHelperService.calculateCoinHoldYield(conditionMulti.getRange(), markets);
 
-        return CommonAnalysisReportResult.<MabsConditionEntity, MabsTradeEntity>builder()
+        return CommonAnalysisReportResult.<NeoVbsConditionEntity, NeoVbsTradeEntity>builder()
                 .condition(conditionMulti)
                 .conditionList(conditionByCoin)
                 .tradeHistory(tradeHistory)
@@ -84,7 +84,7 @@ public class MakeBacktestReportService {
      * @param result 분석결과
      * @throws IOException .
      */
-    private void makeReport(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result) throws IOException {
+    private void makeReport(CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> result) throws IOException {
         AnalysisMultiCondition condition = result.getCondition();
         DateRange range = condition.getRange();
         String coins = StringUtils.join(result.getMarkets(), ", ");
@@ -106,22 +106,21 @@ public class MakeBacktestReportService {
     }
 
     private static XSSFSheet createReportSummary(
-            CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result,
+            CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> result,
             XSSFWorkbook workbook) {
         StringBuilder report = new StringBuilder();
 
         report.append(ReportMakerHelper.makeCommonSummary(result));
 
-        for (MabsConditionEntity mabsConditionEntity : result.getConditionList()) {
+        for (NeoVbsConditionEntity neoVbsConditionEntity : result.getConditionList()) {
             report.append("\n---\n");
-            report.append(String.format("조건아이디\t %s", mabsConditionEntity.getConditionSeq())).append("\n");
-            report.append(String.format("분석주기\t %s", mabsConditionEntity.getTradePeriod())).append("\n");
-            report.append(String.format("대상 코인\t %s", mabsConditionEntity.getMarket())).append("\n");
-            report.append(String.format("상승 매수률\t %,.2f%%", mabsConditionEntity.getUpBuyRate() * 100)).append("\n");
-            report.append(String.format("하락 매도률\t %,.2f%%", mabsConditionEntity.getDownSellRate() * 100)).append("\n");
-            report.append(String.format("단기 이동평균 기간\t %d", mabsConditionEntity.getShortPeriod())).append("\n");
-            report.append(String.format("장기 이동평균 기간\t %d", mabsConditionEntity.getLongPeriod())).append("\n");
-            report.append(String.format("손절\t %,.2f%%", mabsConditionEntity.getLoseStopRate() * 100)).append("\n");
+            report.append(String.format("조건아이디\t %s", neoVbsConditionEntity.getConditionSeq())).append("\n");
+            report.append(String.format("분석주기\t %s", neoVbsConditionEntity.getTradePeriod())).append("\n");
+            report.append(String.format("대상 코인\t %s", neoVbsConditionEntity.getMarket())).append("\n");
+            report.append(String.format("K\t %,.2f%%", neoVbsConditionEntity.getK() * 100)).append("\n");
+            report.append(String.format("트레일링 스탑 진입점\t %,.2f%%", neoVbsConditionEntity.getTrailingStopEnterRate() * 100)).append("\n");
+            report.append(String.format("손절 값\t %d", neoVbsConditionEntity.getTrailingLossStopRate())).append("\n");
+            report.append(String.format("손절\t %,.2f%%", neoVbsConditionEntity.getLoseStopRate() * 100)).append("\n");
         }
         XSSFSheet sheet = workbook.createSheet();
 
@@ -129,9 +128,12 @@ public class MakeBacktestReportService {
         return sheet;
     }
 
-    private static XSSFSheet createTradeReport(CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity> result, XSSFWorkbook workbook) {
+    private static XSSFSheet createTradeReport(CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> result, XSSFWorkbook workbook) {
         XSSFSheet sheet = workbook.createSheet();
-        String header = "날짜(KST),날짜(UTC),코인,매매구분,단기 이동평균, 장기 이동평균,매수 체결 가격,최고수익률,최저수익률,매도 체결 가격,매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금,수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
+        String header = "날짜(KST),날짜(UTC),코인,매매구분," +
+                "매수 체결 가격,최고수익률,최저수익률,매도 체결 가격," +
+                "매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금," +
+                "수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
         ReportMakerHelper.applyHeader(sheet, header);
         int rowIdx = 1;
 
@@ -142,14 +144,14 @@ public class MakeBacktestReportService {
         XSSFCellStyle percentStyle = ExcelStyle.createPercent(workbook);
         XSSFCellStyle decimalStyle = ExcelStyle.createDecimal(workbook);
 
-        for (CommonTradeReportItem<MabsTradeEntity> tradeItem : result.getTradeHistory()) {
-            MabsTradeEntity mabsTradeEntity = tradeItem.getTradeEntity();
-            MabsConditionEntity mabsConditionEntity = mabsTradeEntity.getConditionEntity();
-            LocalDateTime tradeTimeKst = mabsTradeEntity.getTradeTimeKst();
+        for (CommonTradeReportItem<NeoVbsTradeEntity> tradeItem : result.getTradeHistory()) {
+            NeoVbsTradeEntity neoVbsTradeEntity = tradeItem.getTradeEntity();
+            NeoVbsConditionEntity neoVbsConditionEntity = neoVbsTradeEntity.getConditionEntity();
+            LocalDateTime tradeTimeKst = neoVbsTradeEntity.getTradeTimeKst();
             LocalDateTime utcTime = BacktestHelper.convertUtc(tradeTimeKst);
 
             XSSFRow row = sheet.createRow(rowIdx++);
-            MabsTradeEntity tradeEntity = tradeItem.getTradeEntity();
+            NeoVbsTradeEntity tradeEntity = tradeItem.getTradeEntity();
             int cellIdx = 0;
 
             XSSFCell createCell = row.createCell(cellIdx++);
@@ -161,39 +163,31 @@ public class MakeBacktestReportService {
             createCell.setCellStyle(dateTimeStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsConditionEntity.getMarket());
+            createCell.setCellValue(neoVbsConditionEntity.getMarket());
             createCell.setCellStyle(defaultStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsTradeEntity.getTradeType().name());
+            createCell.setCellValue(neoVbsTradeEntity.getTradeType().name());
             createCell.setCellStyle(defaultStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsTradeEntity.getMaShort());
-            createCell.setCellStyle(commaStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsTradeEntity.getMaLong());
-            createCell.setCellStyle(commaStyle);
 
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getBuyAmount());
             createCell.setCellStyle(commaStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsTradeEntity.getHighYield());
+            createCell.setCellValue(neoVbsTradeEntity.getHighYield());
             createCell.setCellStyle(percentStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsTradeEntity.getLowYield());
+            createCell.setCellValue(neoVbsTradeEntity.getLowYield());
             createCell.setCellStyle(percentStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsTradeEntity.getUnitPrice());
+            createCell.setCellValue(neoVbsTradeEntity.getUnitPrice());
             createCell.setCellStyle(commaStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(mabsTradeEntity.getSellReason() == null ? "" : mabsTradeEntity.getSellReason().name());
+            createCell.setCellValue(neoVbsTradeEntity.getSellReason() == null ? "" : neoVbsTradeEntity.getSellReason().name());
             createCell.setCellStyle(defaultStyle);
 
             createCell = row.createCell(cellIdx++);
@@ -251,7 +245,7 @@ public class MakeBacktestReportService {
      * @param accResult 분석결과
      */
     @SneakyThrows
-    public void makeReportMulti(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult) {
+    public void makeReportMulti(List<CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity>> accResult) {
         File reportFile = new File("./backtest-result", "이평선돌파_전략_백테스트_분석결과_" + Timestamp.valueOf(LocalDateTime.now()).getTime() + ".xlsx");
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = ReportMakerHelper.makeReportMultiList(accResult, workbook);
@@ -268,22 +262,22 @@ public class MakeBacktestReportService {
     }
 
 
-    private static XSSFSheet makeMultiCondition(List<CommonAnalysisReportResult<MabsConditionEntity, MabsTradeEntity>> accResult, XSSFWorkbook workbook) {
+    private static XSSFSheet makeMultiCondition(List<CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity>> accResult, XSSFWorkbook workbook) {
         XSSFSheet sheet = workbook.createSheet();
-        String header = "조건 아이디,분석주기,대상 코인,상승 매수률,하락 매도률,단기 이동평균,장기 이동평균,손절률";
+        String header = "조건 아이디,분석주기,대상 코인,K,트레일링 스탑 진입,트레일링 스탑 손절,손절률";
         ReportMakerHelper.applyHeader(sheet, header);
         int rowIdx = 1;
 
-        List<MabsConditionEntity> conditionAll = accResult.stream()
+        List<NeoVbsConditionEntity> conditionAll = accResult.stream()
                 .flatMap(p -> p.getConditionList().stream())
                 .distinct()
-                .sorted(Comparator.comparingInt(MabsConditionEntity::getConditionSeq))
+                .sorted(Comparator.comparingInt(NeoVbsConditionEntity::getConditionSeq))
                 .collect(Collectors.toList());
 
         XSSFCellStyle defaultStyle = ExcelStyle.createDefault(workbook);
         XSSFCellStyle percentStyle = ExcelStyle.createPercent(workbook);
 
-        for (MabsConditionEntity condition : conditionAll) {
+        for (NeoVbsConditionEntity condition : conditionAll) {
             XSSFRow row = sheet.createRow(rowIdx++);
             int cellIdx = 0;
 
@@ -300,19 +294,15 @@ public class MakeBacktestReportService {
             createCell.setCellStyle(defaultStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getUpBuyRate());
+            createCell.setCellValue(condition.getK());
             createCell.setCellStyle(percentStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getDownSellRate());
+            createCell.setCellValue(condition.getTrailingStopEnterRate());
             createCell.setCellStyle(percentStyle);
 
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getShortPeriod());
-            createCell.setCellStyle(defaultStyle);
-
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(condition.getLongPeriod());
+            createCell.setCellValue(condition.getTrailingLossStopRate());
             createCell.setCellStyle(defaultStyle);
 
             createCell = row.createCell(cellIdx++);

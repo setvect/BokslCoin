@@ -29,8 +29,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class NeoVbsMultiService implements CoinTrading {
     private final TradeCommonService tradeCommonService;
-    private final NeoVbsMultiProperties properties;
     private final TradeEvent tradeEvent;
+    private final NeoVbsMultiProperties properties;
     /**
      * 마지막 체결 시세
      * (코인코드: 체결)

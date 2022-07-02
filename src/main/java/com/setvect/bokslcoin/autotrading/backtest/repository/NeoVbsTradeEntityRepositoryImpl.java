@@ -17,13 +17,13 @@ public class NeoVbsTradeEntityRepositoryImpl implements NeoVbsTradeEntityReposit
     private final JPAQueryFactory queryFactory;
 
     /**
-     * @param neoVbsConditionSeq ºĞ¼® Á¶°Ç ÀÏ·Ã¹øÈ£
-     * @return °Å·¡ ³»¿ªÀ» ³¯Â¥¼ø ¿À¸§Â÷¼ø
+     * @param neoVbsConditionSeq ë¶„ì„ ì¡°ê±´ ì¼ë ¨ë²ˆí˜¸
+     * @return ê±°ë˜ ë‚´ì—­ì„ ë‚ ì§œìˆœ ì˜¤ë¦„ì°¨ìˆœ
      */
     public List<NeoVbsTradeEntity> findByCondition(@Param("neoVbsConditionSeq") int neoVbsConditionSeq) {
         return queryFactory
                 .select(neoVbsTradeEntity)
-                .where(neoVbsTradeEntity.vbsConditionEntity.vbsConditionSeq.eq(neoVbsConditionSeq))
+                .where(neoVbsTradeEntity.conditionEntity.conditionSeq.eq(neoVbsConditionSeq))
                 .orderBy(neoVbsTradeEntity.tradeTimeKst.asc())
                 .fetch();
     }
@@ -32,7 +32,7 @@ public class NeoVbsTradeEntityRepositoryImpl implements NeoVbsTradeEntityReposit
     @Transactional
     public long deleteTradeByConditionId(List<Integer> conditionId) {
         return queryFactory.delete(neoVbsTradeEntity)
-                .where(neoVbsTradeEntity.vbsConditionEntity.vbsConditionSeq.in(conditionId))
+                .where(neoVbsTradeEntity.conditionEntity.conditionSeq.in(conditionId))
                 .execute();
     }
 

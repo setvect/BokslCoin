@@ -1,23 +1,22 @@
-package com.setvect.bokslcoin.autotrading.backtest.mabs.service;
+package com.setvect.bokslcoin.autotrading.backtest.neovbs.service;
 
 import com.setvect.bokslcoin.autotrading.algorithm.common.TradeCommonService;
-import com.setvect.bokslcoin.autotrading.algorithm.mabs.MabsMultiProperties;
+import com.setvect.bokslcoin.autotrading.algorithm.neovbs.NeoVbsMultiProperties;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
 import com.setvect.bokslcoin.autotrading.backtest.common.BacktestHelperComponent;
 import com.setvect.bokslcoin.autotrading.backtest.common.CandleDataProvider;
 import com.setvect.bokslcoin.autotrading.backtest.common.mock.*;
 import com.setvect.bokslcoin.autotrading.backtest.common.model.AnalysisMultiCondition;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
-import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.mock.MockMabsMultiProperties;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.mock.MockMabsMultiService;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.mock.MockMabsTradeEvent;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.model.MabsMultiBacktestRow;
+import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsConditionEntity;
+import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsTradeEntity;
+import com.setvect.bokslcoin.autotrading.backtest.neovbs.mock.MockNeoVbsMultiProperties;
+import com.setvect.bokslcoin.autotrading.backtest.neovbs.mock.MockNeoVbsMultiService;
+import com.setvect.bokslcoin.autotrading.backtest.neovbs.mock.MockNeoVbsTradeEvent;
+import com.setvect.bokslcoin.autotrading.backtest.neovbs.model.NeoVbsMultiBacktestRow;
 import com.setvect.bokslcoin.autotrading.backtest.repository.CandleRepositoryCustom;
-import com.setvect.bokslcoin.autotrading.backtest.repository.MabsConditionEntityRepository;
-import com.setvect.bokslcoin.autotrading.backtest.repository.MabsTradeEntityRepository;
+import com.setvect.bokslcoin.autotrading.backtest.repository.NeoVbsConditionEntityRepository;
+import com.setvect.bokslcoin.autotrading.backtest.repository.NeoVbsTradeEntityRepository;
 import com.setvect.bokslcoin.autotrading.model.Account;
-import com.setvect.bokslcoin.autotrading.model.Candle;
 import com.setvect.bokslcoin.autotrading.model.CandleMinute;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.record.repository.AssetHistoryRepository;
@@ -25,8 +24,6 @@ import com.setvect.bokslcoin.autotrading.record.repository.TradeRepository;
 import com.setvect.bokslcoin.autotrading.slack.SlackMessageService;
 import com.setvect.bokslcoin.autotrading.util.ApplicationUtil;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.jetbrains.annotations.NotNull;
@@ -40,16 +37,16 @@ import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class MabsBacktestService {
+public class NeoVbsBacktestService {
     private final SlackMessageService slackMessageService = new MockSlackMessageService();
-    private final MockMabsTradeEvent tradeEvent = new MockMabsTradeEvent(slackMessageService);
+    private final MockNeoVbsTradeEvent tradeEvent = new MockNeoVbsTradeEvent(slackMessageService);
     private final MockAccountService accountService = new MockAccountService();
     private final MockOrderService orderService = new MockOrderService(new MockAccessTokenMaker(), new MockConnectionInfo());
     private final MockCandleService candleService = new MockCandleService(new MockConnectionInfo());
     @Autowired
-    private MabsConditionEntityRepository mabsConditionEntityRepository;
+    private NeoVbsConditionEntityRepository neoVbsConditionEntityRepository;
     @Autowired
-    private MabsTradeEntityRepository mabsTradeEntityRepository;
+    private NeoVbsTradeEntityRepository neoVbsTradeEntityRepository;
     @Autowired
     private CandleRepositoryCustom candleRepositoryCustom;
     @Autowired
@@ -59,34 +56,34 @@ public class MabsBacktestService {
     @Autowired
     private BacktestHelperComponent backtestHelperService;
     @Autowired
-    private MabsMakeBacktestReportService makeBacktestReportService;
+    private NeoVbsMakeBacktestReportService makeBacktestReportService;
 
     private TradeCommonService tradeCommonService;
-    private MockMabsMultiService mabsMultiService;
+    private MockNeoVbsMultiService neoVbsMultiService;
 
     private void initMock() {
         tradeCommonService = new MockTradeCommonService(tradeEvent, accountService, orderService, candleService, tradeRepository, slackMessageService, assetHistoryRepository);
-        mabsMultiService = new MockMabsMultiService(tradeCommonService, tradeEvent, new MockMabsMultiProperties());
+        neoVbsMultiService = new MockNeoVbsMultiService(tradeCommonService, tradeEvent, new MockNeoVbsMultiProperties());
     }
 
-    public void backtest(List<MabsConditionEntity> mabsConditionEntities, DateRange range, AnalysisMultiCondition.AnalysisMultiConditionBuilder analysisMultiConditionBuilder) {
+    public void backtest(List<NeoVbsConditionEntity> neoVbsConditionEntities, DateRange range, AnalysisMultiCondition.AnalysisMultiConditionBuilder analysisMultiConditionBuilder) {
         boolean saveDb = false;
         initMock();
 
         try {
-            mabsConditionEntities = backtestSub(mabsConditionEntities, range);
-            List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
+            neoVbsConditionEntities = backtestSub(neoVbsConditionEntities, range);
+            List<Integer> conditionSeqList = getConditionSeqList(neoVbsConditionEntities);
 
             AnalysisMultiCondition analysisMultiCondition = analysisMultiConditionBuilder.conditionIdSet(new HashSet<>(conditionSeqList)).build();
 
             makeBacktestReportService.makeReport(analysisMultiCondition);
         } finally {
-            if (!saveDb && CollectionUtils.isNotEmpty(mabsConditionEntities)) {
-                List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
+            if (!saveDb && CollectionUtils.isNotEmpty(neoVbsConditionEntities)) {
+                List<Integer> conditionSeqList = getConditionSeqList(neoVbsConditionEntities);
                 // 결과를 삭제함
                 // TODO 너무 무식한 방법이다. @Transactional를 사용해야 되는데 사용하면 속도가 매우 느리다. 해결해야됨
-                mabsTradeEntityRepository.deleteTradeByConditionId(conditionSeqList);
-                mabsConditionEntityRepository.deleteAll(mabsConditionEntities);
+                neoVbsTradeEntityRepository.deleteTradeByConditionId(conditionSeqList);
+                neoVbsConditionEntityRepository.deleteAll(neoVbsConditionEntities);
             }
         }
     }
@@ -97,48 +94,48 @@ public class MabsBacktestService {
         // 완전한 거래(매수-매도 쌍)를 만들기 위해 마지막 거래가 매수인경우 거래 내역 삭제
         deleteLastBuy(conditionSeqList);
 
-        List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
+        List<NeoVbsConditionEntity> conditionEntityList = neoVbsConditionEntityRepository.findAllById(conditionSeqList);
 
-        for (MabsConditionEntity condition : conditionEntityList) {
-            log.info("{}, {}, {}_{} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod(), condition.getShortPeriod());
-            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getConditionSeq());
+        for (NeoVbsConditionEntity condition : conditionEntityList) {
+            log.info("{}, {}, {}, {}, {} 시작", condition.getMarket(), condition.getTradePeriod(), condition.getK(), condition.getLoseStopRate(), condition.getTrailingLossStopRate());
+            List<NeoVbsTradeEntity> tradeList = neoVbsTradeEntityRepository.findByCondition(condition.getConditionSeq());
 
-            LocalDateTime start = backtestHelperService.makeBaseStart(condition.getMarket(), condition.getTradePeriod(), condition.getLongPeriod() + 1);
+            LocalDateTime start = backtestHelperService.makeBaseStart(condition.getMarket(), condition.getTradePeriod(), 1);
             if (!tradeList.isEmpty()) {
-                MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
+                NeoVbsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
                 checkLastSell(lastTrade);
                 start = lastTrade.getTradeTimeKst();
             }
             DateRange range = new DateRange(start, LocalDateTime.now());
-            List<MabsMultiBacktestRow> tradeHistory = backtestSub(condition, range);
+            List<NeoVbsMultiBacktestRow> tradeHistory = backtestSub(condition, range);
 
-            List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
-            log.info("[{}] save. range: {}, trade Count: {}", condition.getMarket(), range, mabsTradeEntities.size());
-            mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+            List<NeoVbsTradeEntity> neoVbsTradeEntities = convert(condition, tradeHistory);
+            log.info("[{}] save. range: {}, trade Count: {}", condition.getMarket(), range, neoVbsTradeEntities.size());
+            neoVbsTradeEntityRepository.saveAll(neoVbsTradeEntities);
         }
     }
 
 
     @NotNull
-    List<Integer> getConditionSeqList(List<MabsConditionEntity> mabsConditionEntities) {
-        return mabsConditionEntities.stream()
-                .map(MabsConditionEntity::getConditionSeq)
+    List<Integer> getConditionSeqList(List<NeoVbsConditionEntity> neoVbsConditionEntities) {
+        return neoVbsConditionEntities.stream()
+                .map(NeoVbsConditionEntity::getConditionSeq)
                 .collect(Collectors.toList());
     }
 
-    public List<MabsConditionEntity> backtestSub(List<MabsConditionEntity> mabsConditionEntities, DateRange range) {
-        for (MabsConditionEntity condition : mabsConditionEntities) {
-            mabsConditionEntityRepository.save(condition);
-            List<MabsMultiBacktestRow> tradeHistory = backtestSub(condition, range);
+    public List<NeoVbsConditionEntity> backtestSub(List<NeoVbsConditionEntity> neoVbsConditionEntities, DateRange range) {
+        for (NeoVbsConditionEntity condition : neoVbsConditionEntities) {
+            neoVbsConditionEntityRepository.save(condition);
+            List<NeoVbsMultiBacktestRow> tradeHistory = backtestSub(condition, range);
 
-            List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
-            mabsTradeEntityRepository.saveAll(mabsTradeEntities);
+            List<NeoVbsTradeEntity> neoVbsTradeEntities = convert(condition, tradeHistory);
+            neoVbsTradeEntityRepository.saveAll(neoVbsTradeEntities);
         }
-        return mabsConditionEntities;
+        return neoVbsConditionEntities;
     }
 
 
-    void checkLastSell(MabsTradeEntity lastTrade) {
+    void checkLastSell(NeoVbsTradeEntity lastTrade) {
         if (lastTrade.getTradeType() == TradeType.BUY) {
             throw new RuntimeException(String.format("마지막 거래가 BUY인 항목이 있음. tradeSeq: %s", lastTrade.getTradeSeq()));
         }
@@ -150,21 +147,21 @@ public class MabsBacktestService {
      * @param conditionSeqList 거래 조건 일련번호
      */
     void deleteLastBuy(List<Integer> conditionSeqList) {
-        List<MabsConditionEntity> conditionEntityList = mabsConditionEntityRepository.findAllById(conditionSeqList);
+        List<NeoVbsConditionEntity> conditionEntityList = neoVbsConditionEntityRepository.findAllById(conditionSeqList);
 
-        for (MabsConditionEntity condition : conditionEntityList) {
-            List<MabsTradeEntity> tradeList = mabsTradeEntityRepository.findByCondition(condition.getConditionSeq());
+        for (NeoVbsConditionEntity condition : conditionEntityList) {
+            List<NeoVbsTradeEntity> tradeList = neoVbsTradeEntityRepository.findByCondition(condition.getConditionSeq());
             if (tradeList.isEmpty()) {
                 continue;
             }
-            MabsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
+            NeoVbsTradeEntity lastTrade = tradeList.get(tradeList.size() - 1);
             log.info("count: {}, last: {} -> {} ", tradeList.size(), lastTrade.getTradeType(), lastTrade.getTradeTimeKst());
             if (lastTrade.getTradeType() == TradeType.SELL) {
                 continue;
             }
 
             log.info("Delete Last Buy: {} {}", lastTrade.getTradeSeq(), lastTrade.getTradeTimeKst());
-            mabsTradeEntityRepository.deleteById(lastTrade.getTradeSeq());
+            neoVbsTradeEntityRepository.deleteById(lastTrade.getTradeSeq());
         }
     }
 
@@ -173,14 +170,12 @@ public class MabsBacktestService {
      * @param tradeHistory 거래 이력
      * @return 거래 내역 entity 변환
      */
-    List<MabsTradeEntity> convert(MabsConditionEntity condition, List<MabsMultiBacktestRow> tradeHistory) {
-        return tradeHistory.stream().map(p -> MabsTradeEntity.builder()
+    List<NeoVbsTradeEntity> convert(NeoVbsConditionEntity condition, List<NeoVbsMultiBacktestRow> tradeHistory) {
+        return tradeHistory.stream().map(p -> NeoVbsTradeEntity.builder()
                 .conditionEntity(condition)
                 .tradeType(p.getTradeEvent())
                 .highYield(p.getHighYield())
                 .lowYield(p.getLowYield())
-                .maShort(p.getMaShort())
-                .maLong(p.getMaLong())
                 .yield(p.getRealYield())
                 .unitPrice(p.getTradeEvent() == TradeType.BUY ? p.getBidPrice() : p.getAskPrice())
                 .sellReason(p.getAskReason())
@@ -193,7 +188,7 @@ public class MabsBacktestService {
      * @param range     백테스트 범위(UTC 기준)
      * @return 거래 내역
      */
-    List<MabsMultiBacktestRow> backtestSub(MabsConditionEntity condition, DateRange range) {
+    List<NeoVbsMultiBacktestRow> backtestSub(NeoVbsConditionEntity condition, DateRange range) {
         // key: market, value: 자산
         Map<String, Account> accountMap = new HashMap<>();
 
@@ -210,13 +205,10 @@ public class MabsBacktestService {
         acc.setBalance("0");
         accountMap.put(market, acc);
 
-        // Key: market, value: 시세 정보
-        Map<String, CurrentPrice> priceMap = new HashMap<>();
 
         injectionFieldValue(condition);
-        List<MabsMultiBacktestRow> tradeHistory = new ArrayList<>();
+        List<NeoVbsMultiBacktestRow> tradeHistory = new ArrayList<>();
 
-        tradeEvent.setPriceMap(priceMap);
         tradeEvent.setAccountMap(accountMap);
         tradeEvent.setTradeHistory(tradeHistory);
 
@@ -248,39 +240,29 @@ public class MabsBacktestService {
                     .tradeVolume(0)
                     .build();
 
-            mabsMultiService.tradeEvent(tradeResult);
+            neoVbsMultiService.tradeEvent(tradeResult);
             current = current.plusMinutes(1);
         }
         return tradeHistory;
     }
 
-    private void injectionFieldValue(MabsConditionEntity condition) {
+    private void injectionFieldValue(NeoVbsConditionEntity condition) {
         ReflectionTestUtils.setField(tradeCommonService, "coinByCandles", new HashMap<>());
         ReflectionTestUtils.setField(tradeCommonService, "assetHistoryRepository", this.assetHistoryRepository);
         ReflectionTestUtils.setField(tradeCommonService, "tradeRepository", this.tradeRepository);
-        ReflectionTestUtils.setField(mabsMultiService, "tradeCommonService", this.tradeCommonService);
-        ReflectionTestUtils.setField(mabsMultiService, "periodIdx", -1);
+        ReflectionTestUtils.setField(neoVbsMultiService, "tradeCommonService", this.tradeCommonService);
+        ReflectionTestUtils.setField(neoVbsMultiService, "periodIdx", -1);
 
-        MabsMultiProperties properties = mabsMultiService.getProperties();
+        NeoVbsMultiProperties properties = neoVbsMultiService.getProperties();
         properties.setMarkets(Collections.singletonList(condition.getMarket()));
         properties.setMaxBuyCount(1);
         properties.setInvestRatio(0.99);
-        properties.setUpBuyRate(condition.getUpBuyRate());
         properties.setLoseStopRate(condition.getLoseStopRate());
-        properties.setDownSellRate(condition.getDownSellRate());
         properties.setPeriodType(condition.getTradePeriod());
-        properties.setShortPeriod(condition.getShortPeriod());
-        properties.setLongPeriod(condition.getLongPeriod());
-        properties.setNewMasBuy(true);
+        properties.setK(condition.getK());
+        properties.setGainStopRate(condition.getTrailingStopEnterRate());
+        properties.setTrailingStopRate(condition.getTrailingLossStopRate());
 
-        ReflectionTestUtils.setField(mabsMultiService, "properties", properties);
-    }
-
-    @RequiredArgsConstructor
-    @Getter
-    public static class CurrentPrice {
-        final Candle candle;
-        final double maShort;
-        final double maLong;
+        ReflectionTestUtils.setField(neoVbsMultiService, "properties", properties);
     }
 }

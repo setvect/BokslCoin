@@ -6,7 +6,7 @@ import com.setvect.bokslcoin.autotrading.backtest.entity.PeriodType;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.mabs.MabsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.mabs.service.MabsBacktestService;
-import com.setvect.bokslcoin.autotrading.backtest.mabs.service.MakeBacktestReportService;
+import com.setvect.bokslcoin.autotrading.backtest.mabs.service.MabsMakeBacktestReportService;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import com.setvect.bokslcoin.autotrading.util.DateUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -30,12 +30,12 @@ import java.util.List;
 @Slf4j
 public class MabsTradeAnalyzerTest {
     @Autowired
-    private MakeBacktestReportService makeBacktestReportService;
+    private MabsMakeBacktestReportService makeBacktestReportService;
     @Autowired
     private MabsBacktestService mabsBacktestService;
 
     @Test
-    @DisplayName("변동성 돌파 전략 백테스트")
+    @DisplayName("이평선 돌파 전략 백테스트")
     public void backtest() {
 //        LocalDateTime baseStart = backtestHelperService.makeBaseStart(market, PeriodType.PERIOD_60, period.getRight() + 1);
 //        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");

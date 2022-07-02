@@ -18,11 +18,11 @@ public class CandleRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     /**
-     * @param market     ÄÚÀÎ
-     * @param periodType ÁÖ±â
-     * @param from       ½ÃÀÛ ³¯Â¥ - UTC
-     * @param end        Á¾·á ³¯Â¥ - UTC
-     * @return ½Ã¼¼(³¯Â¥ ±âÁØ ¿À¸§ Â÷¼ø)
+     * @param market     ì½”ì¸
+     * @param periodType ì£¼ê¸°
+     * @param from       ì‹œì‘ ë‚ ì§œ - UTC
+     * @param end        ì¢…ë£Œ ë‚ ì§œ - UTC
+     * @return ì‹œì„¸(ë‚ ì§œ ê¸°ì¤€ ì˜¤ë¦„ ì°¨ìˆœ)
      */
     public List<CandleEntity> findMarketPrice(String market, PeriodType periodType, LocalDateTime from, LocalDateTime end) {
         return queryFactory.select(candleEntity)
@@ -37,13 +37,13 @@ public class CandleRepositoryCustom {
     }
 
     /**
-     * ±âÁØÀ» ³¯Â¥ º¸´Ù ÀÌÀü ½Ã¼¼ Á¤º¸
+     * ê¸°ì¤€ì„ ë‚ ì§œ ë³´ë‹¤ ì´ì „ ì‹œì„¸ ì •ë³´
      *
-     * @param market     ÄÚÀÎ
-     * @param periodType ÁÖ±â
-     * @param base       ½ÃÀÛ ³¯Â¥ - ÇØ´ç ³¯Â¥¸¦ Æ÷ÇÔÇÏÁö ¾ÊÀ½ - UTC
-     * @param pageable   °¡Á®¿Ã °¹¼ö
-     * @return ½Ã¼¼(³¯Â¥ ±âÁØ ³»¸² Â÷¼ø)
+     * @param market     ì½”ì¸
+     * @param periodType ì£¼ê¸°
+     * @param base       ì‹œì‘ ë‚ ì§œ - í•´ë‹¹ ë‚ ì§œë¥¼ í¬í•¨í•˜ì§€ ì•ŠìŒ - UTC
+     * @param pageable   ê°€ì ¸ì˜¬ ê°¯ìˆ˜
+     * @return ì‹œì„¸(ë‚ ì§œ ê¸°ì¤€ ë‚´ë¦¼ ì°¨ìˆœ)
      */
     public List<CandleEntity> findMarketPricePeriodBefore(String market, PeriodType periodType, LocalDateTime base, Pageable pageable) {
         return queryFactory.select(candleEntity)
@@ -60,13 +60,13 @@ public class CandleRepositoryCustom {
     }
 
     /**
-     * ±âÁØÀ» ³¯Â¥ º¸´Ù ÀÌÈÄ ½Ã¼¼ Á¤º¸
+     * ê¸°ì¤€ì„ ë‚ ì§œ ë³´ë‹¤ ì´í›„ ì‹œì„¸ ì •ë³´
      *
-     * @param market     ÄÚÀÎ
-     * @param periodType ÁÖ±â
-     * @param base       ½ÃÀÛ ³¯Â¥ - ÇØ´ç ³¯Â¥¸¦ Æ÷ÇÔÇÏÁö ¾ÊÀ½ - UTC
-     * @param pageable   °¡Á®¿Ã °¹¼ö
-     * @return ½Ã¼¼(³¯Â¥ ±âÁØ ¿À¸§ Â÷¼ø)
+     * @param market     ì½”ì¸
+     * @param periodType ì£¼ê¸°
+     * @param base       ì‹œì‘ ë‚ ì§œ - í•´ë‹¹ ë‚ ì§œë¥¼ í¬í•¨í•˜ì§€ ì•ŠìŒ - UTC
+     * @param pageable   ê°€ì ¸ì˜¬ ê°¯ìˆ˜
+     * @return ì‹œì„¸(ë‚ ì§œ ê¸°ì¤€ ì˜¤ë¦„ ì°¨ìˆœ)
      */
     public List<CandleEntity> findMarketPricePeriodAfter(String market, PeriodType periodType, LocalDateTime base, Pageable pageable) {
         return queryFactory.select(candleEntity)

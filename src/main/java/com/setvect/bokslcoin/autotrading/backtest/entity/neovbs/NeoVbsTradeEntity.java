@@ -1,6 +1,7 @@
 package com.setvect.bokslcoin.autotrading.backtest.entity.neovbs;
 
 import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
+import com.setvect.bokslcoin.autotrading.backtest.entity.common.CommonTradeEntity;
 import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -17,11 +18,11 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity(name = "XD_VBS_TRADE")
+@Entity(name = "XD_NEO_VBS_TRADE")
 @Table(indexes = {
-        @Index(name = "XB_VBS_TRADE_TRADE_TIME_KST_INDEX", columnList = "TRADE_TIME_KST")
+        @Index(name = "XB_NEO_VBS_TRADE_TRADE_TIME_KST_INDEX", columnList = "TRADE_TIME_KST")
 })
-public class NeoVbsTradeEntity {
+public class NeoVbsTradeEntity implements CommonTradeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "TRADE_SEQ")
@@ -32,7 +33,7 @@ public class NeoVbsTradeEntity {
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "BACKTEST_CONDITION_SEQ")
-    private NeoVbsConditionEntity vbsConditionEntity;
+    private NeoVbsConditionEntity conditionEntity;
 
     /**
      * 매수/매도
@@ -87,4 +88,5 @@ public class NeoVbsTradeEntity {
      */
     @Column(name = "TRADE_TIME_KST", nullable = false)
     private LocalDateTime tradeTimeKst;
+
 }

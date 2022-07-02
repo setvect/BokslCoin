@@ -7,8 +7,8 @@ import java.util.List;
 public interface MabsTradeEntityRepositoryCustom {
 
     /**
-     * @param mabsConditionSeq ºĞ¼® Á¶°Ç ÀÏ·Ã¹øÈ£
-     * @return °Å·¡ ³»¿ªÀ» ³¯Â¥¼ø ¿À¸§Â÷¼ø
+     * @param mabsConditionSeq ë¶„ì„ ì¡°ê±´ ì¼ë ¨ë²ˆí˜¸
+     * @return ê±°ë˜ ë‚´ì—­ì„ ë‚ ì§œìˆœ ì˜¤ë¦„ì°¨ìˆœ
      */
     List<MabsTradeEntity> findByCondition(int mabsConditionSeq);
 
