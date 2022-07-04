@@ -1,10 +1,6 @@
 package com.setvect.bokslcoin.autotrading.algorithm.mabs;
 
-import com.setvect.bokslcoin.autotrading.algorithm.AskPriceRange;
-import com.setvect.bokslcoin.autotrading.algorithm.AskReason;
-import com.setvect.bokslcoin.autotrading.algorithm.CoinTrading;
-import com.setvect.bokslcoin.autotrading.algorithm.CommonTradeHelper;
-import com.setvect.bokslcoin.autotrading.algorithm.TradeEvent;
+import com.setvect.bokslcoin.autotrading.algorithm.*;
 import com.setvect.bokslcoin.autotrading.algorithm.websocket.TradeResult;
 import com.setvect.bokslcoin.autotrading.exchange.AccountService;
 import com.setvect.bokslcoin.autotrading.exchange.OrderService;
@@ -30,12 +26,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -428,7 +419,7 @@ public class MabsMultiService implements CoinTrading {
      * 매수/매도 대기 주문 조회
      */
     private void loadOrderWait() {
-        List<OrderHistory> history = orderService.getHistory(0, properties.getMaxBuyCount());
+        List<OrderHistory> history = orderService.getHistory(1, properties.getMaxBuyCount());
         coinOrderWait.clear();
         coinOrderWait.putAll(history.stream().collect(Collectors.toMap(OrderHistory::getMarket, Function.identity())));
         log.debug("load coinOrder: {}", coinOrderWait);

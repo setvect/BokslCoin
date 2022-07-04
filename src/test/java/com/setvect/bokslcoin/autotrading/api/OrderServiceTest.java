@@ -19,7 +19,7 @@ public class OrderServiceTest {
 
     @Test
     public void orderTest() {
-        List<OrderHistory> history = orderService.getHistory(0, 100);
+        List<OrderHistory> history = orderService.getHistory(1, 100);
         for (OrderHistory orderHistory : history) {
             System.out.println(orderHistory);
         }
