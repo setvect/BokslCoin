@@ -38,7 +38,7 @@ public class MockNeoVbsTradeEvent extends BasicTradeEvent {
     }
 
     @Override
-    public void check(Candle candle, double maShort, double maLong) {
+    public void check(Candle candle) {
         this.candle = candle;
     }
 

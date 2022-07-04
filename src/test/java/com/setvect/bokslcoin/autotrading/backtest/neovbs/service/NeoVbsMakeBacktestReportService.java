@@ -119,7 +119,7 @@ public class NeoVbsMakeBacktestReportService {
             report.append(String.format("대상 코인\t %s", neoVbsConditionEntity.getMarket())).append("\n");
             report.append(String.format("K\t %,.2f%%", neoVbsConditionEntity.getK() * 100)).append("\n");
             report.append(String.format("트레일링 스탑 진입점\t %,.2f%%", neoVbsConditionEntity.getTrailingStopEnterRate() * 100)).append("\n");
-            report.append(String.format("손절 값\t %d", neoVbsConditionEntity.getTrailingLossStopRate())).append("\n");
+            report.append(String.format("트레일링 스탑 손절\t %,.2f%%", neoVbsConditionEntity.getTrailingLossStopRate())).append("\n");
             report.append(String.format("손절\t %,.2f%%", neoVbsConditionEntity.getLoseStopRate() * 100)).append("\n");
         }
         XSSFSheet sheet = workbook.createSheet();
