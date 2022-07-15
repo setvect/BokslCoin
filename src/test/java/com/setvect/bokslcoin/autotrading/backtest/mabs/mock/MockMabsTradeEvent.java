@@ -73,6 +73,35 @@ public class MockMabsTradeEvent extends BasicTradeEvent {
 
     @Override
     public void ask(String market, double balance, double tradePrice, AskReason reason) {
+        MabsBacktestService.CurrentPrice currentPrice = priceMap.get(market);
+        Candle candle = currentPrice.getCandle();
+
+        MabsMultiBacktestRow backtestRow = new MabsMultiBacktestRow(BacktestHelper.depthCopy(candle));
+
+        Account coinAccount = accountMap.get(market);
+        backtestRow.setBidPrice(coinAccount.getAvgBuyPriceValue());
+        backtestRow.setBuyAmount(coinAccount.getInvestCash());
+
+//        double balance = Double.parseDouble(coinAccount.getBalance());
+        double askAmount = tradePrice * balance;
+
+        Account krwAccount = accountMap.get("KRW");
+        double totalCash = Double.parseDouble(krwAccount.getBalance()) + askAmount;
+        krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
+        coinAccount.setBalance("0");
+        coinAccount.setAvgBuyPrice(null);
+
+        backtestRow.setBuyTotalAmount(BacktestHelper.getBuyTotalAmount(accountMap));
+        backtestRow.setTradeEvent(TradeType.SELL);
+        backtestRow.setAskPrice(tradePrice);
+        backtestRow.setCash(krwAccount.getBalanceValue());
+        backtestRow.setAskReason(reason);
+        backtestRow.setMaShort(currentPrice.getMaShort());
+        backtestRow.setMaLong(currentPrice.getMaLong());
+        backtestRow.setHighYield(highYield);
+        backtestRow.setLowYield(lowYield);
+
+        tradeHistory.add(backtestRow);
     }
 
     @Override

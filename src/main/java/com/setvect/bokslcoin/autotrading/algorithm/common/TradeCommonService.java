@@ -215,14 +215,14 @@ public class TradeCommonService {
         Account account = getAccount(market);
         List<Candle> candleList = getCandles(market);
         Candle candle = candleList.get(0);
-        double yield = TradeCommonUtil.getYield(candle, account);
+        double yieldValue = TradeCommonUtil.getYield(candle, account);
 
-        String message = String.format("[%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익률: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
+        String message = String.format("매도: [%s] 현재가: %,.2f, 매입단가: %,.2f, 투자금: %,.0f, 수익률: %.2f%%, 최고 수익률: %.2f%%, 최저 수익률: %.2f%%",
                 candle.getMarket(),
                 candle.getTradePrice(),
                 account.getAvgBuyPriceValue(),
                 account.getInvestCash(),
-                yield * 100,
+                yieldValue * 100,
                 highYield.get(market) * 100,
                 lowYield.get(market) * 100);
 
@@ -242,7 +242,7 @@ public class TradeCommonService {
         trade.setAmount(currentPrice * balance);
         trade.setUnitPrice(currentPrice);
         trade.setRegDate(LocalDateTime.now());
-        trade.setYield(yield);
+        trade.setYield(yieldValue);
         tradeRepository.save(trade);
 
         tradeEvent.ask(market, balance, currentPrice, AskReason.MA_DOWN);
@@ -264,13 +264,13 @@ public class TradeCommonService {
         List<Candle> candleList = getCandles(market);
 
         Candle candle = candleList.get(0);
-        double yield = TradeCommonUtil.getYield(candle, account);
+        double yieldValue = TradeCommonUtil.getYield(candle, account);
 
-        double maxHighYield = Math.max(highYield.getOrDefault(market, 0.0), yield);
+        double maxHighYield = Math.max(highYield.getOrDefault(market, 0.0), yieldValue);
         highYield.put(market, maxHighYield);
         tradeEvent.highYield(candle.getMarket(), maxHighYield);
 
-        double minLowYield = Math.min(lowYield.getOrDefault(market, 0.0), yield);
+        double minLowYield = Math.min(lowYield.getOrDefault(market, 0.0), yieldValue);
         lowYield.put(market, minLowYield);
         tradeEvent.lowYield(candle.getMarket(), minLowYield);
 

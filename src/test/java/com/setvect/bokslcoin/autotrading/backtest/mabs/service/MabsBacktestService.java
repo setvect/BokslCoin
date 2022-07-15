@@ -74,7 +74,7 @@ public class MabsBacktestService {
         initMock();
 
         try {
-            mabsConditionEntities = backtestSub(mabsConditionEntities, range);
+            mabsConditionEntities = backtest(mabsConditionEntities, range);
             List<Integer> conditionSeqList = getConditionSeqList(mabsConditionEntities);
 
             AnalysisMultiCondition analysisMultiCondition = analysisMultiConditionBuilder.conditionIdSet(new HashSet<>(conditionSeqList)).build();
@@ -110,7 +110,7 @@ public class MabsBacktestService {
                 start = lastTrade.getTradeTimeKst();
             }
             DateRange range = new DateRange(start, LocalDateTime.now());
-            List<MabsMultiBacktestRow> tradeHistory = backtestSub(condition, range);
+            List<MabsMultiBacktestRow> tradeHistory = backtest(condition, range);
 
             List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
             log.info("[{}] save. range: {}, trade Count: {}", condition.getMarket(), range, mabsTradeEntities.size());
@@ -126,10 +126,10 @@ public class MabsBacktestService {
                 .collect(Collectors.toList());
     }
 
-    public List<MabsConditionEntity> backtestSub(List<MabsConditionEntity> mabsConditionEntities, DateRange range) {
+    public List<MabsConditionEntity> backtest(List<MabsConditionEntity> mabsConditionEntities, DateRange range) {
         for (MabsConditionEntity condition : mabsConditionEntities) {
             mabsConditionEntityRepository.save(condition);
-            List<MabsMultiBacktestRow> tradeHistory = backtestSub(condition, range);
+            List<MabsMultiBacktestRow> tradeHistory = backtest(condition, range);
 
             List<MabsTradeEntity> mabsTradeEntities = convert(condition, tradeHistory);
             mabsTradeEntityRepository.saveAll(mabsTradeEntities);
@@ -193,7 +193,7 @@ public class MabsBacktestService {
      * @param range     백테스트 범위(UTC 기준)
      * @return 거래 내역
      */
-    List<MabsMultiBacktestRow> backtestSub(MabsConditionEntity condition, DateRange range) {
+    private List<MabsMultiBacktestRow> backtest(MabsConditionEntity condition, DateRange range) {
         // key: market, value: 자산
         Map<String, Account> accountMap = new HashMap<>();
 
