@@ -17,6 +17,7 @@ import java.util.Map;
 
 
 public class MockNeoVbsTradeEvent extends BasicTradeEvent {
+
     @Setter
     private Map<String, Account> accountMap;
     @Setter
@@ -33,6 +34,8 @@ public class MockNeoVbsTradeEvent extends BasicTradeEvent {
     private double lowYield;
     private Candle candle;
 
+    private double targetPrice;
+
     public MockNeoVbsTradeEvent(SlackMessageService slackMessageService) {
         super(slackMessageService);
     }
@@ -40,6 +43,11 @@ public class MockNeoVbsTradeEvent extends BasicTradeEvent {
     @Override
     public void check(Candle candle) {
         this.candle = candle;
+    }
+
+    @Override
+    public void setTargetPrice(String market, double targetPrice) {
+        this.targetPrice = targetPrice;
     }
 
     @Override
@@ -56,6 +64,7 @@ public class MockNeoVbsTradeEvent extends BasicTradeEvent {
         String balance = ApplicationUtil.toNumberString(bidPrice / tradePrice);
         coinAccount.setBalance(balance);
 
+        backtestRow.setTargetPrice(targetPrice);
         backtestRow.setTradeEvent(TradeType.BUY);
         backtestRow.setBidPrice(tradePrice);
         backtestRow.setBuyAmount(bidPrice);
@@ -67,6 +76,29 @@ public class MockNeoVbsTradeEvent extends BasicTradeEvent {
 
     @Override
     public void ask(String market, double balance, double tradePrice, AskReason reason) {
+        NeoVbsMultiBacktestRow backtestRow = new NeoVbsMultiBacktestRow(BacktestHelper.depthCopy(candle));
+
+        Account coinAccount = accountMap.get(market);
+        backtestRow.setBidPrice(coinAccount.getAvgBuyPriceValue());
+        backtestRow.setBuyAmount(coinAccount.getInvestCash());
+
+        double askAmount = tradePrice * balance;
+
+        Account krwAccount = accountMap.get("KRW");
+        double totalCash = Double.parseDouble(krwAccount.getBalance()) + askAmount;
+        krwAccount.setBalance(ApplicationUtil.toNumberString(totalCash));
+        coinAccount.setBalance("0");
+        coinAccount.setAvgBuyPrice(null);
+
+        backtestRow.setBuyTotalAmount(BacktestHelper.getBuyTotalAmount(accountMap));
+        backtestRow.setTradeEvent(TradeType.SELL);
+        backtestRow.setAskPrice(tradePrice);
+        backtestRow.setCash(krwAccount.getBalanceValue());
+        backtestRow.setAskReason(reason);
+        backtestRow.setHighYield(highYield);
+        backtestRow.setLowYield(lowYield);
+
+        tradeHistory.add(backtestRow);
     }
 
     @Override

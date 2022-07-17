@@ -10,6 +10,7 @@ import com.setvect.bokslcoin.autotrading.backtest.common.model.CommonTradeReport
 import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsConditionEntity;
 import com.setvect.bokslcoin.autotrading.backtest.entity.neovbs.NeoVbsTradeEntity;
 import com.setvect.bokslcoin.autotrading.backtest.repository.NeoVbsConditionEntityRepository;
+import com.setvect.bokslcoin.autotrading.record.entity.TradeType;
 import com.setvect.bokslcoin.autotrading.util.DateRange;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -130,7 +131,7 @@ public class NeoVbsMakeBacktestReportService {
 
     private static XSSFSheet createTradeReport(CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> result, XSSFWorkbook workbook) {
         XSSFSheet sheet = workbook.createSheet();
-        String header = "날짜(KST),날짜(UTC),코인,매매구분," +
+        String header = "날짜(KST),날짜(UTC),코인,매매구분,매수 목표가," +
                 "매수 체결 가격,최고수익률,최저수익률,매도 체결 가격," +
                 "매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금," +
                 "수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
@@ -169,6 +170,15 @@ public class NeoVbsMakeBacktestReportService {
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(neoVbsTradeEntity.getTradeType().name());
             createCell.setCellStyle(defaultStyle);
+
+            createCell = row.createCell(cellIdx++);
+            if (neoVbsTradeEntity.getTradeType() == TradeType.BUY) {
+                createCell.setCellValue(neoVbsTradeEntity.getTargetPrice());
+                createCell.setCellStyle(commaStyle);
+            } else {
+                createCell.setCellValue("-");
+                createCell.setCellStyle(defaultStyle);
+            }
 
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getBuyAmount());

@@ -245,7 +245,7 @@ public class TradeCommonService {
         trade.setYield(yieldValue);
         tradeRepository.save(trade);
 
-        tradeEvent.ask(market, balance, currentPrice, AskReason.MA_DOWN);
+        tradeEvent.ask(market, balance, currentPrice, AskReason.TIME);
         highYield.put(market, 0.0);
         lowYield.put(market, 0.0);
         tradeCompleteOfPeriod.add(market);

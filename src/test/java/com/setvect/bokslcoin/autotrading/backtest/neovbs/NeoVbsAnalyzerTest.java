@@ -34,7 +34,7 @@ public class NeoVbsAnalyzerTest {
     public void backtest() {
         LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-05-01T00:00:00");
         LocalDateTime baseEnd = DateUtil.getLocalDateTime("2022-06-01T00:00:00");
-        List<String> markets = Arrays.asList("KRW-BTC");
+        List<String> markets = Arrays.asList("KRW-XRP");
         final DateRange range = new DateRange(baseStart, baseEnd);
         AnalysisMultiCondition.AnalysisMultiConditionBuilder analysisMultiConditionBuilder = AnalysisMultiCondition.builder()
                 .range(range)

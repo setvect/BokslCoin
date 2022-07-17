@@ -2,6 +2,9 @@
 
 ## 진행예정
 
+- NEW-20220717: 용어 변경
+    - bid -> buy
+    - ask -> sell
 - NEW-20220703: 패키지 구조 모듈 중심으로 변경
     - entity.mabs -> mabs.entity
 - NEW-20220606: H2 Update: 1.4.199 -> 2.1.212

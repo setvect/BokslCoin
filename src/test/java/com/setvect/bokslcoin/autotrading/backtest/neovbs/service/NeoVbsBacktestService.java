@@ -174,6 +174,7 @@ public class NeoVbsBacktestService {
         return tradeHistory.stream().map(p -> NeoVbsTradeEntity.builder()
                 .conditionEntity(condition)
                 .tradeType(p.getTradeEvent())
+                .targetPrice(p.getTargetPrice())
                 .highYield(p.getHighYield())
                 .lowYield(p.getLowYield())
                 .yield(p.getRealYield())

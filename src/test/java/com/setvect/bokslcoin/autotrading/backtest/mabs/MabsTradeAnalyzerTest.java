@@ -45,8 +45,8 @@ public class MabsTradeAnalyzerTest {
 //        LocalDateTime baseStart = DateUtil.getLocalDateTime("2022-01-10T00:00:00");
 //        LocalDateTime baseEnd = LocalDateTime.now();
 
-        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
-//        List<String> markets = Arrays.asList("KRW-BTC");
+//        List<String> markets = Arrays.asList("KRW-BTC", "KRW-ETH", "KRW-XRP", "KRW-EOS", "KRW-ETC", "KRW-ADA", "KRW-MANA", "KRW-BAT", "KRW-BCH", "KRW-DOT");
+        List<String> markets = Arrays.asList("KRW-BTC");
         final DateRange range = new DateRange(baseStart, baseEnd);
 
         AnalysisMultiCondition.AnalysisMultiConditionBuilder analysisMultiConditionBuilder = AnalysisMultiCondition.builder()
