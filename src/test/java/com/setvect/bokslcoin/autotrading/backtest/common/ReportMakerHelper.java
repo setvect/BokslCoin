@@ -121,9 +121,11 @@ public class ReportMakerHelper {
         return sheet;
     }
 
-
     public static void applyHeader(XSSFSheet sheet, String header) {
-        List<String> headerList = Arrays.asList(header.split(","));
+        applyHeader(sheet, Arrays.asList(header.split(",")));
+    }
+
+    public static void applyHeader(XSSFSheet sheet, List<String> headerList) {
         XSSFRow rowHeader = sheet.createRow(0);
         for (int cellIdx = 0; cellIdx < headerList.size(); cellIdx++) {
             XSSFCell cell = rowHeader.createCell(cellIdx);
@@ -193,4 +195,5 @@ public class ReportMakerHelper {
         report.append(String.format("매도 수수료\t %,.2f%%", condition.getFeeSell() * 100)).append("\n");
         return report.toString();
     }
+
 }

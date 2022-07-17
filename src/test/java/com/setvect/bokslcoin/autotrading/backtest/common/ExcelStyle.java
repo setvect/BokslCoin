@@ -37,7 +37,7 @@ public class ExcelStyle {
     }
 
     /**
-     * º“ºˆ¡° «•Ω√
+     * ÏÜåÏàòÏ†ê ÌëúÏãú
      */
     public static XSSFCellStyle createDecimal(XSSFWorkbook workbook) {
         XSSFCellStyle cellStyle = workbook.createCellStyle();
@@ -74,7 +74,7 @@ public class ExcelStyle {
     }
 
     /**
-     * ∏µÁ ºø border ¿˚øÎ
+     * Î™®Îì† ÏÖÄ border Ï†ÅÏö©
      */
     public static void applyAllBorder(XSSFSheet sheet) {
         int rowCount = sheet.getPhysicalNumberOfRows();
@@ -85,9 +85,9 @@ public class ExcelStyle {
                 XSSFCell cell = row.getCell(cellIdx);
                 XSSFCellStyle cellStyle = cell.getCellStyle();
                 cellStyle.setBorderLeft(BorderStyle.THIN);
-                cellStyle.setBorderLeft(BorderStyle.THIN);
-                cellStyle.setBorderLeft(BorderStyle.THIN);
-                cellStyle.setBorderLeft(BorderStyle.THIN);
+                cellStyle.setBorderRight(BorderStyle.THIN);
+                cellStyle.setBorderTop(BorderStyle.THIN);
+                cellStyle.setBorderBottom(BorderStyle.THIN);
             }
         }
     }
@@ -99,7 +99,7 @@ public class ExcelStyle {
             int cellCount = row.getPhysicalNumberOfCells();
             for (int cellIdx = 0; cellIdx < cellCount; cellIdx++) {
                 XSSFCellStyle cellStyle = row.getCell(cellIdx).getCellStyle();
-                cellStyle.getFont().setFontName("∏º¿∫ ∞ÌµÒ");
+                cellStyle.getFont().setFontName("ÎßëÏùÄ Í≥†Îîï");
             }
         }
     }

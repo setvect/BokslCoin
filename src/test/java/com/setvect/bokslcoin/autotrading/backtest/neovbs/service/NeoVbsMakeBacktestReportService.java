@@ -25,10 +25,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @Slf4j
@@ -131,11 +130,8 @@ public class NeoVbsMakeBacktestReportService {
 
     private static XSSFSheet createTradeReport(CommonAnalysisReportResult<NeoVbsConditionEntity, NeoVbsTradeEntity> result, XSSFWorkbook workbook) {
         XSSFSheet sheet = workbook.createSheet();
-        String header = "날짜(KST),날짜(UTC),코인,매매구분,매수 목표가," +
-                "매수 체결 가격,최고수익률,최저수익률,매도 체결 가격," +
-                "매도 이유,실현 수익률,매수금액,전체코인 매수금액,현금," +
-                "수수료,투자 수익(수수료포함),투자 결과,현금 + 전체코인 매수금액 - 수수료,수익비";
-        ReportMakerHelper.applyHeader(sheet, header);
+        Map<Integer, String> headerLabel = new HashMap<>();
+
         int rowIdx = 1;
 
         XSSFCellStyle defaultStyle = ExcelStyle.createDefault(workbook);
@@ -152,25 +148,29 @@ public class NeoVbsMakeBacktestReportService {
             LocalDateTime utcTime = BacktestHelper.convertUtc(tradeTimeKst);
 
             XSSFRow row = sheet.createRow(rowIdx++);
-            NeoVbsTradeEntity tradeEntity = tradeItem.getTradeEntity();
             int cellIdx = 0;
 
+            headerLabel.put(cellIdx, "날짜(KST)");
             XSSFCell createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeTimeKst);
             createCell.setCellStyle(dateTimeStyle);
 
+            headerLabel.put(cellIdx, "날짜(UTC)");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(utcTime);
             createCell.setCellStyle(dateTimeStyle);
 
+            headerLabel.put(cellIdx, "종목");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(neoVbsConditionEntity.getMarket());
             createCell.setCellStyle(defaultStyle);
 
+            headerLabel.put(cellIdx, "매매구분");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(neoVbsTradeEntity.getTradeType().name());
             createCell.setCellStyle(defaultStyle);
 
+            headerLabel.put(cellIdx, "매수 목표가");
             createCell = row.createCell(cellIdx++);
             if (neoVbsTradeEntity.getTradeType() == TradeType.BUY) {
                 createCell.setCellValue(neoVbsTradeEntity.getTargetPrice());
@@ -180,63 +180,74 @@ public class NeoVbsMakeBacktestReportService {
                 createCell.setCellStyle(defaultStyle);
             }
 
+            headerLabel.put(cellIdx, "매수금액");
             createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(tradeItem.getBuyAmount());
-            createCell.setCellStyle(commaStyle);
+            if (neoVbsTradeEntity.getTradeType() == TradeType.BUY) {
+                createCell.setCellValue(tradeItem.getBuyAmount());
+                createCell.setCellStyle(commaStyle);
+            } else {
+                createCell.setCellValue("-");
+                createCell.setCellStyle(defaultStyle);
+            }
 
+            headerLabel.put(cellIdx, "최고수익률");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(neoVbsTradeEntity.getHighYield());
             createCell.setCellStyle(percentStyle);
 
+            headerLabel.put(cellIdx, "최저수익률");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(neoVbsTradeEntity.getLowYield());
             createCell.setCellStyle(percentStyle);
 
+            headerLabel.put(cellIdx, "매수/매도 체결 가격");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(neoVbsTradeEntity.getUnitPrice());
             createCell.setCellStyle(commaStyle);
 
+            headerLabel.put(cellIdx, "매도 이유");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(neoVbsTradeEntity.getSellReason() == null ? "" : neoVbsTradeEntity.getSellReason().name());
             createCell.setCellStyle(defaultStyle);
 
+            headerLabel.put(cellIdx, "실현 수익률");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getRealYield());
             createCell.setCellStyle(percentStyle);
 
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(tradeItem.getBuyAmount());
-            createCell.setCellStyle(commaStyle);
-
+            headerLabel.put(cellIdx, "전체코인 매수금액");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getBuyTotalAmount());
             createCell.setCellStyle(commaStyle);
 
+            headerLabel.put(cellIdx, "매매후 보유 현금");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getCash());
             createCell.setCellStyle(commaStyle);
 
+            headerLabel.put(cellIdx, "수수료");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getFeePrice());
             createCell.setCellStyle(commaDecimalStyle);
 
+            headerLabel.put(cellIdx, "투자 수익(수수료포함)");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getGains());
             createCell.setCellStyle(commaStyle);
 
-            createCell = row.createCell(cellIdx++);
-            createCell.setCellValue(tradeItem.getInvestResult());
-            createCell.setCellStyle(commaStyle);
-
+            headerLabel.put(cellIdx, "평가금(코인+현금)");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getFinalResult());
             createCell.setCellStyle(commaStyle);
 
+            headerLabel.put(cellIdx, "수익비");
             createCell = row.createCell(cellIdx++);
             createCell.setCellValue(tradeItem.getFinalResult() / result.getCondition().getCash());
             createCell.setCellStyle(decimalStyle);
         }
 
+        List<String> headerList = IntStream.range(0, headerLabel.size()).mapToObj(i -> headerLabel.get(i)).collect(Collectors.toList());
+        ReportMakerHelper.applyHeader(sheet, headerList);
         sheet.createFreezePane(0, 1);
         sheet.setDefaultColumnWidth(14);
         sheet.setColumnWidth(0, 5000);
