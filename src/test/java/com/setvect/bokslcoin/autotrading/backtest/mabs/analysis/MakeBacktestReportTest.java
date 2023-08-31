@@ -67,8 +67,9 @@ public class MakeBacktestReportTest {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
                 .mabsConditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-06-08T23:59:59")))
+                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), LocalDateTime.now()))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.of(2022, 05, 01, 00, 00)))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
                 .investRatio(.99)
@@ -547,10 +548,24 @@ public class MakeBacktestReportTest {
             report.append(String.format("%s\t", mabsTradeEntity.getTradeType()));
             report.append(String.format("%,.0f\t", mabsTradeEntity.getMaShort()));
             report.append(String.format("%,.0f\t", mabsTradeEntity.getMaLong()));
-            report.append(String.format("%,.0f\t", row.getBuyAmount()));
-            report.append(String.format("%,.2f%%\t", mabsTradeEntity.getHighYield() * 100));
-            report.append(String.format("%,.2f%%\t", mabsTradeEntity.getLowYield() * 100));
-            report.append(String.format("%,.0f\t", mabsTradeEntity.getUnitPrice()));
+
+            if (mabsTradeEntity.getTradeType() == TradeType.BUY) {
+                report.append(String.format("%,.0f\t", mabsTradeEntity.getUnitPrice()));
+            } else {
+                report.append("-\t");
+            }
+            if (mabsTradeEntity.getTradeType() == TradeType.SELL) {
+                report.append(String.format("%,.2f%%\t", mabsTradeEntity.getHighYield() * 100));
+                report.append(String.format("%,.2f%%\t", mabsTradeEntity.getLowYield() * 100));
+            } else {
+                report.append("-\t");
+                report.append("-\t");
+            }
+            if (mabsTradeEntity.getTradeType() == TradeType.SELL) {
+                report.append(String.format("%,.0f\t", mabsTradeEntity.getUnitPrice()));
+            } else {
+                report.append("-\t");
+            }
             report.append(String.format("%s\t", mabsTradeEntity.getSellReason() == null ? "" : mabsTradeEntity.getSellReason()));
             report.append(String.format("%,.2f%%\t", row.getRealYield() * 100));
             report.append(String.format("%,.0f\t", row.getBuyAmount()));
