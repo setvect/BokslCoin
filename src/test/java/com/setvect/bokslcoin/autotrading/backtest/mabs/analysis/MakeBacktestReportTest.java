@@ -67,14 +67,14 @@ public class MakeBacktestReportTest {
         AnalysisMultiCondition analysisMultiCondition = AnalysisMultiCondition.builder()
                 .mabsConditionIdSet(new HashSet<>(conditionSeqList))
 //                .mabsConditionIdSet(new HashSet<>(Arrays.asList(32273626)))
-//                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
+                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.now()))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), DateUtil.getLocalDateTime("2021-06-08T23:59:59")))
-                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), LocalDateTime.now()))
+//                .range(new DateRange(DateUtil.getLocalDateTime("2017-10-01T00:00:00"), LocalDateTime.now()))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2022-01-10T00:00:00"), LocalDateTime.of(2022, 05, 01, 00, 00)))
 //                .range(new DateRange(DateUtil.getLocalDateTime("2021-06-30T00:00:00"), LocalDateTime.now()))
                 .investRatio(.99)
                 .cash(14_223_714)
-                .feeSell(0.002) // 슬립피지까지 고려해 보수적으로 0.2% 수수료 측정
+                .feeSell(0.002) // 슬리피지까지 고려해 보수적으로 0.2% 수수료 측정
                 .feeBuy(0.002)
                 .build();
         List<MabsTradeReportItem> tradeReportItems = trading(analysisMultiCondition);
@@ -336,7 +336,12 @@ public class MakeBacktestReportTest {
     private AnalysisReportResult.MultiCoinHoldYield calculateCoinHoldYield(DateRange range, Set<String> markets) {
         Map<String, List<CandleEntity>> coinCandleListMap = markets.stream()
                 .collect(Collectors.toMap(Function.identity(),
-                        p -> candleRepository.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo()))
+                        p -> {
+                            log.info("조회 시작. 코인: {}", p);
+                            List<CandleEntity> marketPrice = candleRepository.findMarketPrice(p, PeriodType.PERIOD_1440, range.getFrom(), range.getTo());
+                            log.info("조회 완료. 코인: {}, 건수: {}", p, marketPrice.size());
+                            return marketPrice;
+                        })
                 );
 
         Map<String, AnalysisReportResult.YieldMdd> coinByYield = getCoinByYield(coinCandleListMap);
