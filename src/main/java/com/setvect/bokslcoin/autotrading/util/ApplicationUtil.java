@@ -1,12 +1,14 @@
 package com.setvect.bokslcoin.autotrading.util;
 
 import lombok.SneakyThrows;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration;
@@ -28,6 +30,7 @@ import java.util.Map;
 /**
  * 어플리케이션의 의존적인 유틸성 메소드
  */
+@Slf4j
 public class ApplicationUtil {
     private static final ModelMapper modelMapper = new ModelMapper();
 
@@ -161,7 +164,7 @@ public class ApplicationUtil {
     }
 
     public static String request(String url, HttpRequestBase request) throws IOException {
-        HttpClient client = HttpClientBuilder.create().build();
+        HttpClient client = createHttpClientWithLogging();
 
         RequestConfig config = RequestConfig.custom()
                 .setConnectTimeout(TIMEOUT_MS)
@@ -180,6 +183,50 @@ public class ApplicationUtil {
             throw new RuntimeException(message);
         }
         return responseText;
+    }
+
+    private static HttpClient createHttpClientWithLogging() {
+        return HttpClientBuilder.create()
+                .addInterceptorFirst(createRequestLoggingInterceptor())
+                .addInterceptorFirst(createResponseLoggingInterceptor())
+                .build();
+    }
+
+    private static HttpRequestInterceptor createRequestLoggingInterceptor() {
+        return (request, context) -> {
+            log.info("HTTP Request - Method: {}, URL: {}", request.getRequestLine().getMethod(), request.getRequestLine().getUri());
+
+            // Request body 로깅 (POST, PUT 등의 경우)
+            if (request instanceof HttpEntityEnclosingRequest) {
+                HttpEntityEnclosingRequest entityRequest = (HttpEntityEnclosingRequest) request;
+                HttpEntity entity = entityRequest.getEntity();
+                if (entity != null && entity.isRepeatable()) {
+                    String requestBody = EntityUtils.toString(entity, "UTF-8");
+                    log.debug("HTTP Request Body - Body: {}", requestBody);
+                }
+            }
+        };
+    }
+
+    private static HttpResponseInterceptor createResponseLoggingInterceptor() {
+        return (response, context) -> {
+            int statusCode = response.getStatusLine().getStatusCode();
+            HttpEntity entity = response.getEntity();
+
+            if (entity != null) {
+                // Entity를 BufferedHttpEntity로 래핑하여 재사용 가능하게 만듦
+                if (!(entity instanceof BufferedHttpEntity)) {
+                    response.setEntity(new BufferedHttpEntity(entity));
+                    entity = response.getEntity();
+                }
+                
+                String responseBody = EntityUtils.toString(entity, "UTF-8");
+                log.info("HTTP Response - Status: {}, Response Length: {}", statusCode, responseBody.length());
+                log.debug("HTTP Response Body - Body: {}", responseBody);
+            } else {
+                log.info("HTTP Response - Status: {}, No Content", statusCode);
+            }
+        };
     }
 
     public static String getQueryString(Map<String, String> params) {
