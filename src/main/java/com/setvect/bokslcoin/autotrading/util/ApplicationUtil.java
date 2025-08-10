@@ -8,7 +8,7 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.message.BasicHeader;
+import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration;
@@ -16,7 +16,6 @@ import org.modelmapper.convention.MatchingStrategies;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -25,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -166,9 +164,12 @@ public class ApplicationUtil {
     }
 
     public static String request(String url, HttpRequestBase request) throws IOException {
-        HttpClient client = createHttpClientWithLogging(url);
+        HttpClient client = createHttpClientWithLogging();
 
-        RequestConfig config = RequestConfig.custom().setConnectTimeout(TIMEOUT_MS).setConnectionRequestTimeout(TIMEOUT_MS).setSocketTimeout(TIMEOUT_MS).build();
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(TIMEOUT_MS)
+                .setConnectionRequestTimeout(TIMEOUT_MS)
+                .setSocketTimeout(TIMEOUT_MS).build();
         request.setConfig(config);
 
         HttpResponse response = client.execute(request);
@@ -184,36 +185,16 @@ public class ApplicationUtil {
         return responseText;
     }
 
-    private static HttpClient createHttpClientWithLogging(String fullUrl) {
-        List<Header> defaultHeaders = Arrays.asList(
-                new BasicHeader("Accept-Charset", "UTF-8"),
-                new BasicHeader("Accept-Encoding", "identity") // 압축 비활성화
-        );
-
+    private static HttpClient createHttpClientWithLogging() {
         return HttpClientBuilder.create()
-                .addInterceptorFirst(createRequestLoggingInterceptor(fullUrl))
+                .addInterceptorFirst(createRequestLoggingInterceptor())
                 .addInterceptorFirst(createResponseLoggingInterceptor())
-                .setDefaultHeaders(defaultHeaders)
                 .build();
     }
 
-    private static HttpRequestInterceptor createRequestLoggingInterceptor(String fullUrl) {
+    private static HttpRequestInterceptor createRequestLoggingInterceptor() {
         return (request, context) -> {
-            String uri = request.getRequestLine().getUri();
-
-            // 전체 URL에서 호스트 추출
-            String host = "unknown";
-            try {
-                URI fullUri = new URI(fullUrl);
-                host = fullUri.getHost();
-            } catch (Exception e) {
-                // fallback: Host 헤더에서 추출 시도
-                if (request.getFirstHeader("Host") != null) {
-                    host = request.getFirstHeader("Host").getValue();
-                }
-            }
-
-            log.info("HTTP Request - Method: {}, Host: {}, URL: {}", request.getRequestLine().getMethod(), host, uri);
+            log.info("HTTP Request - Method: {}, URL: {}", request.getRequestLine().getMethod(), request.getRequestLine().getUri());
 
             // Request body 로깅 (POST, PUT 등의 경우)
             if (request instanceof HttpEntityEnclosingRequest) {
@@ -233,26 +214,13 @@ public class ApplicationUtil {
             HttpEntity entity = response.getEntity();
 
             if (entity != null) {
-                // Content-Type에서 charset 확인
-                String contentType = entity.getContentType() != null ? entity.getContentType().getValue() : "unknown";
-                log.debug("HTTP Response Content-Type: {}", contentType);
-
                 // Entity를 BufferedHttpEntity로 래핑하여 재사용 가능하게 만듦
                 if (!(entity instanceof BufferedHttpEntity)) {
                     response.setEntity(new BufferedHttpEntity(entity));
                     entity = response.getEntity();
                 }
-
-                // 인코딩을 더 안전하게 처리
-                String responseBody;
-                try {
-                    responseBody = EntityUtils.toString(entity, "UTF-8");
-                } catch (Exception e) {
-                    // UTF-8로 파싱 실패 시 기본 charset 사용
-                    responseBody = EntityUtils.toString(entity);
-                    log.warn("UTF-8 parsing failed, using default charset. Error: {}", e.getMessage());
-                }
-
+                
+                String responseBody = EntityUtils.toString(entity, "UTF-8");
                 log.info("HTTP Response - Status: {}, Response Length: {}", statusCode, responseBody.length());
                 log.debug("HTTP Response Body - Body: {}", responseBody);
             } else {
