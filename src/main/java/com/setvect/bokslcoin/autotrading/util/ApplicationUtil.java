@@ -1,12 +1,14 @@
 package com.setvect.bokslcoin.autotrading.util;
 
 import lombok.SneakyThrows;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.BufferedHttpEntity;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.config.Configuration;
@@ -14,6 +16,7 @@ import org.modelmapper.convention.MatchingStrategies;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -22,12 +25,14 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 /**
  * 어플리케이션의 의존적인 유틸성 메소드
  */
+@Slf4j
 public class ApplicationUtil {
     private static final ModelMapper modelMapper = new ModelMapper();
 
@@ -161,12 +166,9 @@ public class ApplicationUtil {
     }
 
     public static String request(String url, HttpRequestBase request) throws IOException {
-        HttpClient client = HttpClientBuilder.create().build();
+        HttpClient client = createHttpClientWithLogging(url);
 
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(TIMEOUT_MS)
-                .setConnectionRequestTimeout(TIMEOUT_MS)
-                .setSocketTimeout(TIMEOUT_MS).build();
+        RequestConfig config = RequestConfig.custom().setConnectTimeout(TIMEOUT_MS).setConnectionRequestTimeout(TIMEOUT_MS).setSocketTimeout(TIMEOUT_MS).build();
         request.setConfig(config);
 
         HttpResponse response = client.execute(request);
@@ -180,6 +182,83 @@ public class ApplicationUtil {
             throw new RuntimeException(message);
         }
         return responseText;
+    }
+
+    private static HttpClient createHttpClientWithLogging(String fullUrl) {
+        List<Header> defaultHeaders = Arrays.asList(
+                new BasicHeader("Accept-Charset", "UTF-8"),
+                new BasicHeader("Accept-Encoding", "identity") // 압축 비활성화
+        );
+
+        return HttpClientBuilder.create()
+                .addInterceptorFirst(createRequestLoggingInterceptor(fullUrl))
+                .addInterceptorFirst(createResponseLoggingInterceptor())
+                .setDefaultHeaders(defaultHeaders)
+                .build();
+    }
+
+    private static HttpRequestInterceptor createRequestLoggingInterceptor(String fullUrl) {
+        return (request, context) -> {
+            String uri = request.getRequestLine().getUri();
+
+            // 전체 URL에서 호스트 추출
+            String host = "unknown";
+            try {
+                URI fullUri = new URI(fullUrl);
+                host = fullUri.getHost();
+            } catch (Exception e) {
+                // fallback: Host 헤더에서 추출 시도
+                if (request.getFirstHeader("Host") != null) {
+                    host = request.getFirstHeader("Host").getValue();
+                }
+            }
+
+            log.info("HTTP Request - Method: {}, Host: {}, URL: {}", request.getRequestLine().getMethod(), host, uri);
+
+            // Request body 로깅 (POST, PUT 등의 경우)
+            if (request instanceof HttpEntityEnclosingRequest) {
+                HttpEntityEnclosingRequest entityRequest = (HttpEntityEnclosingRequest) request;
+                HttpEntity entity = entityRequest.getEntity();
+                if (entity != null && entity.isRepeatable()) {
+                    String requestBody = EntityUtils.toString(entity, "UTF-8");
+                    log.debug("HTTP Request Body - Body: {}", requestBody);
+                }
+            }
+        };
+    }
+
+    private static HttpResponseInterceptor createResponseLoggingInterceptor() {
+        return (response, context) -> {
+            int statusCode = response.getStatusLine().getStatusCode();
+            HttpEntity entity = response.getEntity();
+
+            if (entity != null) {
+                // Content-Type에서 charset 확인
+                String contentType = entity.getContentType() != null ? entity.getContentType().getValue() : "unknown";
+                log.debug("HTTP Response Content-Type: {}", contentType);
+
+                // Entity를 BufferedHttpEntity로 래핑하여 재사용 가능하게 만듦
+                if (!(entity instanceof BufferedHttpEntity)) {
+                    response.setEntity(new BufferedHttpEntity(entity));
+                    entity = response.getEntity();
+                }
+
+                // 인코딩을 더 안전하게 처리
+                String responseBody;
+                try {
+                    responseBody = EntityUtils.toString(entity, "UTF-8");
+                } catch (Exception e) {
+                    // UTF-8로 파싱 실패 시 기본 charset 사용
+                    responseBody = EntityUtils.toString(entity);
+                    log.warn("UTF-8 parsing failed, using default charset. Error: {}", e.getMessage());
+                }
+
+                log.info("HTTP Response - Status: {}, Response Length: {}", statusCode, responseBody.length());
+                log.debug("HTTP Response Body - Body: {}", responseBody);
+            } else {
+                log.info("HTTP Response - Status: {}, No Content", statusCode);
+            }
+        };
     }
 
     public static String getQueryString(Map<String, String> params) {

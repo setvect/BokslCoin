@@ -44,10 +44,11 @@ public class SlackMessageService {
 
         String url = MESSAGE_POST + "?" + ApplicationUtil.getQueryString(param);
         HttpPost request = new HttpPost(url);
+        request.setHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
 
         List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("token", token));
-        request.setEntity(new UrlEncodedFormEntity(params));
+        request.setEntity(new UrlEncodedFormEntity(params, "UTF-8"));
 
         String response = ApplicationUtil.request(url, request);
         if (response.contains("{\"ok\":false")) {
